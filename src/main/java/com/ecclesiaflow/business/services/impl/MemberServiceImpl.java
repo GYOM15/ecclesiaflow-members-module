@@ -6,7 +6,7 @@ import com.ecclesiaflow.io.entities.Role;
 import com.ecclesiaflow.io.repository.MemberRepository;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.business.services.EmailService;
-
+import com.ecclesiaflow.io.entities.MemberConfirmation;
 import com.ecclesiaflow.io.repository.MemberConfirmationRepository;
 import com.ecclesiaflow.business.domain.MembershipUpdate;
 import com.ecclesiaflow.web.exception.MemberNotFoundException;
@@ -14,9 +14,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
+import java.time.LocalDateTime;
 import java.util.List;
-
+import java.util.Random;
 import java.util.UUID;
 
 /**
@@ -62,6 +62,7 @@ public class MemberServiceImpl implements MemberService {
         }
         Member member = createMemberFromRegistration(registration);
         Member savedMember = memberRepository.save(member);
+        generateAndSendConfirmationCode(savedMember);
         
         return savedMember;
     }
@@ -126,5 +127,44 @@ public class MemberServiceImpl implements MemberService {
     @Transactional(readOnly = true)
     public List<Member> getAllMembers() {
         return memberRepository.findAll();
+    }
+
+    /**
+     * Génère et envoie automatiquement un code de confirmation par email
+     * lors de l'inscription d'un nouveau membre.
+     */
+    private void generateAndSendConfirmationCode(Member member) {
+        try {
+
+            // Supprimer l'ancien code s'il existe
+            confirmationRepository.findByMemberId(member.getId())
+                    .ifPresent(confirmationRepository::delete);
+
+            // Générer un nouveau code à 6 chiffres
+            String confirmationCode = generateConfirmationCode();
+
+            // Créer l'entité de confirmation
+            MemberConfirmation confirmation = MemberConfirmation.builder()
+                    .memberId(member.getId())
+                    .code(confirmationCode)
+                    .expiresAt(LocalDateTime.now().plusHours(24)) // Expire dans 24h
+                    .build();
+
+            confirmationRepository.save(confirmation);
+
+            // Envoyer le code par email
+            emailService.sendConfirmationCode(member.getEmail(), confirmationCode, member.getFirstName());
+
+        } catch (Exception e) {
+            // Ne pas faire échouer l'inscription si l'email ne peut pas être envoyé
+            // L'utilisateur pourra demander un renvoi du code plus tard
+        }
+    }
+
+    /**
+     * Génère un code de confirmation à 6 chiffres aléatoire
+     */
+    private String generateConfirmationCode() {
+        return String.format("%06d", new Random().nextInt(999999));
     }
 }
