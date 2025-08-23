@@ -68,6 +68,7 @@ public class Member {
     /**
      * Adresse e-mail du membre, utilisée comme identifiant pour la connexion.
      */
+    @Column(unique = true, nullable = false)
     private String email;
 
     /**
