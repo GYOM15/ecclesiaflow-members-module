@@ -17,39 +17,26 @@ EcclesiaFlow is built as a distributed microservices platform where each church 
 The platform supports **scalable, secure operations** across multiple churches while maintaining **data isolation** and customization capabilities.
 
 ```mermaid
-flowchart LR
-    classDef client fill:#f9f,stroke:#333,stroke-width:2px
-    classDef auth fill:#bbf,stroke:#333,stroke-width:2px
-    classDef members fill:#bfb,stroke:#333,stroke-width:2px
 
-    subgraph Client["👤 Client (Web/Mobile)"]
-        A1["Login Request"]
-        A2["Call Members API"]
-    end
-    class Client client
+sequenceDiagram
+    participant Client
+    participant Members as Members Module (8080)
+    participant Auth as Auth Module (8081)
 
-    subgraph AuthModule["🔐 Auth Module (8081)"]
-        B1["POST /auth/token"]
-        B2["POST /auth/refresh"]
-        B3["Validate JWT"]
-    end
-    class AuthModule auth
+    Client->>Members: POST /members (create member)
+    Members-->>Client: Confirmation code sent
 
-    subgraph MembersModule["👥 Members Module (8080)"]
-        C1["CRUD Members"]
-        C2["Password Mgmt"]
-        C3["Profile Update"]
-    end
-    class MembersModule members
+    Client->>Members: POST /members/{id}/confirmation (with code)
+    Members-->>Client: Member confirmed
 
-    A1 -->|Email + Password| B1
-    B1 -->|JWT + Refresh Token| A1
-    A2 -->|JWT Access Token| C1
-    A2 -->|JWT Access Token| C2
-    A2 -->|JWT Access Token| C3
-    C1 -->|Validate Token| B3
-    C2 -->|Validate Token| B3
-    C3 -->|Validate Token| B3
+    Members->>Auth: Request temporary token
+    Auth-->>Members: Temporary token
+
+    Members-->>Client: Temporary token
+
+    Client->>Auth: POST /set-password (with temp token + new password)
+    Auth-->>Client: Password set successfully
+
 
 ````
 
