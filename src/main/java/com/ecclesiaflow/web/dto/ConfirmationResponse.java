@@ -8,5 +8,5 @@ import lombok.Data;
 public class ConfirmationResponse {
     private String message;
     private String temporaryToken;
-    private long expiresIn; // Durée de validité en secondes
+    private long expiresIn;
 }
