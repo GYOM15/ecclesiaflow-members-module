@@ -27,7 +27,7 @@ import java.util.UUID;
  * et génère un token temporaire pour définir le mot de passe
  */
 @RestController
-@RequestMapping("/members/{memberId}/confirmation")
+@RequestMapping("ecclesiaflow/members/{memberId}/confirmation")
 @RequiredArgsConstructor
 @Tag(name = "Member Confirmation", description = "Confirmation des comptes membres")
 public class MembersConfirmationController {
