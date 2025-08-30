@@ -2,11 +2,7 @@ package com.ecclesiaflow.business.aspect;
 
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.AfterReturning;
-import org.aspectj.lang.annotation.AfterThrowing;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
-import org.aspectj.lang.annotation.Pointcut;
+import org.aspectj.lang.annotation.*;
 import org.springframework.stereotype.Component;
 
 /**
@@ -58,7 +54,13 @@ public class BusinessOperationLoggingAspect {
     @Pointcut("execution(* com.ecclesiaflow.business.services.impl.MemberServiceImpl.registerMember(..))")
     public void memberRegistration() {}
 
-    // === ENREGISTREMENT DE MEMBRES ===
+    /**
+     * Pointcut pour les appels au module d'authentification
+     */
+    @Pointcut("execution(* com.ecclesiaflow.business.services.impl.AuthModuleService.*(..))")
+    public void authModuleCalls() {}
+
+    // === CONSEILS POUR L'ENREGISTREMENT DES MEMBRES ===
     
     @Before("memberRegistration()")
     public void logBeforeMemberRegistration(JoinPoint joinPoint) {
@@ -73,5 +75,29 @@ public class BusinessOperationLoggingAspect {
     @AfterThrowing(pointcut = "memberRegistration()", throwing = "exception")
     public void logFailedRegistration(JoinPoint joinPoint, Throwable exception) {
         log.warn("BUSINESS: Échec de l'enregistrement du membre - {}", exception.getMessage());
+    }
+
+    // === CONSEILS POUR LES APPELS AU MODULE D'AUTHENTIFICATION ===
+    
+    @Before("authModuleCalls()")
+    public void logBeforeAuthModuleCall(JoinPoint joinPoint) {
+        String methodName = joinPoint.getSignature().getName();
+        log.debug("AUTH MODULE: Appel à {} avec arguments: {}", methodName, joinPoint.getArgs());
+    }
+
+    @AfterReturning(pointcut = "authModuleCalls()", returning = "result")
+    public void logAfterSuccessfulAuthModuleCall(JoinPoint joinPoint, Object result) {
+        String methodName = joinPoint.getSignature().getName();
+        if (result != null) {
+            log.debug("AUTH MODULE: {} a réussi avec résultat: {}", methodName, result);
+        } else {
+            log.debug("AUTH MODULE: {} exécuté avec succès", methodName);
+        }
+    }
+
+    @AfterThrowing(pointcut = "authModuleCalls()", throwing = "exception")
+    public void logAuthModuleError(JoinPoint joinPoint, Throwable exception) {
+        String methodName = joinPoint.getSignature().getName();
+        log.warn("AUTH MODULE: Échec de l'appel à {} - {}", methodName, exception.getMessage());
     }
 }
