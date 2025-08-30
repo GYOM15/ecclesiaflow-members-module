@@ -1,0 +1,966 @@
+openapi: 3.1.1
+info:
+  title: EcclesiaFlow Members API
+  description: |
+    API de gestion des membres pour la plateforme EcclesiaFlow
+    
+    **Architecture Multi-Tenant:**
+    - Chaque tenant représente une église
+    - Les pasteurs sont les administrateurs de leur tenant
+    - Un super admin gère tous les tenants
+    
+    **Fonctionnalités principales:**
+    - Gestion complète des profils membres (CRUD)
+    - Système de confirmation par email avec codes temporaires
+    - Gestion sécurisée des mots de passe
+    - Notifications email automatisées
+    - Validation stricte des données d'entrée
+    
+    **Versions supportées:**
+    - v1: `application/vnd.ecclesiaflow.members.v1+json`
+    - v2: `application/vnd.ecclesiaflow.members.v2+json`
+  version: 2.0.0
+  contact:
+    name: EcclesiaFlow Team
+    email: dev@ecclesiaflow.com
+    url: https://ecclesiaflow.com
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Serveur de développement
+  - url: https://staging.ecclesiaflow.com
+    description: Serveur de staging
+  - url: https://api.ecclesiaflow.com
+    description: Serveur de production
+
+security:
+  - BearerAuth: []
+
+paths:
+  /members:
+    get:
+      tags:
+        - Members Management
+      summary: Lister tous les membres
+      description: |
+        Récupère la liste de tous les membres avec pagination et filtrage optionnel.
+        
+        **Fonctionnalités:**
+        - Pagination par page et taille
+        - Filtrage par statut de confirmation
+        - Recherche par nom ou email
+        - Tri par différents critères
+      operationId: getAllMembers
+      parameters:
+        - name: page
+          in: query
+          description: Numéro de page (commence à 0)
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+            example: 0
+        - name: size
+          in: query
+          description: Taille de la page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
+        - name: search
+          in: query
+          description: Recherche par nom ou email
+          required: false
+          schema:
+            type: string
+            example: "jean"
+        - name: confirmed
+          in: query
+          description: Filtrer par statut de confirmation
+          required: false
+          schema:
+            type: boolean
+            example: true
+        - name: sort
+          in: query
+          description: Critère de tri
+          required: false
+          schema:
+            type: string
+            enum: [firstName, lastName, email, createdAt]
+            default: createdAt
+            example: lastName
+        - name: direction
+          in: query
+          description: Direction du tri
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+            example: asc
+      responses:
+        '200':
+          description: Liste des membres récupérée avec succès
+          content:
+            application/vnd.ecclesiaflow.members.v2+json:
+              schema:
+                $ref: '#/components/schemas/MemberPageResponse'
+            application/vnd.ecclesiaflow.members.v1+json:
+              schema:
+                $ref: '#/components/schemas/MemberPageResponseV1'
+        '400':
+          description: Paramètres de requête invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token d'authentification invalide ou manquant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Permissions insuffisantes pour accéder aux membres
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Members Management
+      summary: Créer un nouveau membre
+      description: |
+        Crée un nouveau membre dans le système.
+        
+        **Processus:**
+        1. Validation des données d'entrée
+        2. Vérification de l'unicité de l'email
+        3. Création du membre avec statut "non confirmé"
+        4. Génération automatique d'un code de confirmation
+        5. Envoi d'un email de confirmation
+        
+        **Note:** Le membre devra confirmer son compte via email avant de pouvoir se connecter.
+      operationId: createMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+            examples:
+              basic_member:
+                summary: Membre basique
+                value:
+                  firstName: "Jean"
+                  lastName: "Dupont"
+                  email: "jean.dupont@example.com"
+                  address: "123 Rue de la Paix, Montréal, H3A 1B2"
+              complete_member:
+                summary: Membre avec informations complètes
+                value:
+                  firstName: "Marie"
+                  lastName: "Martin"
+                  email: "marie.martin@example.com"
+                  address: "456 Avenue des Érables, Québec, G1R 2S3"
+                  phoneNumber: "+1-514-555-0123"
+      responses:
+        '201':
+          description: Membre créé avec succès
+          headers:
+            Location:
+              description: URL du nouveau membre créé
+              schema:
+                type: string
+                example: "/members/550e8400-e29b-41d4-a716-446655440000"
+          content:
+            application/vnd.ecclesiaflow.members.v2+json:
+              schema:
+                $ref: '#/components/schemas/MemberResponse'
+        '400':
+          description: Données d'entrée invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Un membre avec cette adresse email existe déjà
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Erreur de validation des données
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+
+  /members/{memberId}:
+    get:
+      tags:
+        - Members Management
+      summary: Obtenir les détails d'un membre
+      description: |
+        Récupère les informations détaillées d'un membre spécifique.
+        
+        **Informations incluses:**
+        - Profil complet du membre
+        - Statut de confirmation
+        - Dates de création et mise à jour
+        - Historique des confirmations
+      operationId: getMemberById
+      parameters:
+        - name: memberId
+          in: path
+          description: Identifiant unique du membre (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Détails du membre récupérés avec succès
+          content:
+            application/vnd.ecclesiaflow.members.v2+json:
+              schema:
+                $ref: '#/components/schemas/MemberResponse'
+        '404':
+          description: Membre introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        
+    patch:
+      tags:
+        - Members Management
+      summary: Mettre à jour partiellement un membre
+      description: |
+        Met à jour partiellement les informations d'un membre existant.
+        
+        **Champs modifiables:**
+        - Nom et prénom
+        - Adresse
+        - Numéro de téléphone
+        
+        **Restrictions:**
+        - L'email ne peut pas être modifié via cette API
+        - Le statut de confirmation ne peut pas être changé
+        - Seuls les champs fournis sont mis à jour (mise à jour partielle)
+      operationId: updateMemberPartially
+      parameters:
+        - name: memberId
+          in: path
+          description: Identifiant unique du membre
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMemberRequest'
+      responses:
+        '200':
+          description: Membre mis à jour avec succès
+          content:
+            application/vnd.ecclesiaflow.members.v2+json:
+              schema:
+                $ref: '#/components/schemas/MemberResponse'
+        '400':
+          description: Données d'entrée invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Membre introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Erreur de validation des données
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+
+    delete:
+      tags:
+        - Members Management
+      summary: Supprimer un membre
+      description: |
+        Supprime définitivement un membre du système.
+        
+        **Attention:** Cette action est irréversible.
+        
+        **Processus:**
+        1. Vérification de l'existence du membre
+        2. Suppression des données associées
+        3. Suppression du membre
+      operationId: deleteMember
+      parameters:
+        - name: memberId
+          in: path
+          description: Identifiant unique du membre
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '204':
+          description: Membre supprimé avec succès
+        '404':
+          description: Membre introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Permissions insuffisantes pour supprimer ce membre
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  
+  /members/{memberId}/confirmation/resend:
+    post:
+      tags:
+        - Member Confirmation
+      summary: Renvoyer le code de confirmation
+      description: |
+        Renvoie le code de confirmation actuel par email.
+        
+        **Différence avec `/confirmation`:**
+        - Réutilise le code existant s'il est encore valide
+        - Génère un nouveau code si l'ancien est expiré
+        - Limite les abus avec rate limiting
+      operationId: resendConfirmationCode
+      parameters:
+        - name: memberId
+          in: path
+          description: Identifiant unique du membre
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Code de confirmation renvoyé avec succès
+          content:
+            application/vnd.ecclesiaflow.members.v2+json:
+              schema:
+                $ref: '#/components/schemas/ConfirmationResponse'
+        '404':
+          description: Membre introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Membre déjà confirmé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Trop de tentatives de renvoi (rate limiting)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /members/{memberId}/confirmation:
+    post:
+      tags:
+        - Member Confirmation
+      summary: Vérifier le code de confirmation
+      description: |
+        Valide un code de confirmation et active le compte membre.
+        
+        **Processus de validation:**
+        1. Vérification de l'existence du membre
+        2. Validation du code (format et correspondance)
+        3. Vérification de l'expiration (15 minutes max)
+        4. Activation du compte
+        5. Suppression du code utilisé
+        
+        **Après confirmation:**
+        - Le membre peut se connecter
+        - Un email de bienvenue peut être envoyé
+      operationId: verifyConfirmationCode
+      parameters:
+        - name: memberId
+          in: path
+          description: Identifiant unique du membre
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmationRequest'
+            examples:
+              valid_code:
+                summary: Code valide
+                value:
+                  Code: "123456"
+      responses:
+        '200':
+          description: Compte confirmé avec succès
+          content:
+            application/vnd.ecclesiaflow.members.v2+json:
+              schema:
+                $ref: '#/components/schemas/ConfirmationResponse'
+        '400':
+          description: Code de confirmation invalide ou expiré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Membre introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Membre déjà confirmé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Erreur de validation du code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+
+  /members/{memberId}/password/change:
+    post:
+      tags:
+        - Password Management
+      summary: Changer le mot de passe
+      description: |
+        Permet à un membre authentifié de changer son mot de passe.
+        
+        **Sécurité:**
+        - Ancien mot de passe requis pour validation
+        - Nouveau mot de passe doit respecter les règles de complexité
+        - Hachage sécurisé avec BCrypt
+        
+        **Règles du mot de passe:**
+        - Minimum 8 caractères
+        - Au moins une minuscule
+        - Au moins une majuscule
+        - Au moins un chiffre
+      operationId: changePassword
+      parameters:
+        - name: memberId
+          in: path
+          description: Identifiant unique du membre
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Mot de passe changé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Mot de passe changé avec succès"
+                  timestamp:
+                    type: string
+                    format: date-time
+        '400':
+          description: Ancien mot de passe incorrect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Membre introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Nouveau mot de passe ne respecte pas les règles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+
+  /members/{memberId}/password/set:
+    post:
+      tags:
+        - Password Management
+      summary: Définir un mot de passe initial
+      description: |
+        Permet de définir un mot de passe pour un membre nouvellement créé.
+        
+        **Utilisation:**
+        - Membres créés sans mot de passe initial
+        - Réinitialisation complète du mot de passe
+        
+        **Sécurité:**
+        - Compte doit être confirmé
+        - Respecter les règles de complexité
+        - Hachage sécurisé avec BCrypt
+      operationId: setPassword
+      parameters:
+        - name: memberId
+          in: path
+          description: Identifiant unique du membre
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPasswordRequest'
+      responses:
+        '200':
+          description: Mot de passe défini avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Mot de passe défini avec succès"
+                  timestamp:
+                    type: string
+                    format: date-time
+        '400':
+          description: Compte non confirmé ou mot de passe déjà défini
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Membre introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Mot de passe ne respecte pas les règles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token JWT d'authentification obtenu via le module d'authentification.
+        
+        **Format:** `Authorization: Bearer <token>`
+        
+        **Obtention:** Utilisez l'API d'authentification EcclesiaFlow
+
+  schemas:
+    # Request Schemas
+    SignUpRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - address
+      properties:
+        firstName:
+          type: string
+          description: Prénom du membre
+          minLength: 2
+          maxLength: 50
+          example: "Jean"
+        lastName:
+          type: string
+          description: Nom de famille du membre
+          minLength: 2
+          maxLength: 50
+          example: "Dupont"
+        email:
+          type: string
+          format: email
+          description: Adresse email unique du membre
+          example: "jean.dupont@example.com"
+        address:
+          type: string
+          description: Adresse complète du membre
+          minLength: 10
+          maxLength: 200
+          example: "123 Rue de la Paix, Montréal, H3A 1B2"
+        phoneNumber:
+          type: string
+          description: Numéro de téléphone (optionnel)
+          pattern: "^\\+?[1-9]\\d{1,14}$"
+          example: "+1-514-555-0123"
+
+    UpdateMemberRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          description: Prénom du membre
+          minLength: 2
+          maxLength: 50
+          example: "Jean"
+        lastName:
+          type: string
+          description: Nom de famille du membre
+          minLength: 2
+          maxLength: 50
+          example: "Dupont"
+        address:
+          type: string
+          description: Adresse complète du membre
+          minLength: 10
+          maxLength: 200
+          example: "456 Avenue des Érables, Québec, G1R 2S3"
+        phoneNumber:
+          type: string
+          description: Numéro de téléphone
+          pattern: "^\\+?[1-9]\\d{1,14}$"
+          example: "+1-418-555-0456"
+
+    ConfirmationRequest:
+      type: object
+      required:
+        - Code
+      properties:
+        Code:
+          type: string
+          description: Code de confirmation à 6 chiffres
+          pattern: "^\\d{6}$"
+          example: "123456"
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      properties:
+        currentPassword:
+          type: string
+          format: password
+          description: Mot de passe actuel
+          example: "ancienMotDePasse123"
+        newPassword:
+          type: string
+          format: password
+          description: Nouveau mot de passe
+          minLength: 8
+          pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$"
+          example: "nouveauMotDePasse456"
+
+    SetPasswordRequest:
+      type: object
+      required:
+        - password
+      properties:
+        password:
+          type: string
+          format: password
+          description: Nouveau mot de passe
+          minLength: 8
+          pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$"
+          example: "motDePasseSecurise789"
+
+    # Response Schemas
+    MemberResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifiant unique du membre
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        firstName:
+          type: string
+          description: Prénom du membre
+          example: "Jean"
+        lastName:
+          type: string
+          description: Nom de famille du membre
+          example: "Dupont"
+        email:
+          type: string
+          format: email
+          description: Adresse email du membre
+          example: "jean.dupont@example.com"
+        address:
+          type: string
+          description: Adresse du membre
+          example: "123 Rue de la Paix, Montréal, H3A 1B2"
+        phoneNumber:
+          type: string
+          description: Numéro de téléphone du membre
+          example: "+1-514-555-0123"
+        confirmed:
+          type: boolean
+          description: Statut de confirmation du compte
+          example: true
+        role:
+          type: string
+          enum: [MEMBER, ADMIN]
+          description: Rôle du membre
+          example: "MEMBER"
+        createdAt:
+          type: string
+          format: date-time
+          description: Date de création du membre
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Date de dernière mise à jour
+          example: "2024-01-16T14:45:00Z"
+
+    MemberResponseV1:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        firstName:
+          type: string
+          example: "Jean"
+        lastName:
+          type: string
+          example: "Dupont"
+        email:
+          type: string
+          format: email
+          example: "jean.dupont@example.com"
+        confirmed:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    MemberPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberResponse'
+          description: Liste des membres pour la page actuelle
+        page:
+          type: object
+          properties:
+            number:
+              type: integer
+              description: Numéro de page actuelle (commence à 0)
+              example: 0
+            size:
+              type: integer
+              description: Taille de la page
+              example: 20
+            totalElements:
+              type: integer
+              description: Nombre total d'éléments
+              example: 157
+            totalPages:
+              type: integer
+              description: Nombre total de pages
+              example: 8
+            first:
+              type: boolean
+              description: Est-ce la première page
+              example: true
+            last:
+              type: boolean
+              description: Est-ce la dernière page
+              example: false
+
+    MemberPageResponseV1:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberResponseV1'
+        totalCount:
+          type: integer
+          example: 157
+        page:
+          type: integer
+          example: 0
+        size:
+          type: integer
+          example: 20
+
+    ConfirmationResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Message de confirmation
+          example: "Code de confirmation envoyé avec succès"
+        expiresAt:
+          type: string
+          format: date-time
+          description: Date d'expiration du code
+          example: "2024-01-15T10:45:00Z"
+        attemptsRemaining:
+          type: integer
+          description: Nombre de tentatives restantes
+          example: 3
+
+    # Error Response Schemas
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - timestamp
+      properties:
+        error:
+          type: string
+          description: Code d'erreur
+          example: "MEMBER_NOT_FOUND"
+        message:
+          type: string
+          description: Message d'erreur lisible
+          example: "Le membre avec l'ID spécifié n'existe pas"
+        timestamp:
+          type: string
+          format: date-time
+          description: Horodatage de l'erreur
+          example: "2024-01-15T10:30:00Z"
+        path:
+          type: string
+          description: Chemin de la requête qui a causé l'erreur
+          example: "/members/invalid-id"
+
+    ValidationErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - timestamp
+        - validationErrors
+      properties:
+        error:
+          type: string
+          description: Code d'erreur
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          description: Message d'erreur général
+          example: "Les données fournies ne sont pas valides"
+        timestamp:
+          type: string
+          format: date-time
+          description: Horodatage de l'erreur
+          example: "2024-01-15T10:30:00Z"
+        validationErrors:
+          type: array
+          description: Liste des erreurs de validation spécifiques
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                description: Nom du champ en erreur
+                example: "email"
+              message:
+                type: string
+                description: Message d'erreur pour ce champ
+                example: "L'adresse email n'est pas valide"
+              rejectedValue:
+                type: string
+                description: Valeur rejetée
+                example: "email-invalide"
+
+tags:
+  - name: Members Management
+    description: |
+      Opérations de gestion des membres
+      
+      **Responsabilités:**
+      - Création, lecture, mise à jour et suppression des membres
+      - Gestion des profils membres
+      - Recherche et filtrage des membres
+      - Pagination des résultats
+
+  - name: Member Confirmation
+    description: |
+      Système de confirmation des comptes membres
+      
+      **Processus:**
+      - Génération de codes de confirmation temporaires
+      - Envoi par email avec modèles personnalisés
+      - Validation des codes avec gestion d'expiration
+      - Activation des comptes après confirmation
+      
+      **Sécurité:**
+      - Codes à 6 chiffres avec expiration (15 minutes)
+      - Rate limiting pour prévenir les abus
+      - Tentatives limitées de validation
+
+  - name: Password Management
+    description: |
+      Gestion sécurisée des mots de passe
+      
+      **Fonctionnalités:**
+      - Changement de mot de passe pour les comptes existants
+      - Définition de mot de passe initial
+      - Validation des règles de complexité
+      - Hachage sécurisé avec BCrypt
+      
+      **Règles de sécurité:**
+      - Minimum 8 caractères
+      - Au moins une minuscule, une majuscule et un chiffre
+      - Protection contre les mots de passe communs

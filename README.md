@@ -257,4 +257,3 @@ MIT – see [LICENSE](LICENSE)
 
 **Developed with ❤️ for church communities worldwide**
 
-
