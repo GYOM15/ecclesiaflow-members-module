@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -161,6 +162,29 @@ public class MembersController {
     })
     public ResponseEntity<?> getAllMembers() {
         return ResponseEntity.ok(memberService.getAllMembers());
+    }
+
+    @GetMapping("/members/{email}/confirmation-status")
+    @Operation(
+            summary = "Vérifier le statut de confirmation d'un membre",
+            description = "Endpoint interne pour que le module d'auth vérifie si un membre est confirmé"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Statut de confirmation récupéré",
+                    content = @Content(
+                            mediaType = "application/json"
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Membre non trouvé"
+            )
+    })
+    public ResponseEntity<Map<String, Boolean>> getMemberConfirmationStatus(@PathVariable String email) {
+        boolean isConfirmed = memberService.isEmailConfirmed(email);
+        return ResponseEntity.ok(Map.of("confirmed", isConfirmed));
     }
 
     @DeleteMapping("/members/{memberId}")
