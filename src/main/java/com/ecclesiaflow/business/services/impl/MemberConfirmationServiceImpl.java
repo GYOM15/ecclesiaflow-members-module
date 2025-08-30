@@ -1,6 +1,5 @@
 package com.ecclesiaflow.business.services.impl;
 
-import com.ecclesiaflow.business.services.AuthModuleService;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.business.services.EmailService;
 import com.ecclesiaflow.io.entities.Member;
