@@ -207,7 +207,7 @@ curl -X POST http://localhost:8080/members \
 curl -X POST http://localhost:8080/members/123e4567-e89b-12d3-a456-426614174000/confirmation \
   -H "Content-Type: application/json" \
   -H "Accept: application/vnd.ecclesiaflow.members.v2+json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+  
 ```
 
 **Vérifier un code de confirmation :**
