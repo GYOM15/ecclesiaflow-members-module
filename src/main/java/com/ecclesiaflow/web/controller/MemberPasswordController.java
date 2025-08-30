@@ -18,7 +18,7 @@ public class MemberPasswordController {
 
     private final MemberPasswordService memberPasswordService;
 
-    @PostMapping("/{memberId}/set-password")
+    @PostMapping(value = "/{memberId}/password", produces = "application/vnd.ecclesiaflow.members.v1+json")
     public ResponseEntity<Void> setPassword(
             @PathVariable UUID memberId,
             @RequestBody @Valid SetPasswordRequest request,
