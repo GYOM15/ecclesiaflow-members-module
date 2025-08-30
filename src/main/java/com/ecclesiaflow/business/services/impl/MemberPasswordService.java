@@ -1,7 +1,6 @@
 package com.ecclesiaflow.business.services.impl;
 
 
-import com.ecclesiaflow.business.services.AuthModuleService;
 import com.ecclesiaflow.io.entities.Member;
 import com.ecclesiaflow.io.repository.MemberRepository;
 import com.ecclesiaflow.web.exception.MemberNotFoundException;

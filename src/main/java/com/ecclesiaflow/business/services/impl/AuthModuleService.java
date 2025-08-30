@@ -1,4 +1,4 @@
-package com.ecclesiaflow.business.services;
+package com.ecclesiaflow.business.services.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatusCode;
