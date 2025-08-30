@@ -27,7 +27,7 @@ import java.util.UUID;
  * et génère un token temporaire pour définir le mot de passe
  */
 @RestController
-@RequestMapping("ecclesiaflow/members/{memberId}/confirmation")
+@RequestMapping("ecclesiaflow/members/{memberId}")
 @RequiredArgsConstructor
 @Tag(name = "Member Confirmation", description = "Confirmation des comptes membres")
 public class MembersConfirmationController {
@@ -36,7 +36,7 @@ public class MembersConfirmationController {
     private final ConfirmationResponseMapper confirmationResponseMapper;
     private final ConfirmationRequestMapper confirmationRequestMapper;
 
-    @PostMapping(produces = "application/vnd.ecclesiaflow.members.v2+json")
+    @PostMapping(value = "/confirmation", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @Operation(
             summary = "Confirmer le compte d'un membre",
             description = "Confirmer l'inscription d'un membre avec le code reçu par email. " +
@@ -77,7 +77,7 @@ public class MembersConfirmationController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping(value = "/resend", produces = "application/vnd.ecclesiaflow.members.v2+json")
+    @PostMapping(value = "/confirmation-code", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @Operation(
             summary = "Renvoyer le code de confirmation",
             description = "Renvoyer un nouveau code de confirmation par email"
