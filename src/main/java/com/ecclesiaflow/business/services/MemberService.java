@@ -52,13 +52,20 @@ public interface MemberService {
      * @implNote Opération transactionnelle en écriture.
      */
     Member registerMember(MembershipRegistration registration);
-    
+
     /**
      * Vérifie si un email est déjà utilisé
      * @param email l'email à vérifier
      * @return true si l'email existe déjà
      */
     boolean isEmailAlreadyUsed(String email);
+
+    /**
+     * Vérifie si un membre avec cet email est confirmé.
+     * @param email l'email du membre à vérifier
+     * @return true si le membre existe et est confirmé, false sinon
+     */
+    boolean isEmailConfirmed(String email);
     Member findById(UUID id);
     Member updateMember(MembershipUpdate updateRequest);
     void deleteMember(UUID id);

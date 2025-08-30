@@ -70,7 +70,15 @@ public class MemberServiceImpl implements MemberService {
     @Override
     @Transactional(readOnly = true)
     public boolean isEmailAlreadyUsed(String email) {
-        return memberRepository.findByEmail(email).isPresent();
+        return memberRepository.existsByEmail(email);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isEmailConfirmed(String email) {
+        return memberRepository.findByEmail(email)
+                .map(Member::isConfirmed)
+                .orElse(false);
     }
 
     /**
