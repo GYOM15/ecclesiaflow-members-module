@@ -129,6 +129,26 @@ spring.security.filter.order=10
 # spring.mail.password=${MAIL_PASSWORD}
 
 # ============================================================================
+# API DOCUMENTATION CONFIGURATION (SpringDoc OpenAPI)
+# ============================================================================
+# SpringDoc OpenAPI Configuration
+springdoc.api-docs.path=/api-docs
+springdoc.swagger-ui.path=/swagger-ui.html
+springdoc.swagger-ui.operations-sorter=method
+springdoc.show-actuator=true
+springdoc.default-produces-media-type=application/json
+springdoc.default-consumes-media-type=application/json
+
+# Disable cache for development
+springdoc.cache.disabled=true
+
+# Configure paths to include in documentation
+springdoc.paths-to-match=/ecclesiaflow/**
+
+# Configure packages to scan for documentation
+springdoc.packages-to-scan=com.ecclesiaflow.web.controller,com.ecclesiaflow.web.exception
+
+# ============================================================================
 # OPTIONAL CONFIGURATIONS
 # ============================================================================
 
