@@ -21,6 +21,54 @@ import java.time.LocalDateTime;
 import java.util.Random;
 import java.util.UUID;
 
+/**
+ * Implémentation complète du service de confirmation des membres EcclesiaFlow.
+ * <p>
+ * Cette classe implémente l'interface {@link MemberConfirmationService} et orchestre
+ * le processus complet de confirmation des comptes : validation des codes,
+ * mise à jour du statut de confirmation, génération de tokens temporaires,
+ * et intégration avec le module d'authentification.
+ * </p>
+ * 
+ * <p><strong>Rôle architectural :</strong> Implémentation de service - Logique de confirmation</p>
+ * 
+ * <p><strong>Responsabilités principales :</strong></p>
+ * <ul>
+ *   <li>Validation des codes de confirmation avec vérification d'expiration</li>
+ *   <li>Mise à jour du statut de confirmation des membres</li>
+ *   <li>Génération et renvoi de nouveaux codes de confirmation</li>
+ *   <li>Intégration avec le module d'authentification pour les tokens temporaires</li>
+ *   <li>Nettoyage automatique des codes utilisés ou expirés</li>
+ * </ul>
+ * 
+ * <p><strong>Dépendances critiques :</strong></p>
+ * <ul>
+ *   <li>{@link MemberRepository} - Gestion des membres et statuts de confirmation</li>
+ *   <li>{@link MemberConfirmationRepository} - Persistance des codes de confirmation</li>
+ *   <li>{@link AuthModuleService} - Génération de tokens temporaires</li>
+ *   <li>{@link EmailService} - Envoi des codes par email</li>
+ * </ul>
+ * 
+ * <p><strong>Flux de confirmation typique :</strong></p>
+ * <ol>
+ *   <li>Validation de l'existence du membre</li>
+ *   <li>Vérification que le compte n'est pas déjà confirmé</li>
+ *   <li>Validation du code et vérification de l'expiration</li>
+ *   <li>Mise à jour du statut de confirmation du membre</li>
+ *   <li>Suppression du code utilisé</li>
+ *   <li>Génération d'un token temporaire pour définir le mot de passe</li>
+ * </ol>
+ * 
+ * <p><strong>Sécurité :</strong> Codes à usage unique, expiration courte (5 min pour renvoi),
+ * suppression automatique après utilisation.</p>
+ * 
+ * <p><strong>Garanties :</strong> Thread-safe, transactionnel, gestion d'erreurs complète.</p>
+ * 
+ * @author EcclesiaFlow Team
+ * @since 1.0.0
+ * @see MemberConfirmationService
+ * @see AuthModuleService
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -65,7 +113,7 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
         return MembershipConfirmationResult.builder()
                 .message("Compte confirmé avec succès")
                 .temporaryToken(temporaryToken)
-                .expiresInSeconds(3600) // 1 heure
+                .expiresInSeconds(900) // 15 minutes
                 .build();
     }
 
@@ -97,6 +145,18 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
         emailService.sendConfirmationCode(member.getEmail(), newCode, member.getFirstName());
     }
 
+    /**
+     * Génère un code de confirmation à 6 chiffres aléatoire.
+     * <p>
+     * Utilise {@link Random} pour générer un entier entre 0 et 999999,
+     * puis le formate en chaîne de 6 caractères avec zéros de tête si nécessaire.
+     * Identique à la méthode dans {@link MemberServiceImpl} pour cohérence.
+     * </p>
+     * 
+     * @return un code de confirmation de 6 chiffres (ex: "012345", "987654")
+     * 
+     * @implNote Utilise String.format("%06d") pour garantir 6 caractères avec zéros de tête.
+     */
     private String generateConfirmationCode() {
         return String.format("%06d", new Random().nextInt(999999));
     }

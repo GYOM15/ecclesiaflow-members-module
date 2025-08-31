@@ -27,13 +27,50 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * CONTRÔLEUR TEMPORAIRE - À MIGRER VERS LE MODULE DE GESTION DES MEMBRES
+ * Contrôleur REST pour la gestion des membres EcclesiaFlow.
+ * <p>
+ * Ce contrôleur expose les endpoints HTTP pour les opérations CRUD sur les membres :
+ * inscription, consultation, mise à jour et suppression. Respecte les principes
+ * REST et utilise une architecture en couches avec mappers pour la transformation
+ * des données entre DTOs et objets métier.
+ * </p>
  * 
- * Ce contrôleur sera déplacé vers ecclesiaflow-member-management-module
- * dans la future architecture multi-tenant où :
- * - Les pasteurs (admins tenant) créent les membres
- * - Les demandes d'inscription sont soumises pour approbation
- * - La gestion des membres est séparée de l'authentification
+ * <p><strong>⚠️ STATUT TEMPORAIRE :</strong> Ce contrôleur sera migré vers le module
+ * ecclesiaflow-member-management-module dans la future architecture multi-tenant.</p>
+ * 
+ * <p><strong>Rôle architectural :</strong> Couche de présentation - API REST</p>
+ * 
+ * <p><strong>Responsabilités principales :</strong></p>
+ * <ul>
+ *   <li>Exposition des endpoints HTTP pour la gestion des membres</li>
+ *   <li>Validation des données d'entrée via annotations Bean Validation</li>
+ *   <li>Transformation des DTOs en objets métier via mappers</li>
+ *   <li>Gestion des codes de statut HTTP appropriés</li>
+ *   <li>Documentation OpenAPI/Swagger intégrée</li>
+ * </ul>
+ * 
+ * <p><strong>Dépendances critiques :</strong></p>
+ * <ul>
+ *   <li>{@link MemberService} - Logique métier des membres</li>
+ *   <li>Mappers - Transformation DTOs ↔ objets métier</li>
+ *   <li>Spring Web MVC - Framework REST</li>
+ * </ul>
+ * 
+ * <p><strong>Endpoints exposés :</strong></p>
+ * <ul>
+ *   <li>GET /ecclesiaflow/hello - Test d'authentification</li>
+ *   <li>POST /ecclesiaflow/members - Inscription d'un nouveau membre</li>
+ *   <li>GET /ecclesiaflow/members/{id} - Consultation d'un membre</li>
+ *   <li>PATCH /ecclesiaflow/members/{id} - Mise à jour d'un membre</li>
+ *   <li>DELETE /ecclesiaflow/members/{id} - Suppression d'un membre</li>
+ *   <li>GET /ecclesiaflow/members - Liste de tous les membres</li>
+ *   <li>GET /ecclesiaflow/members/{email}/confirmation-status - Statut de confirmation</li>
+ * </ul>
+ * 
+ * <p><strong>Garanties :</strong> Validation automatique, gestion d'erreurs, documentation OpenAPI.</p>
+ * 
+ * @author EcclesiaFlow Team
+ * @since 1.0.0
  */
 @RestController
 @RequestMapping("/ecclesiaflow")
@@ -43,6 +80,18 @@ public class MembersController {
     private final MemberService memberService;
     private final MemberUpdateMapper memberUpdateMapper;
 
+    /**
+     * Endpoint de test d'authentification pour les membres.
+     * <p>
+     * Cette méthode simple permet de vérifier que l'authentification JWT
+     * fonctionne correctement pour les membres connectés. Retourne un message
+     * de bienvenue basique.
+     * </p>
+     * 
+     * @return {@link ResponseEntity} contenant le message "Hi Member" avec statut HTTP 200
+     * 
+     * @implNote Endpoint sécurisé nécessitant un token JWT valide.
+     */
     @GetMapping(value = "/hello", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @Operation(
         summary = "Message de bienvenue pour les membres",
@@ -83,6 +132,23 @@ public class MembersController {
             content = @Content
         )
     })
+    /**
+     * Enregistre un nouveau membre dans le système.
+     * <p>
+     * Cette méthode permet l'auto-inscription d'un nouveau membre.
+     * Elle valide les données d'entrée, transforme le DTO en objet métier,
+     * appelle le service pour l'enregistrement, puis retourne la réponse formatée.
+     * </p>
+     * 
+     * <p><strong>⚠️ TEMPORAIRE :</strong> Sera remplacé par un système d'approbation admin.</p>
+     * 
+     * @param signUpRequest les données d'inscription du membre, validées automatiquement
+     * @return {@link ResponseEntity} avec {@link MemberResponse} et statut HTTP 201
+     * @throws org.springframework.web.bind.MethodArgumentNotValidException si les données sont invalides
+     * @throws IllegalArgumentException si l'email existe déjà
+     * 
+     * @implNote Utilise le pattern Mapper pour la transformation DTO → Objet métier → DTO.
+     */
     public ResponseEntity<MemberResponse> registerMember(@Valid @RequestBody SignUpRequest signUpRequest) {
         MembershipRegistration registration = MemberMapper.fromSignUpRequest(signUpRequest);
         Member member = memberService.registerMember(registration);

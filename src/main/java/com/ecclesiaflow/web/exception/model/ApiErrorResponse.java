@@ -8,6 +8,50 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Record représentant une réponse d'erreur standardisée avec support des erreurs de validation.
+ * <p>
+ * Cette classe étend le concept de {@link com.ecclesiaflow.web.dto.ErrorResponse} en ajoutant
+ * la capacité de gérer des erreurs de validation détaillées. Utilisée principalement par
+ * {@link com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler} pour les erreurs
+ * de validation Bean Validation et les erreurs métier complexes.
+ * </p>
+ * 
+ * <p><strong>Rôle architectural :</strong> Modèle de réponse d'erreur avancée</p>
+ * 
+ * <p><strong>Fonctionnalités :</strong></p>
+ * <ul>
+ *   <li>Informations d'erreur de base (timestamp, status, message, path)</li>
+ *   <li>Liste détaillée des erreurs de validation</li>
+ *   <li>Builder pattern pour construction flexible</li>
+ *   <li>Sérialisation JSON optimisée (exclusion des champs null)</li>
+ *   <li>Documentation OpenAPI intégrée</li>
+ * </ul>
+ * 
+ * <p><strong>Cas d'utilisation :</strong></p>
+ * <ul>
+ *   <li>Erreurs de validation Bean Validation (@Valid)</li>
+ *   <li>Erreurs de validation métier complexes</li>
+ *   <li>Erreurs avec détails multiples</li>
+ *   <li>Documentation API avec exemples détaillés</li>
+ * </ul>
+ * 
+ * <p><strong>Avantages du record :</strong> Immutabilité, equals/hashCode automatiques,
+ * constructeur compact avec validation, sérialisation JSON native.</p>
+ * 
+ * @param timestamp Horodatage de l'erreur
+ * @param status Code de statut HTTP
+ * @param error Type d'erreur HTTP
+ * @param message Message d'erreur principal
+ * @param path Chemin de la requête
+ * @param errors Liste des erreurs de validation détaillées
+ * 
+ * @author EcclesiaFlow Team
+ * @since 1.0.0
+ * @see ValidationError
+ * @see com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler
+ * @see com.ecclesiaflow.web.dto.ErrorResponse
+ */
 @Schema(description = "Réponse d'erreur standard de l'API")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ApiErrorResponse(
@@ -35,10 +79,22 @@ public record ApiErrorResponse(
         }
     }
 
+    /**
+     * Crée un nouveau builder pour construire une ApiErrorResponse.
+     * 
+     * @return nouvelle instance de builder
+     */
     public static ApiErrorResponseBuilder builder() {
         return new ApiErrorResponseBuilder();
     }
 
+    /**
+     * Builder pour construire une ApiErrorResponse de manière fluide.
+     * <p>
+     * Permet la construction étape par étape d'une réponse d'erreur avec
+     * validation automatique et valeurs par défaut appropriées.
+     * </p>
+     */
     public static class ApiErrorResponseBuilder {
         private LocalDateTime timestamp = LocalDateTime.now();
         private int status;
@@ -47,31 +103,66 @@ public record ApiErrorResponse(
         private String path;
         private List<ValidationError> errors = new ArrayList<>();
 
+        /**
+         * Définit le code de statut HTTP.
+         * 
+         * @param status le code de statut HTTP (400, 404, 500, etc.)
+         * @return ce builder pour chaînage
+         */
         public ApiErrorResponseBuilder status(int status) {
             this.status = status;
             return this;
         }
 
+        /**
+         * Définit le type d'erreur HTTP.
+         * 
+         * @param error le type d'erreur ("Bad Request", "Not Found", etc.)
+         * @return ce builder pour chaînage
+         */
         public ApiErrorResponseBuilder error(String error) {
             this.error = error;
             return this;
         }
 
+        /**
+         * Définit le message d'erreur principal.
+         * 
+         * @param message le message d'erreur descriptif
+         * @return ce builder pour chaînage
+         */
         public ApiErrorResponseBuilder message(String message) {
             this.message = message;
             return this;
         }
 
+        /**
+         * Définit le chemin de la requête qui a causé l'erreur.
+         * 
+         * @param path le chemin de la requête HTTP
+         * @return ce builder pour chaînage
+         */
         public ApiErrorResponseBuilder path(String path) {
             this.path = path;
             return this;
         }
 
+        /**
+         * Ajoute une erreur de validation à la liste.
+         * 
+         * @param error l'erreur de validation à ajouter
+         * @return ce builder pour chaînage
+         */
         public ApiErrorResponseBuilder addValidationError(ValidationError error) {
             this.errors.add(error);
             return this;
         }
 
+        /**
+         * Construit l'ApiErrorResponse finale.
+         * 
+         * @return nouvelle instance d'ApiErrorResponse avec les paramètres définis
+         */
         public ApiErrorResponse build() {
             return new ApiErrorResponse(timestamp, status, error, message, path, errors);
         }

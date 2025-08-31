@@ -17,23 +17,48 @@ import java.util.UUID;
 /**
  * Entité JPA représentant un membre EcclesiaFlow dans la base de données.
  * <p>
- * Cette classe implémente {@link } pour l'intégration avec Spring Security,
- * permettant l'authentification et l'autorisation des membres. Utilise UUID comme
- * identifiant primaire pour garantir l'unicité dans un environnement multi-tenant.
+ * Cette classe modélise les données de profil des membres de l'application EcclesiaFlow.
+ * Elle gère les informations personnelles, le statut de confirmation, et l'intégration
+ * avec le module d'authentification via un UUID de référence.
  * </p>
  * 
- * <p><strong>Dépendances critiques :</strong></p>
+ * <p><strong>Rôle architectural :</strong> Entité JPA - Modèle de données des membres</p>
+ * 
+ * <p><strong>Responsabilités principales :</strong></p>
  * <ul>
- *   <li>JPA/Hibernate pour la persistance</li>
- *   <li>Spring Security pour l'authentification</li>
- *   <li>UUID Generator pour les identifiants uniques</li>
+ *   <li>Stockage des informations de profil des membres</li>
+ *   <li>Gestion du statut de confirmation des comptes</li>
+ *   <li>Référence vers le module d'authentification (memberId)</li>
+ *   <li>Horodatage automatique des créations et modifications</li>
  * </ul>
  * 
- * <p><strong>Garanties :</strong> Thread-safe pour les opérations de lecture, 
- * gestion transactionnelle via JPA.</p>
+ * <p><strong>Contraintes de base de données :</strong></p>
+ * <ul>
+ *   <li>Email unique et obligatoire</li>
+ *   <li>MemberId unique pour l'intégration inter-modules</li>
+ *   <li>Identifiant UUID pour la scalabilité</li>
+ * </ul>
+ * 
+ * <p><strong>Intégration inter-modules :</strong></p>
+ * <ul>
+ *   <li>memberId : Référence vers le module d'authentification</li>
+ *   <li>email : Identifiant commun entre les modules</li>
+ * </ul>
+ * 
+ * <p><strong>Cycle de vie :</strong></p>
+ * <ol>
+ *   <li>Création avec confirmed=false</li>
+ *   <li>Confirmation via code email</li>
+ *   <li>Mise à jour du profil par l'utilisateur</li>
+ * </ol>
+ * 
+ * <p><strong>Garanties :</strong> Thread-safe pour lecture, gestion transactionnelle JPA,
+ * horodatage automatique, contraintes d'intégrité.</p>
  *
  * @author EcclesiaFlow Team
  * @since 1.0.0
+ * @see Role
+ * @see MemberConfirmation
  */
 @Entity
 @Table(name = "member")
@@ -76,24 +101,66 @@ public class Member {
      */
     private Role role;
 
-    // Référence vers le membre dans le module d'auth
+    /**
+     * Identifiant de référence vers le module d'authentification.
+     * <p>
+     * UUID utilisé pour lier ce membre aux données d'authentification
+     * dans le module séparé. Permet la communication inter-modules
+     * tout en maintenant la séparation des responsabilités.
+     * </p>
+     */
     @Column(name = "member_id", columnDefinition = "BINARY(16)", nullable = false, unique = true)
     private UUID memberId;
 
+    /**
+     * Adresse physique du membre.
+     * <p>
+     * Champ optionnel pour stocker l'adresse complète du membre.
+     * Limité à 200 caractères pour optimiser le stockage.
+     * </p>
+     */
     @Column(length = 200)
     private String address;
 
+    /**
+     * Statut de confirmation du compte membre.
+     * <p>
+     * Indique si le membre a confirmé son adresse email via le code
+     * de confirmation. Par défaut à false lors de la création.
+     * </p>
+     */
     @Column(nullable = false)
     @Builder.Default
     private boolean confirmed = false;
 
+    /**
+     * Date et heure de confirmation du compte.
+     * <p>
+     * Horodatage précis du moment où le membre a confirmé son compte.
+     * Null tant que le compte n'est pas confirmé.
+     * </p>
+     */
     @Column
     private LocalDateTime confirmedAt;
 
+    /**
+     * Date et heure de création du membre.
+     * <p>
+     * Généré automatiquement par Hibernate lors de la persistance initiale.
+     * Immuable après création pour garantir la traçabilité.
+     * </p>
+     */
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /**
+     * Date et heure de dernière modification.
+     * <p>
+     * Mis à jour automatiquement par Hibernate à chaque modification
+     * de l'entité. Permet le suivi des changements de profil.
+     * </p>
+     */
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;

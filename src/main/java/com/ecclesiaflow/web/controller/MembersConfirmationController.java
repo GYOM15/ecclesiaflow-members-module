@@ -4,7 +4,6 @@ import com.ecclesiaflow.business.mappers.ConfirmationResponseMapper;
 import com.ecclesiaflow.business.mappers.ConfirmationRequestMapper;
 import com.ecclesiaflow.business.domain.MembershipConfirmationResult;
 import com.ecclesiaflow.business.domain.MembershipConfirmation;
-import com.ecclesiaflow.io.repository.MemberConfirmationRepository;
 import com.ecclesiaflow.web.dto.ConfirmationRequest;
 import com.ecclesiaflow.web.dto.ConfirmationResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,10 +20,49 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 /**
- * Contrôleur pour la confirmation des comptes membres
- *
- * Gère la confirmation des comptes via code envoyé par email
- * et génère un token temporaire pour définir le mot de passe
+ * Contrôleur REST pour la gestion du processus de confirmation des membres EcclesiaFlow.
+ * <p>
+ * Ce contrôleur gère le processus complet de confirmation des comptes membres :
+ * validation des codes de confirmation envoyés par email, mise à jour du statut
+ * de confirmation, et génération de tokens temporaires pour la définition des mots de passe.
+ * </p>
+ * 
+ * <p><strong>Rôle architectural :</strong> Couche de présentation - API REST Confirmation</p>
+ * 
+ * <p><strong>Responsabilités principales :</strong></p>
+ * <ul>
+ *   <li>Validation des codes de confirmation saisis par les membres</li>
+ *   <li>Orchestration du processus de confirmation avec les services métier</li>
+ *   <li>Génération et retour des tokens temporaires</li>
+ *   <li>Gestion des erreurs de confirmation (code invalide, expiré, etc.)</li>
+ *   <li>Endpoints de débogage pour les tests (temporaires)</li>
+ * </ul>
+ * 
+ * <p><strong>Dépendances critiques :</strong></p>
+ * <ul>
+ *   <li>{@link MemberConfirmationService} - Logique métier de confirmation</li>
+ *   <li>Mappers - Transformation DTOs ↔ objets métier</li>
+ *   <li>Spring Web MVC - Framework REST</li>
+ * </ul>
+ * 
+ * <p><strong>Endpoints exposés :</strong></p>
+ * <ul>
+ *   <li>POST /ecclesiaflow/members/{memberId}/confirmation - Confirmer un compte</li>
+ *   <li>GET /ecclesiaflow/members/{memberId}/confirmation/debug/code - Debug (temporaire)</li>
+ * </ul>
+ * 
+ * <p><strong>Flux typique :</strong></p>
+ * <ol>
+ *   <li>Membre reçoit un email avec code de confirmation</li>
+ *   <li>Membre saisit le code via l'interface</li>
+ *   <li>Validation du code et mise à jour du statut</li>
+ *   <li>Génération d'un token temporaire pour définir le mot de passe</li>
+ * </ol>
+ * 
+ * <p><strong>Garanties :</strong> Validation automatique, sécurité des codes, gestion d'erreurs.</p>
+ * 
+ * @author EcclesiaFlow Team
+ * @since 1.0.0
  */
 @RestController
 @RequestMapping("ecclesiaflow/members/{memberId}")
