@@ -43,7 +43,7 @@ public class MembersController {
     private final MemberService memberService;
     private final MemberUpdateMapper memberUpdateMapper;
 
-    @GetMapping(value = "/hello", produces = "application/vnd.ecclesiaflow.members.v2+json")
+    @GetMapping(value = "/hello", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @Operation(
         summary = "Message de bienvenue pour les membres",
         description = "Endpoint de test pour les membres authentifiés"
@@ -63,7 +63,7 @@ public class MembersController {
         return ResponseEntity.ok("Hi Member");
     }
 
-    @PostMapping(value = "/members", produces = "application/vnd.ecclesiaflow.members.v2+json")
+    @PostMapping(value = "/members", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @Operation(
         summary = "[TEMPORAIRE] Auto-enregistrement d'un membre",
         description = "SERA REMPLACÉ par un système d'approbation admin dans le module de gestion des membres"
@@ -90,7 +90,7 @@ public class MembersController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping(value = "/members/{memberId}", produces = "application/vnd.ecclesiaflow.members.v2+json")
+    @GetMapping(value = "/members/{memberId}", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @Operation(
             summary = "Obtenir les informations d'un membre",
             description = "Récupérer les détails d'un membre par son ID"
@@ -117,7 +117,7 @@ public class MembersController {
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping(value = "/members/{memberId}", produces = "application/vnd.ecclesiaflow.members.v2+json")
+    @PatchMapping(value = "/members/{memberId}", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @Operation(
             summary = "Modifier un membre",
             description = "Mettre à jour les informations d'un membre"
@@ -146,7 +146,7 @@ public class MembersController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping(value = "/members", produces = "application/vnd.ecclesiaflow.members.v2+json")
+    @GetMapping(value = "/members", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @Operation(
             summary = "[TEMPORAIRE] Lister tous les membres",
             description = "Endpoint temporaire pour les tests - récupérer tous les membres"
@@ -164,7 +164,7 @@ public class MembersController {
         return ResponseEntity.ok(memberService.getAllMembers());
     }
 
-    @GetMapping("/members/{email}/confirmation-status")
+    @GetMapping(value = "/members/{email}/confirmation-status", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @Operation(
             summary = "Vérifier le statut de confirmation d'un membre",
             description = "Endpoint interne pour que le module d'auth vérifie si un membre est confirmé"
@@ -187,7 +187,7 @@ public class MembersController {
         return ResponseEntity.ok(Map.of("confirmed", isConfirmed));
     }
 
-    @DeleteMapping("/members/{memberId}")
+    @DeleteMapping(value = "/members/{memberId}", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @Operation(
             summary = "Supprimer un membre",
             description = "Supprimer définitivement un membre"
