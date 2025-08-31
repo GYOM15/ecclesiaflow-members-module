@@ -20,31 +20,47 @@ import java.util.Random;
 import java.util.UUID;
 
 /**
- * Implémentation du service d'enregistrement de nouveaux membres EcclesiaFlow.
+ * Implémentation complète du service de gestion des membres EcclesiaFlow.
  * <p>
- * Cette classe gère exclusivement l'inscription de nouveaux membres dans le système :
- * validation de l'unicité de l'email, encodage sécurisé du mot de passe et persistance
- * en base de données. Respecte le principe de responsabilité unique.
+ * Cette classe implémente l'interface {@link MemberService} et fournit toutes les opérations
+ * CRUD pour la gestion des membres : inscription, consultation, mise à jour, suppression.
+ * Gère également la génération automatique des codes de confirmation lors de l'inscription.
  * </p>
  * 
- * <p><strong>Rôle architectural :</strong> Service de domaine - Gestion des inscriptions</p>
+ * <p><strong>Rôle architectural :</strong> Implémentation de service - Logique métier des membres</p>
+ * 
+ * <p><strong>Responsabilités principales :</strong></p>
+ * <ul>
+ *   <li>Inscription de nouveaux membres avec validation d'unicité email</li>
+ *   <li>Génération automatique de codes de confirmation à l'inscription</li>
+ *   <li>Opérations CRUD complètes sur les profils membres</li>
+ *   <li>Validation du statut de confirmation des comptes</li>
+ *   <li>Orchestration avec les services d'email pour les notifications</li>
+ * </ul>
  * 
  * <p><strong>Dépendances critiques :</strong></p>
  * <ul>
- *   <li>{@link MemberRepository} - Persistance et vérification d'unicité</li>
+ *   <li>{@link MemberRepository} - Persistance et requêtes sur les membres</li>
+ *   <li>{@link MemberConfirmationRepository} - Gestion des codes de confirmation</li>
+ *   <li>{@link EmailService} - Envoi des emails de confirmation</li>
  * </ul>
  * 
- * <p><strong>Cas d'utilisation typiques :</strong></p>
- * <ul>
- *   <li>Inscription de nouveaux membres via formulaire web</li>
- *   <li>Validation de l'unicité des emails avant inscription</li>
- *   <li>Création automatique de comptes avec rôle USER par défaut</li>
- * </ul>
+ * <p><strong>Flux d'inscription typique :</strong></p>
+ * <ol>
+ *   <li>Vérification de l'unicité de l'email</li>
+ *   <li>Création de l'entité Member avec statut non confirmé</li>
+ *   <li>Persistance en base de données</li>
+ *   <li>Génération d'un code de confirmation à 6 chiffres</li>
+ *   <li>Envoi automatique de l'email de confirmation</li>
+ * </ol>
  * 
- * <p><strong>Garanties :</strong> Thread-safe (stateless), transactionnel, validation d'unicité.</p>
+ * <p><strong>Garanties :</strong> Thread-safe, transactionnel, gestion d'erreurs robuste.</p>
  * 
  * @author EcclesiaFlow Team
  * @since 1.0.0
+ * @see MemberService
+ * @see MemberRepository
+ * @see EmailService
  */
 @Service
 @RequiredArgsConstructor
@@ -82,7 +98,18 @@ public class MemberServiceImpl implements MemberService {
     }
 
     /**
-     * Crée une entité Member à partir des données d'enregistrement
+     * Crée une entité Member à partir des données d'inscription.
+     * <p>
+     * Cette méthode transforme un objet métier {@link MembershipRegistration}
+     * en entité JPA {@link Member} prête pour la persistance. Initialise
+     * les valeurs par défaut : rôle MEMBER, statut non confirmé, et génère
+     * un UUID unique pour l'intégration avec le module d'authentification.
+     * </p>
+     * 
+     * @param registration les données d'inscription validées, non null
+     * @return une entité Member initialisée prête pour la persistance
+     * 
+     * @implNote Génère automatiquement un memberId UUID pour l'intégration inter-modules.
      */
     private Member createMemberFromRegistration(MembershipRegistration registration) {
         Member member = new Member();
@@ -138,8 +165,19 @@ public class MemberServiceImpl implements MemberService {
     }
 
     /**
-     * Génère et envoie automatiquement un code de confirmation par email
-     * lors de l'inscription d'un nouveau membre.
+     * Génère et envoie automatiquement un code de confirmation par email.
+     * <p>
+     * Cette méthode orchestre le processus complet de génération du code :
+     * suppression de l'ancien code s'il existe, génération d'un nouveau code
+     * à 6 chiffres, persistance avec expiration 24h, et envoi par email.
+     * </p>
+     * 
+     * <p><strong>Gestion d'erreurs :</strong> Les erreurs d'envoi d'email ne font pas
+     * échouer l'inscription. L'utilisateur peut demander un renvoi ultérieurement.</p>
+     * 
+     * @param member le membre nouvellement inscrit, non null
+     * 
+     * @implNote Opération non-bloquante : l'échec d'envoi d'email n'affecte pas l'inscription.
      */
     private void generateAndSendConfirmationCode(Member member) {
         try {
@@ -170,7 +208,15 @@ public class MemberServiceImpl implements MemberService {
     }
 
     /**
-     * Génère un code de confirmation à 6 chiffres aléatoire
+     * Génère un code de confirmation à 6 chiffres aléatoire.
+     * <p>
+     * Utilise {@link Random} pour générer un entier entre 0 et 999999,
+     * puis le formate en chaîne de 6 caractères avec zéros de tête si nécessaire.
+     * </p>
+     * 
+     * @return un code de confirmation de 6 chiffres (ex: "012345", "987654")
+     * 
+     * @implNote Utilise String.format("%06d") pour garantir 6 caractères avec zéros de tête.
      */
     private String generateConfirmationCode() {
         return String.format("%06d", new Random().nextInt(999999));

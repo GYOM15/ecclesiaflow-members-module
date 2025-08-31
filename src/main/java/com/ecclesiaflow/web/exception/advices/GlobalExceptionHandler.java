@@ -19,6 +19,64 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Gestionnaire global d'exceptions pour l'API REST EcclesiaFlow Members Module.
+ * <p>
+ * Cette classe centralise la gestion de toutes les exceptions levées par les contrôleurs
+ * et les transforme en réponses HTTP standardisées avec le format {@link ApiErrorResponse}.
+ * Utilise le pattern @RestControllerAdvice de Spring pour intercepter les exceptions
+ * de manière transversale.
+ * </p>
+ * 
+ * <p><strong>Rôle architectural :</strong> Aspect transversal - Gestion centralisée des erreurs</p>
+ * 
+ * <p><strong>Responsabilités principales :</strong></p>
+ * <ul>
+ *   <li>Interception et transformation des exceptions métier en réponses HTTP</li>
+ *   <li>Standardisation du format des erreurs avec {@link ApiErrorResponse}</li>
+ *   <li>Gestion détaillée des erreurs de validation Bean Validation</li>
+ *   <li>Mapping approprié des codes de statut HTTP selon le type d'erreur</li>
+ *   <li>Logging et traçabilité des erreurs (implicite via Spring)</li>
+ * </ul>
+ * 
+ * <p><strong>Types d'exceptions gérées :</strong></p>
+ * <ul>
+ *   <li>{@link MethodArgumentNotValidException} - Erreurs de validation Bean Validation (400)</li>
+ *   <li>{@link ConstraintViolationException} - Violations de contraintes (400)</li>
+ *   <li>{@link HttpMessageNotReadableException} - JSON mal formé (400)</li>
+ *   <li>{@link MemberNotFoundException} - Membre non trouvé (404)</li>
+ *   <li>{@link InvalidConfirmationCodeException} - Code de confirmation invalide (400)</li>
+ *   <li>{@link MemberAlreadyConfirmedException} - Membre déjà confirmé (409)</li>
+ *   <li>{@link IllegalArgumentException} - Arguments invalides (400)</li>
+ *   <li>{@link Exception} - Erreurs génériques (500)</li>
+ * </ul>
+ * 
+ * <p><strong>Format de réponse standardisé :</strong></p>
+ * <pre>{@code
+ * {
+ *   "timestamp": "2024-01-15T10:30:00",
+ *   "status": 400,
+ *   "error": "Bad Request",
+ *   "message": "Erreur de validation des données",
+ *   "path": "/ecclesiaflow/members",
+ *   "errors": [
+ *     {
+ *       "message": "Le nom est obligatoire",
+ *       "path": "firstName",
+ *       "type": "validation",
+ *       "code": "NotBlank"
+ *     }
+ *   ]
+ * }
+ * }</pre>
+ * 
+ * <p><strong>Garanties :</strong> Gestion exhaustive, format cohérent, codes HTTP appropriés.</p>
+ * 
+ * @author EcclesiaFlow Team
+ * @since 1.0.0
+ * @see ApiErrorResponse
+ * @see ValidationError
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

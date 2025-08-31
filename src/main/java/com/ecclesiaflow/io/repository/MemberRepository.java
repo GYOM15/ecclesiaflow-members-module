@@ -71,14 +71,65 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
     Member findByRole(Role role);
 
 
+    /**
+     * Vérifie l'existence d'un membre par son adresse email.
+     * <p>
+     * Cette méthode optimisée vérifie uniquement l'existence sans charger
+     * l'entité complète. Plus performante que findByEmail() pour les vérifications
+     * d'unicité lors de l'inscription.
+     * </p>
+     * 
+     * @param email l'adresse email à vérifier, non null
+     * @return true si un membre avec cet email existe, false sinon
+     * @throws IllegalArgumentException si email est null
+     * 
+     * @implNote Génère une requête COUNT optimisée : SELECT COUNT(*) FROM members WHERE email = ?
+     */
     boolean existsByEmail(String email);
 
+    /**
+     * Recherche tous les membres selon leur statut de confirmation.
+     * <p>
+     * Cette méthode permet de filtrer les membres confirmés ou en attente
+     * de confirmation. Utilisée pour les rapports administratifs et
+     * les opérations de maintenance.
+     * </p>
+     * 
+     * @param confirmed true pour les membres confirmés, false pour ceux en attente
+     * @return la liste des membres correspondant au statut, peut être vide
+     * 
+     * @implNote Requête JPQL avec paramètre : SELECT m FROM Member m WHERE m.confirmed = :confirmed
+     */
     @Query("SELECT m FROM Member m WHERE m.confirmed = :confirmed")
     List<Member> findByConfirmedStatus(@Param("confirmed") boolean confirmed);
 
+    /**
+     * Compte le nombre de membres confirmés dans le système.
+     * <p>
+     * Cette méthode de comptage optimisée retourne le nombre total
+     * de membres ayant confirmé leur compte. Utilisée pour les
+     * statistiques et tableaux de bord administratifs.
+     * </p>
+     * 
+     * @return le nombre de membres confirmés (≥ 0)
+     * 
+     * @implNote Requête COUNT optimisée : SELECT COUNT(m) FROM Member m WHERE m.confirmed = true
+     */
     @Query("SELECT COUNT(m) FROM Member m WHERE m.confirmed = true")
     long countConfirmedMembers();
 
+    /**
+     * Compte le nombre de membres en attente de confirmation.
+     * <p>
+     * Cette méthode de comptage optimisée retourne le nombre total
+     * de membres n'ayant pas encore confirmé leur compte. Utilisée
+     * pour le suivi des inscriptions en cours et les relances.
+     * </p>
+     * 
+     * @return le nombre de membres en attente de confirmation (≥ 0)
+     * 
+     * @implNote Requête COUNT optimisée : SELECT COUNT(m) FROM Member m WHERE m.confirmed = false
+     */
     @Query("SELECT COUNT(m) FROM Member m WHERE m.confirmed = false")
     long countPendingConfirmations();
 }
