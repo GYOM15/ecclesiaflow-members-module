@@ -3,23 +3,22 @@ info:
   title: EcclesiaFlow Members API
   description: |
     API de gestion des membres pour la plateforme EcclesiaFlow
-    
+
     **Architecture Multi-Tenant:**
     - Chaque tenant représente une église
     - Les pasteurs sont les administrateurs de leur tenant
     - Un super admin gère tous les tenants
-    
+
     **Fonctionnalités principales:**
     - Gestion complète des profils membres (CRUD)
     - Système de confirmation par email avec codes temporaires
     - Gestion sécurisée des mots de passe
     - Notifications email automatisées
     - Validation stricte des données d'entrée
-    
-    **Versions supportées:**
+
+    **Version supportée:**
     - v1: `application/vnd.ecclesiaflow.members.v1+json`
-    - v2: `application/vnd.ecclesiaflow.members.v2+json`
-  version: 2.0.0
+  version: 1.0.0
   contact:
     name: EcclesiaFlow Team
     email: dev@ecclesiaflow.com
@@ -40,14 +39,38 @@ security:
   - BearerAuth: []
 
 paths:
-  /members:
+  /ecclesiaflow/hello:
+    get:
+      tags:
+        - Members (Temporary)
+      summary: Message de bienvenue pour les membres
+      description: Endpoint de test pour les membres authentifiés
+      operationId: sayHello
+      responses:
+        '200':
+          description: Message de bienvenue
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Hi Member"
+        '401':
+          description: Token d'authentification invalide ou manquant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /ecclesiaflow/members:
     get:
       tags:
         - Members Management
       summary: Lister tous les membres
       description: |
         Récupère la liste de tous les membres avec pagination et filtrage optionnel.
-        
+
         **Fonctionnalités:**
         - Pagination par page et taille
         - Filtrage par statut de confirmation
@@ -110,9 +133,6 @@ paths:
         '200':
           description: Liste des membres récupérée avec succès
           content:
-            application/vnd.ecclesiaflow.members.v2+json:
-              schema:
-                $ref: '#/components/schemas/MemberPageResponse'
             application/vnd.ecclesiaflow.members.v1+json:
               schema:
                 $ref: '#/components/schemas/MemberPageResponseV1'
@@ -121,19 +141,46 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                invalid_query_params:
+                  summary: Exemples de paramètres invalides
+                  value:
+                    timestamp: "2024-01-15T10:35:00Z"
+                    status: 400
+                    error: "Bad Request"
+                    message: "Le paramètre de page doit être supérieur ou égal à zéro."
+                    path: "/ecclesiaflow/members"
         '401':
           description: Token d'authentification invalide ou manquant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                missing_auth_token:
+                  summary: Token manquant ou invalide
+                  value:
+                    timestamp: "2024-01-15T10:36:00Z"
+                    status: 401
+                    error: "Unauthorized"
+                    message: "Authentification requise pour accéder à cette ressource."
+                    path: "/ecclesiaflow/members"
         '403':
           description: Permissions insuffisantes pour accéder aux membres
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                insufficient_permissions:
+                  summary: Autorisations insuffisantes
+                  value:
+                    timestamp: "2024-01-15T10:37:00Z"
+                    status: 403
+                    error: "Forbidden"
+                    message: "Vous n'avez pas les autorisations nécessaires pour effectuer cette action."
+                    path: "/ecclesiaflow/members"
 
     post:
       tags:
@@ -141,14 +188,14 @@ paths:
       summary: Créer un nouveau membre
       description: |
         Crée un nouveau membre dans le système.
-        
+
         **Processus:**
         1. Validation des données d'entrée
         2. Vérification de l'unicité de l'email
         3. Création du membre avec statut "non confirmé"
         4. Génération automatique d'un code de confirmation
         5. Envoi d'un email de confirmation
-        
+
         **Note:** Le membre devra confirmer son compte via email avant de pouvoir se connecter.
       operationId: createMember
       requestBody:
@@ -183,36 +230,73 @@ paths:
                 type: string
                 example: "/members/550e8400-e29b-41d4-a716-446655440000"
           content:
-            application/vnd.ecclesiaflow.members.v2+json:
+            application/vnd.ecclesiaflow.members.v1+json:
               schema:
-                $ref: '#/components/schemas/MemberResponse'
+                $ref: '#/components/schemas/MemberResponseV1'
         '400':
           description: Données d'entrée invalides
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                invalid_input:
+                  summary: Données d'entrée malformées
+                  value:
+                    timestamp: "2024-01-15T10:38:00Z"
+                    status: 400
+                    error: "Bad Request"
+                    message: "Erreur de validation des données"
+                    path: "/ecclesiaflow/members"
+                    errors:
+                      - message: "Le prénom est obligatoire"
+                        path: "firstName"
+                        type: "validation"
+                        code: "NotBlank"
         '409':
           description: Un membre avec cette adresse email existe déjà
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                email_conflict:
+                  summary: Email déjà utilisé
+                  value:
+                    timestamp: "2024-01-15T10:39:00Z"
+                    status: 409
+                    error: "Conflict"
+                    message: "Un membre avec cet email existe déjà"
+                    path: "/ecclesiaflow/members"
         '422':
           description: Erreur de validation des données
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                validation_error:
+                  summary: Erreur de validation
+                  value:
+                    timestamp: "2024-01-15T10:40:00Z"
+                    status: 422
+                    error: "Unprocessable Entity"
+                    message: "Le champ 'email' n'est pas au bon format"
+                    path: "/ecclesiaflow/members"
+                    errors:
+                      - message: "Format d'email invalide"
+                        path: "email"
+                        type: "validation"
+                        code: "Pattern"
 
-  /members/{memberId}:
+  /ecclesiaflow/members/{memberId}:
     get:
       tags:
         - Members Management
       summary: Obtenir les détails d'un membre
       description: |
         Récupère les informations détaillées d'un membre spécifique.
-        
+
         **Informations incluses:**
         - Profil complet du membre
         - Statut de confirmation
@@ -232,28 +316,37 @@ paths:
         '200':
           description: Détails du membre récupérés avec succès
           content:
-            application/vnd.ecclesiaflow.members.v2+json:
+            application/vnd.ecclesiaflow.members.v1+json:
               schema:
-                $ref: '#/components/schemas/MemberResponse'
+                $ref: '#/components/schemas/MemberResponseV1'
         '404':
           description: Membre introuvable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                member_not_found:
+                  summary: Membre introuvable
+                  value:
+                    timestamp: "2024-01-15T10:41:00Z"
+                    status: 404
+                    error: "Not Found"
+                    message: "Le membre avec l'ID spécifié n'existe pas."
+                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000"
+
     patch:
       tags:
         - Members Management
       summary: Mettre à jour partiellement un membre
       description: |
         Met à jour partiellement les informations d'un membre existant.
-        
+
         **Champs modifiables:**
         - Nom et prénom
         - Adresse
         - Numéro de téléphone
-        
+
         **Restrictions:**
         - L'email ne peut pas être modifié via cette API
         - Le statut de confirmation ne peut pas être changé
@@ -278,135 +371,81 @@ paths:
         '200':
           description: Membre mis à jour avec succès
           content:
-            application/vnd.ecclesiaflow.members.v2+json:
+            application/vnd.ecclesiaflow.members.v1+json:
               schema:
-                $ref: '#/components/schemas/MemberResponse'
+                $ref: '#/components/schemas/MemberResponseV1'
         '400':
           description: Données d'entrée invalides
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                invalid_update_data:
+                  summary: Données de mise à jour invalides
+                  value:
+                    timestamp: "2024-01-15T10:42:00Z"
+                    status: 400
+                    error: "Bad Request"
+                    message: "Erreur de validation des données"
+                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000"
+                    errors:
+                      - message: "Le prénom doit avoir au moins 2 caractères"
+                        path: "firstName"
+                        type: "validation"
+                        code: "MinLength"
         '404':
           description: Membre introuvable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                member_not_found:
+                  summary: Membre introuvable
+                  value:
+                    timestamp: "2024-01-15T10:43:00Z"
+                    status: 404
+                    error: "Not Found"
+                    message: "Le membre avec l'ID spécifié n'existe pas."
+                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000"
         '422':
           description: Erreur de validation des données
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                validation_error:
+                  summary: Erreur de validation
+                  value:
+                    timestamp: "2024-01-15T10:44:00Z"
+                    status: 422
+                    error: "Unprocessable Entity"
+                    message: "Le numéro de téléphone n'est pas au bon format"
+                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000"
+                    errors:
+                      - message: "Format de téléphone invalide"
+                        path: "phoneNumber"
+                        type: "validation"
+                        code: "Pattern"
 
-    delete:
-      tags:
-        - Members Management
-      summary: Supprimer un membre
-      description: |
-        Supprime définitivement un membre du système.
-        
-        **Attention:** Cette action est irréversible.
-        
-        **Processus:**
-        1. Vérification de l'existence du membre
-        2. Suppression des données associées
-        3. Suppression du membre
-      operationId: deleteMember
-      parameters:
-        - name: memberId
-          in: path
-          description: Identifiant unique du membre
-          required: true
-          schema:
-            type: string
-            format: uuid
-            example: "550e8400-e29b-41d4-a716-446655440000"
-      responses:
-        '204':
-          description: Membre supprimé avec succès
-        '404':
-          description: Membre introuvable
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Permissions insuffisantes pour supprimer ce membre
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 
-  
-  /members/{memberId}/confirmation/resend:
+  /ecclesiaflow/members/{memberId}/confirmation:
     post:
       tags:
         - Member Confirmation
-      summary: Renvoyer le code de confirmation
+      summary: Confirmer le compte d'un membre
       description: |
-        Renvoie le code de confirmation actuel par email.
-        
-        **Différence avec `/confirmation`:**
-        - Réutilise le code existant s'il est encore valide
-        - Génère un nouveau code si l'ancien est expiré
-        - Limite les abus avec rate limiting
-      operationId: resendConfirmationCode
-      parameters:
-        - name: memberId
-          in: path
-          description: Identifiant unique du membre
-          required: true
-          schema:
-            type: string
-            format: uuid
-            example: "550e8400-e29b-41d4-a716-446655440000"
-      responses:
-        '200':
-          description: Code de confirmation renvoyé avec succès
-          content:
-            application/vnd.ecclesiaflow.members.v2+json:
-              schema:
-                $ref: '#/components/schemas/ConfirmationResponse'
-        '404':
-          description: Membre introuvable
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: Membre déjà confirmé
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          description: Trop de tentatives de renvoi (rate limiting)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+        Confirmer l'inscription d'un membre avec le code reçu par email.
+        Génère un token temporaire pour définir le mot de passe.
 
-  /members/{memberId}/confirmation:
-    post:
-      tags:
-        - Member Confirmation
-      summary: Vérifier le code de confirmation
-      description: |
-        Valide un code de confirmation et active le compte membre.
-        
-        **Processus de validation:**
-        1. Vérification de l'existence du membre
-        2. Validation du code (format et correspondance)
-        3. Vérification de l'expiration (15 minutes max)
-        4. Activation du compte
-        5. Suppression du code utilisé
-        
-        **Après confirmation:**
-        - Le membre peut se connecter
-        - Un email de bienvenue peut être envoyé
-      operationId: verifyConfirmationCode
+        **Processus de confirmation:**
+        1. Validation du code de confirmation
+        2. Activation du compte membre
+        3. Génération d'un token temporaire
+        4. Retour du token pour définir le mot de passe
+      operationId: confirmMember
       parameters:
         - name: memberId
           in: path
@@ -426,58 +465,76 @@ paths:
               valid_code:
                 summary: Code valide
                 value:
-                  Code: "123456"
+                  code: "123456"
       responses:
         '200':
-          description: Compte confirmé avec succès
+          description: Compte confirmé avec succès, token temporaire généré
           content:
-            application/vnd.ecclesiaflow.members.v2+json:
+            application/vnd.ecclesiaflow.members.v1+json:
               schema:
                 $ref: '#/components/schemas/ConfirmationResponse'
-        '400':
-          description: Code de confirmation invalide ou expiré
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Membre introuvable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                member_not_found:
+                  summary: Membre introuvable
+                  value:
+                    timestamp: "2024-01-15T10:47:00Z"
+                    status: 404
+                    error: "Not Found"
+                    message: "Le membre avec l'ID spécifié n'existe pas."
+                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation-code"
         '409':
           description: Membre déjà confirmé
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422':
-          description: Erreur de validation du code
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                member_already_confirmed:
+                  summary: Compte déjà confirmé
+                  value:
+                    timestamp: "2024-01-15T10:48:00Z"
+                    status: 409
+                    error: "Conflict"
+                    message: "Ce compte est déjà confirmé."
+                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation-code"
+        '429':
+          description: Trop de tentatives de renvoi (rate limiting)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                rate_limit_exceeded:
+                  summary: Limite de tentatives dépassée
+                  value:
+                    timestamp: "2024-01-15T10:49:00Z"
+                    status: 429
+                    error: "Too Many Requests"
+                    message: "Trop de tentatives de renvoi de code. Veuillez réessayer plus tard."
+                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation-code"
 
-  /members/{memberId}/password/change:
+  /ecclesiaflow/members/{memberId}/confirmation-code:
     post:
       tags:
-        - Password Management
-      summary: Changer le mot de passe
+        - Member Confirmation
+      summary: Renvoyer le code de confirmation
       description: |
-        Permet à un membre authentifié de changer son mot de passe.
-        
-        **Sécurité:**
-        - Ancien mot de passe requis pour validation
-        - Nouveau mot de passe doit respecter les règles de complexité
-        - Hachage sécurisé avec BCrypt
-        
-        **Règles du mot de passe:**
-        - Minimum 8 caractères
-        - Au moins une minuscule
-        - Au moins une majuscule
-        - Au moins un chiffre
-      operationId: changePassword
+        Renvoie le code de confirmation actuel par email.
+        Réutilise le code existant s'il est encore valide ou génère un nouveau code si l'ancien est expiré.
+
+        **Processus de renvoi:**
+        1. Vérification de l'existence du membre
+        2. Vérification que le compte n'est pas déjà confirmé
+        3. Génération d'un nouveau code si nécessaire
+        4. Envoi du code par email
+        5. Limitation des abus avec rate limiting
+      operationId: resendConfirmationCode
       parameters:
         - name: memberId
           in: path
@@ -487,61 +544,94 @@ paths:
             type: string
             format: uuid
             example: "550e8400-e29b-41d4-a716-446655440000"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ChangePasswordRequest'
       responses:
         '200':
-          description: Mot de passe changé avec succès
+          description: Code de confirmation renvoyé avec succès
           content:
-            application/json:
+            application/vnd.ecclesiaflow.members.v1+json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Mot de passe changé avec succès"
-                  timestamp:
-                    type: string
-                    format: date-time
+                $ref: '#/components/schemas/ConfirmationResponse'
         '400':
-          description: Ancien mot de passe incorrect
+          description: Code de confirmation invalide ou expiré
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                invalid_code:
+                  summary: Code invalide ou expiré
+                  value:
+                    timestamp: "2024-01-15T10:50:00Z"
+                    status: 400
+                    error: "Bad Request"
+                    message: "Le code de confirmation est invalide ou a expiré."
+                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation"
         '404':
           description: Membre introuvable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422':
-          description: Nouveau mot de passe ne respecte pas les règles
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                member_not_found:
+                  summary: Membre introuvable
+                  value:
+                    timestamp: "2024-01-15T10:51:00Z"
+                    status: 404
+                    error: "Not Found"
+                    message: "Le membre avec l'ID spécifié n'existe pas."
+                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation"
+        '409':
+          description: Membre déjà confirmé
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                member_already_confirmed:
+                  summary: Compte déjà confirmé
+                  value:
+                    timestamp: "2024-01-15T10:52:00Z"
+                    status: 409
+                    error: "Conflict"
+                    message: "Ce compte est déjà confirmé."
+                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation"
+        '422':
+          description: Erreur de validation du code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                validation_error:
+                  summary: Erreur de validation du code
+                  value:
+                    timestamp: "2024-01-15T10:53:00Z"
+                    status: 422
+                    error: "Unprocessable Entity"
+                    message: "Le code de confirmation doit comporter 6 chiffres."
+                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation"
 
-  /members/{memberId}/password/set:
+  /ecclesiaflow/members/{memberId}/password:
     post:
       tags:
         - Password Management
-      summary: Définir un mot de passe initial
+      summary: Définir le mot de passe
       description: |
-        Permet de définir un mot de passe pour un membre nouvellement créé.
-        
-        **Utilisation:**
-        - Membres créés sans mot de passe initial
-        - Réinitialisation complète du mot de passe
-        
+        Permet à un membre de définir son mot de passe après confirmation du compte.
+        Utilise un token temporaire généré lors de la confirmation.
+
         **Sécurité:**
-        - Compte doit être confirmé
-        - Respecter les règles de complexité
+        - Token temporaire requis (généré lors de la confirmation)
+        - Validation que l'email correspond au memberId
+        - Nouveau mot de passe doit respecter les règles de complexité
         - Hachage sécurisé avec BCrypt
+
+        **Règles du mot de passe:**
+        - Minimum 8 caractères
+        - Au moins une minuscule
+        - Au moins une majuscule
+        - Au moins un chiffre
       operationId: setPassword
       parameters:
         - name: memberId
@@ -561,35 +651,57 @@ paths:
       responses:
         '200':
           description: Mot de passe défini avec succès
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Mot de passe défini avec succès"
-                  timestamp:
-                    type: string
-                    format: date-time
         '400':
-          description: Compte non confirmé ou mot de passe déjà défini
+          description: Ancien mot de passe incorrect
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                invalid_password:
+                  summary: Ancien mot de passe invalide
+                  value:
+                    timestamp: "2024-01-15T10:54:00Z"
+                    status: 400
+                    error: "Bad Request"
+                    message: "L'ancien mot de passe fourni est incorrect."
+                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/password"
         '404':
           description: Membre introuvable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                member_not_found:
+                  summary: Membre introuvable
+                  value:
+                    timestamp: "2024-01-15T10:55:00Z"
+                    status: 404
+                    error: "Not Found"
+                    message: "Le membre avec l'ID spécifié n'existe pas."
+                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/password"
         '422':
-          description: Mot de passe ne respecte pas les règles
+          description: Nouveau mot de passe ne respecte pas les règles
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
+                $ref: '#/components/schemas/ApiErrorResponse'
+              examples:
+                password_validation_error:
+                  summary: Validation du nouveau mot de passe échouée
+                  value:
+                    timestamp: "2024-01-15T10:56:00Z"
+                    status: 422
+                    error: "Unprocessable Entity"
+                    message: "Le nouveau mot de passe ne respecte pas les règles de complexité."
+                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/password"
+                    errors:
+                      - message: "Le mot de passe doit contenir au moins un chiffre"
+                        path: "newPassword"
+                        type: "validation"
+                        code: "Pattern"
+
 
 components:
   securitySchemes:
@@ -599,9 +711,9 @@ components:
       bearerFormat: JWT
       description: |
         Token JWT d'authentification obtenu via le module d'authentification.
-        
+
         **Format:** `Authorization: Bearer <token>`
-        
+
         **Obtention:** Utilisez l'API d'authentification EcclesiaFlow
 
   schemas:
@@ -714,55 +826,6 @@ components:
           example: "motDePasseSecurise789"
 
     # Response Schemas
-    MemberResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Identifiant unique du membre
-          example: "550e8400-e29b-41d4-a716-446655440000"
-        firstName:
-          type: string
-          description: Prénom du membre
-          example: "Jean"
-        lastName:
-          type: string
-          description: Nom de famille du membre
-          example: "Dupont"
-        email:
-          type: string
-          format: email
-          description: Adresse email du membre
-          example: "jean.dupont@example.com"
-        address:
-          type: string
-          description: Adresse du membre
-          example: "123 Rue de la Paix, Montréal, H3A 1B2"
-        phoneNumber:
-          type: string
-          description: Numéro de téléphone du membre
-          example: "+1-514-555-0123"
-        confirmed:
-          type: boolean
-          description: Statut de confirmation du compte
-          example: true
-        role:
-          type: string
-          enum: [MEMBER, ADMIN]
-          description: Rôle du membre
-          example: "MEMBER"
-        createdAt:
-          type: string
-          format: date-time
-          description: Date de création du membre
-          example: "2024-01-15T10:30:00Z"
-        updatedAt:
-          type: string
-          format: date-time
-          description: Date de dernière mise à jour
-          example: "2024-01-16T14:45:00Z"
-
     MemberResponseV1:
       type: object
       properties:
@@ -787,42 +850,6 @@ components:
           type: string
           format: date-time
           example: "2024-01-15T10:30:00Z"
-
-    MemberPageResponse:
-      type: object
-      properties:
-        content:
-          type: array
-          items:
-            $ref: '#/components/schemas/MemberResponse'
-          description: Liste des membres pour la page actuelle
-        page:
-          type: object
-          properties:
-            number:
-              type: integer
-              description: Numéro de page actuelle (commence à 0)
-              example: 0
-            size:
-              type: integer
-              description: Taille de la page
-              example: 20
-            totalElements:
-              type: integer
-              description: Nombre total d'éléments
-              example: 157
-            totalPages:
-              type: integer
-              description: Nombre total de pages
-              example: 8
-            first:
-              type: boolean
-              description: Est-ce la première page
-              example: true
-            last:
-              type: boolean
-              description: Est-ce la dernière page
-              example: false
 
     MemberPageResponseV1:
       type: object
@@ -859,8 +886,88 @@ components:
           example: 3
 
     # Error Response Schemas
+    ApiErrorResponse:
+      type: object
+      required:
+        - timestamp
+        - status
+        - error
+        - message
+        - path
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Horodatage de l'erreur
+          example: "2024-01-15T10:30:00Z"
+        status:
+          type: integer
+          description: Code de statut HTTP
+          example: 400
+        error:
+          type: string
+          description: Type d'erreur HTTP
+          example: "Bad Request"
+        message:
+          type: string
+          description: Message d'erreur détaillé
+          example: "Erreur de validation des données"
+        path:
+          type: string
+          description: Chemin de la requête
+          example: "/ecclesiaflow/members"
+        errors:
+          type: array
+          description: Liste des erreurs de validation détaillées
+          items:
+            $ref: '#/components/schemas/ValidationError'
+
+    ValidationError:
+      type: object
+      required:
+        - message
+        - path
+        - type
+        - code
+      properties:
+        message:
+          type: string
+          description: Message d'erreur
+          example: "L'email est obligatoire"
+        path:
+          type: string
+          description: Chemin du champ en erreur
+          example: "email"
+        type:
+          type: string
+          description: Type d'erreur
+          example: "validation"
+        expected:
+          type: string
+          description: Type ou valeur attendue
+          example: "string"
+        received:
+          type: string
+          description: Valeur reçue
+          example: "null"
+        code:
+          type: string
+          description: Code d'erreur
+          example: "NotBlank"
+        line:
+          type: integer
+          description: Numéro de ligne (pour les erreurs JSON)
+          example: 6
+        column:
+          type: integer
+          description: Numéro de colonne (pour les erreurs JSON)
+          example: 15
+
+    # Schéma de compatibilité pour les anciennes versions
     ErrorResponse:
       type: object
+      deprecated: true
+      description: "DEPRECATED: Utilisez ApiErrorResponse à la place"
       required:
         - error
         - message
@@ -884,51 +991,11 @@ components:
           description: Chemin de la requête qui a causé l'erreur
           example: "/members/invalid-id"
 
-    ValidationErrorResponse:
-      type: object
-      required:
-        - error
-        - message
-        - timestamp
-        - validationErrors
-      properties:
-        error:
-          type: string
-          description: Code d'erreur
-          example: "VALIDATION_ERROR"
-        message:
-          type: string
-          description: Message d'erreur général
-          example: "Les données fournies ne sont pas valides"
-        timestamp:
-          type: string
-          format: date-time
-          description: Horodatage de l'erreur
-          example: "2024-01-15T10:30:00Z"
-        validationErrors:
-          type: array
-          description: Liste des erreurs de validation spécifiques
-          items:
-            type: object
-            properties:
-              field:
-                type: string
-                description: Nom du champ en erreur
-                example: "email"
-              message:
-                type: string
-                description: Message d'erreur pour ce champ
-                example: "L'adresse email n'est pas valide"
-              rejectedValue:
-                type: string
-                description: Valeur rejetée
-                example: "email-invalide"
-
 tags:
   - name: Members Management
     description: |
       Opérations de gestion des membres
-      
+
       **Responsabilités:**
       - Création, lecture, mise à jour et suppression des membres
       - Gestion des profils membres
@@ -938,13 +1005,13 @@ tags:
   - name: Member Confirmation
     description: |
       Système de confirmation des comptes membres
-      
+
       **Processus:**
       - Génération de codes de confirmation temporaires
       - Envoi par email avec modèles personnalisés
       - Validation des codes avec gestion d'expiration
       - Activation des comptes après confirmation
-      
+
       **Sécurité:**
       - Codes à 6 chiffres avec expiration (15 minutes)
       - Rate limiting pour prévenir les abus
@@ -953,13 +1020,13 @@ tags:
   - name: Password Management
     description: |
       Gestion sécurisée des mots de passe
-      
+
       **Fonctionnalités:**
       - Changement de mot de passe pour les comptes existants
       - Définition de mot de passe initial
       - Validation des règles de complexité
       - Hachage sécurisé avec BCrypt
-      
+
       **Règles de sécurité:**
       - Minimum 8 caractères
       - Au moins une minuscule, une majuscule et un chiffre
