@@ -104,11 +104,11 @@ public class AuthModuleService {
      */
     public void setPassword(String email, String password, String temporaryToken) {
         try {
-            postVoid("/ecclesiaflow/auth/set-password", Map.of(
-                    "email", email,
-                    "password", password,
-                    "temporaryToken", temporaryToken
-            )).block();
+            Map<String, String> body = new java.util.HashMap<>();
+            body.put("email", email);
+            body.put("password", password);
+            body.put("temporaryToken", temporaryToken);
+            postVoid("/ecclesiaflow/auth/set-password", body).block();
         } catch (Exception e) {}
     }
 
