@@ -1,6 +1,8 @@
 package com.ecclesiaflow.io.entities;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -83,22 +85,28 @@ public class Member {
     /**
      * Prénom du membre.
      */
+    @NotBlank(message = "Le prénom est obligatoire")
+    @Column(nullable = false)
     private String firstName;
 
     /**
      * Nom du membre.
      */
+    @NotBlank(message = "Le nom est obligatoire")
+    @Column(nullable = false)
     private String lastName;
 
     /**
      * Adresse e-mail du membre, utilisée comme identifiant pour la connexion.
      */
+    @NotBlank(message = "L’email est obligatoire")
     @Column(unique = true, nullable = false)
     private String email;
 
     /**
      * Rôle du membre dans l'application, déterminant ses autorisations.
      */
+    @NotNull(message = "Le rôle est obligatoire")
     private Role role;
 
     /**
@@ -109,6 +117,7 @@ public class Member {
      * tout en maintenant la séparation des responsabilités.
      * </p>
      */
+    @NotNull(message = "L’identifiant du membre est obligatoire")
     @Column(name = "member_id", columnDefinition = "BINARY(16)", nullable = false, unique = true)
     private UUID memberId;
 
@@ -119,7 +128,8 @@ public class Member {
      * Limité à 200 caractères pour optimiser le stockage.
      * </p>
      */
-    @Column(length = 200)
+    @NotBlank(message = "L’adresse est obligatoire")
+    @Column(length = 200, nullable = false)
     private String address;
 
     /**
