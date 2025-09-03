@@ -108,10 +108,9 @@ public class MembersConfirmationController {
     public ResponseEntity<ConfirmationResponse> confirmMember(
             @PathVariable UUID memberId,
             @Valid @RequestBody ConfirmationRequest confirmationRequest) {
-        MembershipConfirmation businessRequest = confirmationRequestMapper.fromConfirmationRequest(memberId, confirmationRequest);
-        MembershipConfirmationResult result = confirmationService.confirmMember(businessRequest);
+        MembershipConfirmation membershipConfirmation = confirmationRequestMapper.fromConfirmationRequest(memberId, confirmationRequest);
+        MembershipConfirmationResult result = confirmationService.confirmMember(membershipConfirmation);
         ConfirmationResponse response = confirmationResponseMapper.fromMemberConfirmationResult(result);
-
         return ResponseEntity.ok(response);
     }
 
