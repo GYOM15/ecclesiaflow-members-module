@@ -108,7 +108,7 @@ public class AuthModuleService {
             body.put("email", email);
             body.put("password", password);
             body.put("temporaryToken", temporaryToken);
-            postVoid("/ecclesiaflow/auth/set-password", body).block();
+            postVoid("/ecclesiaflow/auth/password", body).block();
         } catch (Exception e) {}
     }
 
@@ -126,7 +126,7 @@ public class AuthModuleService {
      * @throws RuntimeException si l'opération échoue (mot de passe incorrect, etc.)
      */
     public void changePassword(String email, String currentPassword, String newPassword) {
-        postVoid("/ecclesiaflow/auth/change-password", Map.of(
+        postVoid("/ecclesiaflow/auth/new-password", Map.of(
                 "email", email,
                 "currentPassword", currentPassword,
                 "newPassword", newPassword
