@@ -1,7 +1,10 @@
 package com.ecclesiaflow.web.controller;
 
+import com.ecclesiaflow.business.domain.MembershipPassword;
+import com.ecclesiaflow.business.mappers.PasswordSetMapper;
 import com.ecclesiaflow.business.services.impl.MemberPasswordService;
 import com.ecclesiaflow.web.dto.SetPasswordRequest;
+import com.ecclesiaflow.web.dto.PasswordSetResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -66,6 +69,7 @@ import java.util.UUID;
 public class MemberPasswordController {
 
     private final MemberPasswordService memberPasswordService;
+    private final PasswordSetMapper passwordSetMapper;
 
     @Operation(
         summary = "Définir le mot de passe initial d'un membre",
@@ -152,19 +156,21 @@ public class MemberPasswordController {
         )
     })
     @PostMapping(value = "/{memberId}/password", produces = "application/vnd.ecclesiaflow.members.v1+json")
-    public ResponseEntity<Void> setPassword(
+    public ResponseEntity<PasswordSetResponse> setPassword(
             @PathVariable UUID memberId,
             @RequestBody @Valid SetPasswordRequest request,
             @RequestHeader("Authorization") String authHeader) {
 
         String token = extractBearerToken(authHeader);
+        MembershipPassword membershipPassword = passwordSetMapper.fromSetPasswordRequest(request);
         // Valider que l'email correspond au memberId via le module Members
-        UUID realMemberId = memberPasswordService.getMemberIdByEmail(request.getEmail());
+        UUID realMemberId = memberPasswordService.getMemberIdByEmail(membershipPassword.getEmail());
         if (!realMemberId.equals(memberId)) {
             throw new IllegalArgumentException("L'email ne correspond pas à l'ID du membre");
         }
-        memberPasswordService.setPassword(request.getEmail(), request.getPassword(), token);
-        return ResponseEntity.ok().build();
+        memberPasswordService.setPassword(membershipPassword.getEmail(), membershipPassword.getPassword(), token);
+        PasswordSetResponse response = passwordSetMapper.toSuccessResponse();
+        return ResponseEntity.ok(response);
     }
 
 
