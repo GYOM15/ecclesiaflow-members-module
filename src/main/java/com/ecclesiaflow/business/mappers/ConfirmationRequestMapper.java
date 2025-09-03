@@ -55,14 +55,6 @@ public class ConfirmationRequestMapper {
      * @implNote Utilise le pattern Builder pour la construction de l'objet métier.
      */
     public MembershipConfirmation fromConfirmationRequest(UUID memberId, ConfirmationRequest request) {
-        if (request == null) {
-            return MembershipConfirmation.builder()
-                    .memberId(memberId)
-                    .confirmationCode("")
-                    .build();
-        }
-
-        
         return MembershipConfirmation.builder()
                 .memberId(memberId)
                 .confirmationCode(request.getCode())

@@ -34,12 +34,6 @@ public class MemberUpdateMapper {
      * @return Objet métier pour la couche business
      */
     public MembershipUpdate fromUpdateMemberRequest(UUID memberId, UpdateMemberRequest updateRequest) {
-        if (updateRequest == null) {
-            return MembershipUpdate.builder()
-                    .memberId(memberId)
-                    .build();
-        }
-
         return MembershipUpdate.builder()
                 .memberId(memberId)
                 .firstName(updateRequest.getFirstName())
