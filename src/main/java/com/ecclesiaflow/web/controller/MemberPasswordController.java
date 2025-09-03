@@ -159,7 +159,7 @@ public class MemberPasswordController {
     public ResponseEntity<PasswordSetResponse> setPassword(
             @PathVariable UUID memberId,
             @RequestBody @Valid SetPasswordRequest request,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader("Authorization") String authHeader) throws IllegalArgumentException  {
 
         String token = extractBearerToken(authHeader);
         MembershipPassword membershipPassword = passwordSetMapper.fromSetPasswordRequest(request);
