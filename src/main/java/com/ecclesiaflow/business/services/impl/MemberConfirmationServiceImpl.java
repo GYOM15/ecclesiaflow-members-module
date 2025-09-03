@@ -1,7 +1,9 @@
 package com.ecclesiaflow.business.services.impl;
 
 import com.ecclesiaflow.business.services.MemberConfirmationService;
-import com.ecclesiaflow.business.services.EmailService;
+import com.ecclesiaflow.common.code.ConfirmationCodeGenerator;
+import com.ecclesiaflow.common.notification.ConfirmationNotifier;
+import com.ecclesiaflow.web.security.JwtProcessor;
 import com.ecclesiaflow.io.entities.Member;
 import com.ecclesiaflow.io.entities.MemberConfirmation;
 import com.ecclesiaflow.io.repository.MemberRepository;
@@ -13,12 +15,10 @@ import com.ecclesiaflow.web.exception.InvalidConfirmationCodeException;
 import com.ecclesiaflow.web.exception.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.web.exception.MemberNotFoundException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Random;
 import java.util.UUID;
 
 /**
@@ -45,8 +45,9 @@ import java.util.UUID;
  * <ul>
  *   <li>{@link MemberRepository} - Gestion des membres et statuts de confirmation</li>
  *   <li>{@link MemberConfirmationRepository} - Persistance des codes de confirmation</li>
- *   <li>{@link AuthModuleService} - Génération de tokens temporaires</li>
- *   <li>{@link EmailService} - Envoi des codes par email</li>
+ *   <li>{@link JwtProcessor} - Génération de tokens temporaires</li>
+ *   <li>{@link ConfirmationNotifier} - Envoi des codes de confirmation</li>
+ *   <li>{@link ConfirmationCodeGenerator} - Génération de codes aléatoires</li>
  * </ul>
  * 
  * <p><strong>Flux de confirmation typique :</strong></p>
@@ -67,30 +68,27 @@ import java.util.UUID;
  * @author EcclesiaFlow Team
  * @since 1.0.0
  * @see MemberConfirmationService
- * @see AuthModuleService
+ * @see JwtProcessor
+ * @see ConfirmationNotifier
+ * @see ConfirmationCodeGenerator
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MemberConfirmationServiceImpl implements MemberConfirmationService {
 
     private final MemberRepository memberRepository;
     private final MemberConfirmationRepository confirmationRepository;
-    private final AuthModuleService authModuleService; // Service pour appeler le module d'auth
-    private final EmailService emailService;
+    private final JwtProcessor jwtProcessor;
+    private final ConfirmationNotifier confirmationNotifier;
+    private final ConfirmationCodeGenerator codeGenerator;
 
     @Override
     @Transactional
-    public MembershipConfirmationResult confirmMember(MembershipConfirmation confirmationRequest) {
-        UUID memberId = confirmationRequest.getMemberId();
-        String code = confirmationRequest.getConfirmationCode();
-        
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new MemberNotFoundException("Membre non trouvé"));
+    public MembershipConfirmationResult confirmMember(MembershipConfirmation membershipConfirmation) {
+        UUID memberId = membershipConfirmation.getMemberId();
+        String code = membershipConfirmation.getConfirmationCode();
 
-        if (member.isConfirmed()) {
-            throw new MemberAlreadyConfirmedException("Compte déjà confirmé");
-        }
+        Member member = getMemberToConfirmOrThrow(memberId);
 
         MemberConfirmation confirmation = confirmationRepository.findByMemberIdAndCode(memberId, code)
                 .orElseThrow(() -> new InvalidConfirmationCodeException("Code de confirmation invalide"));
@@ -99,7 +97,7 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
             throw new ExpiredConfirmationCodeException("Code de confirmation expiré");
         }
 
-        // Marquer comme confirmé
+        // Marquer le membre comme confirmé
         member.setConfirmed(true);
         member.setConfirmedAt(LocalDateTime.now());
         memberRepository.save(member);
@@ -107,57 +105,52 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
         // Supprimer le code utilisé
         confirmationRepository.delete(confirmation);
 
-        // Générer un token temporaire via le module d'authentification
-        String temporaryToken = authModuleService.generateTemporaryToken(member.getEmail());
+        // Générer un token temporaire via le service dédié
+        String temporaryToken = jwtProcessor.generateTemporaryToken(member.getEmail());
 
         return MembershipConfirmationResult.builder()
                 .message("Compte confirmé avec succès")
                 .temporaryToken(temporaryToken)
-                .expiresInSeconds(900) // 15 minutes
+                .expiresInSeconds(900)
                 .build();
     }
 
     @Override
     @Transactional
     public void sendConfirmationCode(UUID memberId) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new MemberNotFoundException("Membre non trouvé"));
-
-        if (member.isConfirmed()) {
-            throw new MemberAlreadyConfirmedException("Compte déjà confirmé");
-        }
+        Member member = getMemberToConfirmOrThrow(memberId);
 
         // Supprimer l'ancien code s'il existe
-        confirmationRepository.findByMemberId(memberId)
-                .ifPresent(confirmationRepository::delete);
+        deleteExistingConfirmationCode(memberId);
 
-        // Générer un nouveau code
-        String newCode = generateConfirmationCode();
+        // Générer un nouveau code via le service spécialisé
+        String newCode = codeGenerator.generateCode();
+
         MemberConfirmation confirmation = MemberConfirmation.builder()
                 .memberId(memberId)
                 .code(newCode)
-                .expiresAt(LocalDateTime.now().plusMinutes(5)) // 5 minutes seulement !
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
                 .build();
 
         confirmationRepository.save(confirmation);
 
-        // Envoyer le nouveau code par email
-        emailService.sendConfirmationCode(member.getEmail(), newCode, member.getFirstName());
+        // Envoyer le code via le service de notification
+        confirmationNotifier.sendCode(member.getEmail(), newCode, member.getFirstName());
     }
 
-    /**
-     * Génère un code de confirmation à 6 chiffres aléatoire.
-     * <p>
-     * Utilise {@link Random} pour générer un entier entre 0 et 999999,
-     * puis le formate en chaîne de 6 caractères avec zéros de tête si nécessaire.
-     * Identique à la méthode dans {@link MemberServiceImpl} pour cohérence.
-     * </p>
-     * 
-     * @return un code de confirmation de 6 chiffres (ex: "012345", "987654")
-     * 
-     * @implNote Utilise String.format("%06d") pour garantir 6 caractères avec zéros de tête.
-     */
-    private String generateConfirmationCode() {
-        return String.format("%06d", new Random().nextInt(999999));
+    // Méthodes utilitaires privées
+
+    private Member getMemberToConfirmOrThrow(UUID memberId) throws MemberNotFoundException, MemberAlreadyConfirmedException {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberNotFoundException("Membre non trouvé"));
+        if (member.isConfirmed()) {
+            throw new MemberAlreadyConfirmedException("Compte déjà confirmé");
+        }
+        return member;
+    }
+
+    private void deleteExistingConfirmationCode(UUID memberId) {
+        confirmationRepository.findByMemberId(memberId)
+                .ifPresent(confirmationRepository::delete);
     }
 }
