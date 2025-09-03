@@ -1,4 +1,4 @@
-package com.ecclesiaflow.business.mappers.persistence;
+package com.ecclesiaflow.web.mappers.persistence;
 
 import com.ecclesiaflow.business.domain.MembershipRegistration;
 import com.ecclesiaflow.web.dto.SignUpRequest;
