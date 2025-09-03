@@ -2,7 +2,7 @@ package com.ecclesiaflow.web.controller;
 
 import com.ecclesiaflow.business.domain.MembershipPassword;
 import com.ecclesiaflow.business.mappers.web.PasswordSetMapper;
-import com.ecclesiaflow.business.services.impl.MemberPasswordService;
+import com.ecclesiaflow.business.services.MemberPasswordService;
 import com.ecclesiaflow.web.dto.SetPasswordRequest;
 import com.ecclesiaflow.web.dto.PasswordSetResponse;
 import io.swagger.v3.oas.annotations.Operation;

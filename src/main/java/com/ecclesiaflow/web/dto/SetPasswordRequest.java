@@ -1,6 +1,7 @@
 package com.ecclesiaflow.web.dto;
 
 
+import com.ecclesiaflow.business.services.MemberPasswordService;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -43,12 +44,12 @@ import lombok.NoArgsConstructor;
  * </ul>
  * 
  * <p><strong>Intégration :</strong> Utilisée par {@link com.ecclesiaflow.web.controller.MemberPasswordController}
- * et traitée par {@link com.ecclesiaflow.business.services.impl.MemberPasswordService}.</p>
+ * et traitée par {@link MemberPasswordService}.</p>
  * 
  * @author EcclesiaFlow Team
  * @since 1.0.0
  * @see com.ecclesiaflow.web.controller.MemberPasswordController
- * @see com.ecclesiaflow.business.services.impl.MemberPasswordService
+ * @see MemberPasswordService
  */
 @Data
 @NoArgsConstructor
