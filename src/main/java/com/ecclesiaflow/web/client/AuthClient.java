@@ -1,4 +1,4 @@
-package com.ecclesiaflow.business.services.impl;
+package com.ecclesiaflow.web.client;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -59,7 +59,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "ecclesiaflow.auth.module.enabled", havingValue = "true", matchIfMissing = true)
-public class AuthModuleService {
+public class AuthClient {
 
     private final WebClient authWebClient;
 

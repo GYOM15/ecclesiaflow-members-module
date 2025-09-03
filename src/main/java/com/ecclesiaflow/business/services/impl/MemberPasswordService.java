@@ -3,6 +3,7 @@ package com.ecclesiaflow.business.services.impl;
 
 import com.ecclesiaflow.io.entities.Member;
 import com.ecclesiaflow.io.repository.MemberRepository;
+import com.ecclesiaflow.web.client.AuthClient;
 import com.ecclesiaflow.web.exception.MemberNotFoundException;
 import com.ecclesiaflow.web.exception.PasswordAlreadySetException;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,7 @@ import java.util.UUID;
  * Service de gestion des mots de passe des membres EcclesiaFlow.
  * <p>
  * Cette classe orchestre les opérations liées aux mots de passe des membres
- * en déléguant au module d'authentification via {@link AuthModuleService}.
+ * en déléguant au module d'authentification via {@link AuthClient}.
  * Fournit également des utilitaires pour récupérer les informations des membres.
  * </p>
  * 
@@ -29,7 +30,7 @@ import java.util.UUID;
  * 
  * <p><strong>Dépendances critiques :</strong></p>
  * <ul>
- *   <li>{@link AuthModuleService} - Communication avec le module d'authentification</li>
+ *   <li>{@link AuthClient} - Communication avec le module d'authentification</li>
  *   <li>{@link MemberRepository} - Récupération des informations membres</li>
  * </ul>
  * 
@@ -47,14 +48,14 @@ import java.util.UUID;
  * 
  * @author EcclesiaFlow Team
  * @since 1.0.0
- * @see AuthModuleService
+ * @see AuthClient
  * @see MemberRepository
  */
 @Service
 @RequiredArgsConstructor
 public class MemberPasswordService {
 
-    private final AuthModuleService authModuleService;
+    private final AuthClient authClient;
     private final MemberRepository memberRepository;
 
     /**
@@ -71,7 +72,7 @@ public class MemberPasswordService {
         if (member.isPasswordSet()) {
             throw new PasswordAlreadySetException("Le mot de passe a déjà été défini pour ce membre");
         }
-        authModuleService.setPassword(email, password, temporaryToken);
+        authClient.setPassword(email, password, temporaryToken);
         member.setPasswordSet(true);
         memberRepository.save(member);
     }
