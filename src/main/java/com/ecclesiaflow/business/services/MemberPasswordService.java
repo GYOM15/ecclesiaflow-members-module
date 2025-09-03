@@ -1,4 +1,4 @@
-package com.ecclesiaflow.business.services.impl;
+package com.ecclesiaflow.business.services;
 
 
 import com.ecclesiaflow.io.entities.Member;

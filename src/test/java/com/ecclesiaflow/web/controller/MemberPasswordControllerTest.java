@@ -1,6 +1,6 @@
 package com.ecclesiaflow.web.controller;
 
-import com.ecclesiaflow.business.services.impl.MemberPasswordService;
+import com.ecclesiaflow.business.services.MemberPasswordService;
 import com.ecclesiaflow.web.dto.SetPasswordRequest;
 import com.ecclesiaflow.web.exception.MemberNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
