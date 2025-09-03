@@ -4,6 +4,7 @@ package com.ecclesiaflow.business.services.impl;
 import com.ecclesiaflow.io.entities.Member;
 import com.ecclesiaflow.io.repository.MemberRepository;
 import com.ecclesiaflow.web.exception.MemberNotFoundException;
+import com.ecclesiaflow.web.exception.PasswordAlreadySetException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -63,8 +64,17 @@ public class MemberPasswordService {
      * @param password        Nouveau mot de passe
      * @param temporaryToken  Token temporaire obtenu après confirmation
      */
-    public void setPassword(String email, String password, String temporaryToken) {
+    public void setPassword(String email, String password, String temporaryToken) throws PasswordAlreadySetException {
+        // Vérifier que le membre existe et n'a pas déjà défini son mot de passe
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new MemberNotFoundException("Membre non trouvé pour l'email : " + email));
+        // Empêcher la redéfinition du mot de passe
+        if (member.isPasswordSet()) {
+            throw new PasswordAlreadySetException("Le mot de passe a déjà été défini pour ce membre");
+        }
         authModuleService.setPassword(email, password, temporaryToken);
+        member.setPasswordSet(true);
+        memberRepository.save(member);
     }
 
     public UUID getMemberIdByEmail(String email) throws MemberNotFoundException {
