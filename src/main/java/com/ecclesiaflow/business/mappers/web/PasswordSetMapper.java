@@ -1,4 +1,4 @@
-package com.ecclesiaflow.business.mappers;
+package com.ecclesiaflow.business.mappers.web;
 
 import com.ecclesiaflow.business.domain.MembershipPassword;
 import com.ecclesiaflow.web.dto.SetPasswordRequest;

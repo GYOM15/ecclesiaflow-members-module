@@ -1,6 +1,7 @@
 package com.ecclesiaflow.business.mappers;
 
 import com.ecclesiaflow.business.domain.MembershipConfirmationResult;
+import com.ecclesiaflow.business.mappers.web.ConfirmationResponseMapper;
 import com.ecclesiaflow.web.dto.ConfirmationResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

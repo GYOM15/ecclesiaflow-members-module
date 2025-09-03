@@ -1,4 +1,4 @@
-package com.ecclesiaflow.business.mappers;
+package com.ecclesiaflow.business.mappers.web;
 
 import com.ecclesiaflow.web.dto.MemberResponse;
 import com.ecclesiaflow.io.entities.Member;
