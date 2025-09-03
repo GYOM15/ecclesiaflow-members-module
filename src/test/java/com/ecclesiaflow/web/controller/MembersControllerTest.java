@@ -2,7 +2,7 @@ package com.ecclesiaflow.web.controller;
 
 import com.ecclesiaflow.business.domain.MembershipRegistration;
 import com.ecclesiaflow.business.domain.MembershipUpdate;
-import com.ecclesiaflow.business.mappers.persistence.MemberUpdateMapper;
+import com.ecclesiaflow.web.mappers.persistence.MemberUpdateMapper;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.io.entities.Member;
 import com.ecclesiaflow.io.entities.Role;

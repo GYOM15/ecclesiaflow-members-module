@@ -1,7 +1,6 @@
-package com.ecclesiaflow.business.mappers;
+package com.ecclesiaflow.web.mappers.persistence;
 
 import com.ecclesiaflow.business.domain.MembershipRegistration;
-import com.ecclesiaflow.business.mappers.persistence.MemberMapper;
 import com.ecclesiaflow.web.dto.SignUpRequest;
 import org.junit.jupiter.api.Test;
 

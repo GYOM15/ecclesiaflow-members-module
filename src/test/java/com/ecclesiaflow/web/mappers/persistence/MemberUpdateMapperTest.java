@@ -1,7 +1,6 @@
-package com.ecclesiaflow.business.mappers;
+package com.ecclesiaflow.web.mappers.persistence;
 
 import com.ecclesiaflow.business.domain.MembershipUpdate;
-import com.ecclesiaflow.business.mappers.persistence.MemberUpdateMapper;
 import com.ecclesiaflow.web.dto.UpdateMemberRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,7 +1,7 @@
 package com.ecclesiaflow.web.controller;
 
 import com.ecclesiaflow.business.domain.MembershipPassword;
-import com.ecclesiaflow.business.mappers.web.PasswordSetMapper;
+import com.ecclesiaflow.web.mappers.web.PasswordSetMapper;
 import com.ecclesiaflow.business.services.MemberPasswordService;
 import com.ecclesiaflow.web.dto.SetPasswordRequest;
 import com.ecclesiaflow.web.dto.PasswordSetResponse;
