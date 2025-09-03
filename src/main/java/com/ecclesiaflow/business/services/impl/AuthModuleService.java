@@ -42,8 +42,8 @@ import java.util.Map;
  * <p><strong>Endpoints du module d'auth :</strong></p>
  * <ul>
  *   <li>POST /ecclesiaflow/auth/temporary-token - Génération de token temporaire</li>
- *   <li>POST /ecclesiaflow/auth/set-password - Définition initiale du mot de passe</li>
- *   <li>POST /ecclesiaflow/auth/change-password - Changement de mot de passe</li>
+ *   <li>POST /ecclesiaflow/auth/password - Définition initiale du mot de passe</li>
+ *   <li>POST /ecclesiaflow/auth/new-password - Changement de mot de passe</li>
  * </ul>
  * 
  * <p><strong>Gestion d'erreurs :</strong> Mode dégradé avec valeurs de test en cas

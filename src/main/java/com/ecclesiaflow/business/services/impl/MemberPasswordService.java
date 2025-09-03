@@ -68,7 +68,6 @@ public class MemberPasswordService {
         // Vérifier que le membre existe et n'a pas déjà défini son mot de passe
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new MemberNotFoundException("Membre non trouvé pour l'email : " + email));
-        // Empêcher la redéfinition du mot de passe
         if (member.isPasswordSet()) {
             throw new PasswordAlreadySetException("Le mot de passe a déjà été défini pour ce membre");
         }
