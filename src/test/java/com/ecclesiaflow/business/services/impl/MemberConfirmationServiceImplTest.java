@@ -7,6 +7,7 @@ import com.ecclesiaflow.io.entities.Member;
 import com.ecclesiaflow.io.entities.MemberConfirmation;
 import com.ecclesiaflow.io.repository.MemberConfirmationRepository;
 import com.ecclesiaflow.io.repository.MemberRepository;
+import com.ecclesiaflow.web.client.AuthClient;
 import com.ecclesiaflow.web.exception.ExpiredConfirmationCodeException;
 import com.ecclesiaflow.web.exception.InvalidConfirmationCodeException;
 import com.ecclesiaflow.web.exception.MemberAlreadyConfirmedException;
@@ -42,7 +43,7 @@ class MemberConfirmationServiceImplTest {
     private MemberConfirmationRepository confirmationRepository;
 
     @Mock
-    private AuthModuleService authModuleService;
+    private AuthClient authClient;
 
     @Mock
     private EmailService emailService;
@@ -87,7 +88,7 @@ class MemberConfirmationServiceImplTest {
         String expectedToken = "temp_token_123";
         when(memberRepository.findById(testMemberId)).thenReturn(Optional.of(testMember));
         when(confirmationRepository.findByMemberIdAndCode(testMemberId, "123456")).thenReturn(Optional.of(testConfirmation));
-        when(authModuleService.generateTemporaryToken(any(String.class))).thenReturn(expectedToken);
+        when(authClient.generateTemporaryToken(any(String.class))).thenReturn(expectedToken);
 
         // When
         MembershipConfirmationResult result = confirmationService.confirmMember(testRequest);

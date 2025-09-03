@@ -1,12 +1,12 @@
 package com.ecclesiaflow.business.services.impl;
 
+import com.ecclesiaflow.web.client.AuthClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
@@ -19,11 +19,11 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
- * Tests unitaires pour AuthModuleService.
+ * Tests unitaires pour AuthClient.
  * Vérifie l'intégration avec le module d'authentification externe.
  */
 @ExtendWith(MockitoExtension.class)
-class AuthModuleServiceTest {
+class AuthClientTest {
 
     @Mock
     private WebClient authWebClient;
@@ -41,7 +41,7 @@ class AuthModuleServiceTest {
     private WebClient.ResponseSpec responseSpec;
 
     @InjectMocks
-    private AuthModuleService authModuleService;
+    private AuthClient authClient;
 
     @BeforeEach
     void setUp() {
@@ -63,7 +63,7 @@ class AuthModuleServiceTest {
         when(responseSpec.bodyToMono(Map.class)).thenReturn(Mono.just(mockResponse));
 
         // When
-        String result = authModuleService.generateTemporaryToken(email);
+        String result = authClient.generateTemporaryToken(email);
 
         // Then
         assertEquals(expectedToken, result);
@@ -80,7 +80,7 @@ class AuthModuleServiceTest {
             .thenReturn(Mono.error(new WebClientResponseException(500, "Internal Server Error", null, null, null)));
 
         // When
-        String result = authModuleService.generateTemporaryToken(email);
+        String result = authClient.generateTemporaryToken(email);
 
         // Then
         assertEquals("temporary-token-mock-for-dev", result);
@@ -93,7 +93,7 @@ class AuthModuleServiceTest {
         when(responseSpec.bodyToMono(Map.class)).thenReturn(Mono.just(Map.of()));
 
         // When
-        String result = authModuleService.generateTemporaryToken(email);
+        String result = authClient.generateTemporaryToken(email);
 
         // Then
         assertEquals("temporary-token-mock-for-dev", result);
@@ -109,7 +109,7 @@ class AuthModuleServiceTest {
         when(responseSpec.bodyToMono(Map.class)).thenReturn(Mono.just(mockResponse));
 
         // When
-        String result = authModuleService.generateTemporaryToken(email);
+        String result = authClient.generateTemporaryToken(email);
 
         // Then
         assertEquals(expectedToken, result);
@@ -126,7 +126,7 @@ class AuthModuleServiceTest {
         when(responseSpec.bodyToMono(Void.class)).thenReturn(Mono.empty());
 
         // When
-        authModuleService.setPassword(email, password, temporaryToken);
+        authClient.setPassword(email, password, temporaryToken);
 
         // Then
         verify(authWebClient).post();
@@ -149,7 +149,7 @@ class AuthModuleServiceTest {
             .thenReturn(Mono.error(new WebClientResponseException(400, "Bad Request", null, null, null)));
 
         // When & Then - Ne doit pas lever d'exception
-        assertDoesNotThrow(() -> authModuleService.setPassword(email, password, temporaryToken));
+        assertDoesNotThrow(() -> authClient.setPassword(email, password, temporaryToken));
     }
 
     @Test
@@ -162,7 +162,7 @@ class AuthModuleServiceTest {
         when(responseSpec.bodyToMono(Void.class)).thenReturn(Mono.empty());
 
         // When
-        authModuleService.setPassword(email, password, temporaryToken);
+        authClient.setPassword(email, password, temporaryToken);
 
         // Then
         Map<String, Object> expectedBody = new java.util.HashMap<>();
@@ -183,7 +183,7 @@ class AuthModuleServiceTest {
         when(responseSpec.bodyToMono(Void.class)).thenReturn(Mono.empty());
 
         // When
-        authModuleService.changePassword(email, currentPassword, newPassword);
+        authClient.changePassword(email, currentPassword, newPassword);
 
         // Then
         verify(authWebClient).post();
@@ -208,7 +208,7 @@ class AuthModuleServiceTest {
 
         // When & Then
         assertThrows(WebClientResponseException.class, () ->
-            authModuleService.changePassword(email, currentPassword, newPassword));
+            authClient.changePassword(email, currentPassword, newPassword));
     }
 
     @Test
@@ -224,7 +224,7 @@ class AuthModuleServiceTest {
 
         // When & Then
         assertThrows(WebClientResponseException.class, () ->
-            authModuleService.changePassword(email, currentPassword, newPassword));
+            authClient.changePassword(email, currentPassword, newPassword));
     }
 
     @Test
@@ -240,6 +240,6 @@ class AuthModuleServiceTest {
 
         // When & Then
         assertThrows(WebClientResponseException.class, () ->
-            authModuleService.changePassword(email, currentPassword, newPassword));
+            authClient.changePassword(email, currentPassword, newPassword));
     }
 }

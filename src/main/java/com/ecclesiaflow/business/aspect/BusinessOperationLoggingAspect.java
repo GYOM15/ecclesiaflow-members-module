@@ -65,7 +65,7 @@ public class BusinessOperationLoggingAspect {
      * pour tracer les interactions inter-modules critiques.
      * </p>
      */
-    @Pointcut("execution(* com.ecclesiaflow.business.services.impl.AuthModuleService.*(..))")
+    @Pointcut("execution(* com.ecclesiaflow.web.client.AuthClient.*(..))")
     public void authModuleCalls() {}
 
     // === CONSEILS POUR L'ENREGISTREMENT DES MEMBRES ===

@@ -2,6 +2,7 @@ package com.ecclesiaflow.business.services.impl;
 
 import com.ecclesiaflow.io.entities.Member;
 import com.ecclesiaflow.io.repository.MemberRepository;
+import com.ecclesiaflow.web.client.AuthClient;
 import com.ecclesiaflow.web.exception.MemberNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,7 @@ import static org.mockito.Mockito.*;
 class MemberPasswordServiceTest {
 
     @Mock
-    private AuthModuleService authModuleService;
+    private AuthClient authClient;
 
     @Mock
     private MemberRepository memberRepository;
@@ -57,7 +58,7 @@ class MemberPasswordServiceTest {
         memberPasswordService.setPassword(email, password, temporaryToken);
 
         // Then
-        verify(authModuleService).setPassword(email, password, temporaryToken);
+        verify(authClient).setPassword(email, password, temporaryToken);
     }
 
     @Test
@@ -71,7 +72,7 @@ class MemberPasswordServiceTest {
         memberPasswordService.setPassword(email, password, temporaryToken);
 
         // Then
-        verify(authModuleService).setPassword(email, password, temporaryToken);
+        verify(authClient).setPassword(email, password, temporaryToken);
     }
 
     @Test
@@ -85,7 +86,7 @@ class MemberPasswordServiceTest {
         memberPasswordService.setPassword(email, password, temporaryToken);
 
         // Then
-        verify(authModuleService).setPassword(email, password, temporaryToken);
+        verify(authClient).setPassword(email, password, temporaryToken);
     }
 
     @Test
@@ -96,7 +97,7 @@ class MemberPasswordServiceTest {
         String temporaryToken = "temp_token_123";
         
         RuntimeException authException = new RuntimeException("Auth module error");
-        doThrow(authException).when(authModuleService).setPassword(email, password, temporaryToken);
+        doThrow(authException).when(authClient).setPassword(email, password, temporaryToken);
 
         // When & Then
         assertThrows(RuntimeException.class, () ->
