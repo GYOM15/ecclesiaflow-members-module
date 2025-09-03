@@ -1,4 +1,4 @@
-package com.ecclesiaflow.business.mappers;
+package com.ecclesiaflow.business.mappers.persistence;
 
 import com.ecclesiaflow.business.domain.MembershipUpdate;
 import com.ecclesiaflow.web.dto.UpdateMemberRequest;

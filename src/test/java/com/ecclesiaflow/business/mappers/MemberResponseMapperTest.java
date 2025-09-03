@@ -1,5 +1,6 @@
 package com.ecclesiaflow.business.mappers;
 
+import com.ecclesiaflow.business.mappers.web.MemberResponseMapper;
 import com.ecclesiaflow.io.entities.Member;
 import com.ecclesiaflow.io.entities.Role;
 import com.ecclesiaflow.web.dto.MemberResponse;

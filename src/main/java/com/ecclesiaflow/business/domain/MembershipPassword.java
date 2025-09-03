@@ -1,5 +1,6 @@
 package com.ecclesiaflow.business.domain;
 
+import com.ecclesiaflow.business.mappers.web.PasswordSetMapper;
 import lombok.Builder;
 import lombok.Data;
 
@@ -25,7 +26,7 @@ import lombok.Data;
  * 
  * <p><strong>Cycle de vie typique :</strong></p>
  * <ol>
- *   <li>Création via {@link com.ecclesiaflow.business.mappers.PasswordSetMapper} depuis une requête web</li>
+ *   <li>Création via {@link PasswordSetMapper} depuis une requête web</li>
  *   <li>Traitement par {@link MemberPasswordService} pour validation métier</li>
  *   <li>Transmission au module d'authentification pour persistance</li>
  * </ol>
