@@ -4,7 +4,8 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import com.ecclesiaflow.business.annotation.LogExecution;
+import com.ecclesiaflow.common.logging.annotation.LogExecution;
+import com.ecclesiaflow.common.logging.aspect.LoggingAspect;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -34,7 +35,7 @@ import static org.assertj.core.api.Assertions.*;
  */
 @SpringBootTest(classes = {LoggingAspectTest.TestConfig.class})
 @TestPropertySource(properties = {
-        "logging.level.com.ecclesiaflow.business.aspect.LoggingAspect=DEBUG"
+        "logging.level.com.ecclesiaflow.common.logging.aspect.LoggingAspect=DEBUG"
 })
 @DisplayName("LoggingAspect - Tests d'intégration AOP")
 class LoggingAspectTest {

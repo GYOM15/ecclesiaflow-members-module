@@ -4,7 +4,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import org.aspectj.lang.JoinPoint;
+import com.ecclesiaflow.common.logging.aspect.BusinessOperationLoggingAspect;
 import org.aspectj.lang.annotation.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
