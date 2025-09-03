@@ -15,15 +15,6 @@ public class ConfirmationResponseMapper {
      * Transforme un résultat de confirmation métier en DTO de réponse
      */
     public ConfirmationResponse fromMemberConfirmationResult(MembershipConfirmationResult result) {
-        if (result == null) {
-            return ConfirmationResponse.builder()
-                    .message("Erreur de confirmation")
-                    .temporaryToken(null)
-                    .expiresIn(0)
-                    .build();
-        }
-
-        
         return ConfirmationResponse.builder()
                 .message(result.getMessage())
                 .temporaryToken(result.getTemporaryToken())
