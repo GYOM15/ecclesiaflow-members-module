@@ -90,12 +90,7 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
 
         Member member = getMemberToConfirmOrThrow(memberId);
 
-        MemberConfirmation confirmation = confirmationRepository.findByMemberIdAndCode(memberId, code)
-                .orElseThrow(() -> new InvalidConfirmationCodeException("Code de confirmation invalide"));
-
-        if (confirmation.isExpired()) {
-            throw new ExpiredConfirmationCodeException("Code de confirmation expiré");
-        }
+        MemberConfirmation confirmation = validateConfirmationCode(memberId, code);
 
         // Marquer le membre comme confirmé
         member.setConfirmed(true);
@@ -113,6 +108,16 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
                 .temporaryToken(temporaryToken)
                 .expiresInSeconds(900)
                 .build();
+    }
+
+    private MemberConfirmation validateConfirmationCode(UUID memberId, String code) {
+        MemberConfirmation confirmation = confirmationRepository.findByMemberIdAndCode(memberId, code)
+                .orElseThrow(() -> new InvalidConfirmationCodeException("Code de confirmation invalide"));
+
+        if (confirmation.isExpired()) {
+            throw new ExpiredConfirmationCodeException("Code de confirmation expiré");
+        }
+        return confirmation;
     }
 
     @Override
