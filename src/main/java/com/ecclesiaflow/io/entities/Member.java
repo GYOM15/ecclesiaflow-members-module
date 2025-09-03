@@ -154,6 +154,17 @@ public class Member {
     private LocalDateTime confirmedAt;
 
     /**
+     * Indique si le membre a déjà défini son mot de passe initial.
+     * <p>
+     * Empêche la redéfinition multiple du mot de passe avec le même token.
+     * Passe à true après la première définition de mot de passe.
+     * </p>
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean passwordSet = false;
+
+    /**
      * Date et heure de création du membre.
      * <p>
      * Généré automatiquement par Hibernate lors de la persistance initiale.
@@ -177,6 +188,10 @@ public class Member {
 
     public boolean isConfirmed() {
         return confirmed;
+    }
+
+    public boolean isPasswordSet() {
+        return passwordSet;
     }
 
     /**
