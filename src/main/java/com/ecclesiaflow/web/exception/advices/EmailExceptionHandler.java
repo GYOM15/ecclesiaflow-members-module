@@ -1,5 +1,6 @@
 package com.ecclesiaflow.web.exception.advices;
 
+import com.ecclesiaflow.io.email.EmailServiceImpl;
 import com.ecclesiaflow.web.exception.*;
 import com.ecclesiaflow.web.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,7 +46,7 @@ import java.time.LocalDateTime;
  * @author EcclesiaFlow Team
  * @since 1.0.0
  * @see GlobalExceptionHandler
- * @see com.ecclesiaflow.business.services.impl.EmailServiceImpl
+ * @see EmailServiceImpl
  */
 @ControllerAdvice
 public class EmailExceptionHandler {

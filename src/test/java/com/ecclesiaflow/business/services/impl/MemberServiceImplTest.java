@@ -3,7 +3,7 @@ package com.ecclesiaflow.business.services.impl;
 import com.ecclesiaflow.business.domain.MembershipRegistration;
 import com.ecclesiaflow.business.domain.MembershipUpdate;
 import com.ecclesiaflow.business.services.EmailService;
-import com.ecclesiaflow.io.entities.Member;
+import com.ecclesiaflow.io.entities.MemberEntity;
 import com.ecclesiaflow.io.entities.MemberConfirmation;
 import com.ecclesiaflow.io.entities.Role;
 import com.ecclesiaflow.io.repository.MemberConfirmationRepository;
@@ -31,7 +31,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MemberServiceImpl - Tests unitaires")
-class MemberServiceImplTest {
+class MemberEntityServiceImplTest {
 
     @Mock
     private MemberRepository memberRepository;
@@ -46,7 +46,7 @@ class MemberServiceImplTest {
     private MemberServiceImpl memberService;
 
     private MembershipRegistration testRegistration;
-    private Member testMember;
+    private MemberEntity testMemberEntity;
     private UUID testMemberId;
 
     @BeforeEach
@@ -60,30 +60,30 @@ class MemberServiceImplTest {
                 "123 Rue de la Paix"
         );
 
-        testMember = new Member();
-        testMember.setId(testMemberId);
-        testMember.setMemberId(UUID.randomUUID());
-        testMember.setFirstName("Jean");
-        testMember.setLastName("Dupont");
-        testMember.setEmail("jean.dupont@example.com");
-        testMember.setAddress("123 Rue de la Paix");
-        testMember.setRole(Role.MEMBER);
-        testMember.setConfirmed(false);
-        testMember.setCreatedAt(LocalDateTime.now());
+        testMemberEntity = new MemberEntity();
+        testMemberEntity.setId(testMemberId);
+        testMemberEntity.setMemberId(UUID.randomUUID());
+        testMemberEntity.setFirstName("Jean");
+        testMemberEntity.setLastName("Dupont");
+        testMemberEntity.setEmail("jean.dupont@example.com");
+        testMemberEntity.setAddress("123 Rue de la Paix");
+        testMemberEntity.setRole(Role.MEMBER);
+        testMemberEntity.setConfirmed(false);
+        testMemberEntity.setCreatedAt(LocalDateTime.now());
     }
 
     // --- TESTS EXISTANTS (omitted for brevity) ---
     @Test
     void registerMember_WithNewEmail_ShouldCreateMemberAndSendConfirmation() {
         when(memberRepository.existsByEmail(testRegistration.email())).thenReturn(false);
-        when(memberRepository.save(any(Member.class))).thenReturn(testMember);
+        when(memberRepository.save(any(MemberEntity.class))).thenReturn(testMemberEntity);
         when(confirmationRepository.findByMemberId(any())).thenReturn(Optional.empty());
 
-        Member result = memberService.registerMember(testRegistration);
+        MemberEntity result = memberService.registerMember(testRegistration);
 
         assertNotNull(result);
-        assertEquals(testMember, result);
-        verify(memberRepository).save(any(Member.class));
+        assertEquals(testMemberEntity, result);
+        verify(memberRepository).save(any(MemberEntity.class));
         verify(confirmationRepository).save(any(MemberConfirmation.class));
         verify(emailService).sendConfirmationCode(anyString(), anyString(), anyString());
     }
@@ -94,7 +94,7 @@ class MemberServiceImplTest {
     void registerMember_WithEmailServiceFailure_ShouldStillCreateMemberAndConfirmation() {
         // Given
         when(memberRepository.existsByEmail(testRegistration.email())).thenReturn(false);
-        when(memberRepository.save(any(Member.class))).thenReturn(testMember);
+        when(memberRepository.save(any(MemberEntity.class))).thenReturn(testMemberEntity);
         when(confirmationRepository.findByMemberId(any())).thenReturn(Optional.empty());
 
         doThrow(new RuntimeException("Email service failure"))
@@ -105,13 +105,13 @@ class MemberServiceImplTest {
 
         // Then
         // Utiliser ArgumentCaptor pour vérifier l'objet passé à save()
-        ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
+        ArgumentCaptor<MemberEntity> memberCaptor = ArgumentCaptor.forClass(MemberEntity.class);
         verify(memberRepository, times(1)).save(memberCaptor.capture());
 
-        Member capturedMember = memberCaptor.getValue();
-        assertNotNull(capturedMember);
-        assertEquals(testMember.getEmail(), capturedMember.getEmail());
-        assertEquals(testMember.getFirstName(), capturedMember.getFirstName());
+        MemberEntity capturedMemberEntity = memberCaptor.getValue();
+        assertNotNull(capturedMemberEntity);
+        assertEquals(testMemberEntity.getEmail(), capturedMemberEntity.getEmail());
+        assertEquals(testMemberEntity.getFirstName(), capturedMemberEntity.getFirstName());
 
         verify(confirmationRepository).save(any(MemberConfirmation.class));
     }
@@ -123,11 +123,11 @@ class MemberServiceImplTest {
         // Given
         MemberConfirmation existingConfirmation = new MemberConfirmation();
         when(memberRepository.existsByEmail(testRegistration.email())).thenReturn(false);
-        when(memberRepository.save(any(Member.class))).thenReturn(testMember);
+        when(memberRepository.save(any(MemberEntity.class))).thenReturn(testMemberEntity);
         when(confirmationRepository.findByMemberId(testMemberId)).thenReturn(Optional.of(existingConfirmation));
 
         // When
-        Member result = memberService.registerMember(testRegistration);
+        MemberEntity result = memberService.registerMember(testRegistration);
 
         // Then
         verify(confirmationRepository).findByMemberId(testMemberId);
@@ -163,16 +163,16 @@ class MemberServiceImplTest {
 
     @Test
     void isEmailConfirmed_WithConfirmedEmail_ShouldReturnTrue() {
-        testMember.setConfirmed(true);
-        when(memberRepository.findByEmail("confirmed@example.com")).thenReturn(Optional.of(testMember));
+        testMemberEntity.setConfirmed(true);
+        when(memberRepository.findByEmail("confirmed@example.com")).thenReturn(Optional.of(testMemberEntity));
         boolean result = memberService.isEmailConfirmed("confirmed@example.com");
         assertTrue(result);
     }
 
     @Test
     void isEmailConfirmed_WithUnconfirmedEmail_ShouldReturnFalse() {
-        testMember.setConfirmed(false);
-        when(memberRepository.findByEmail("unconfirmed@example.com")).thenReturn(Optional.of(testMember));
+        testMemberEntity.setConfirmed(false);
+        when(memberRepository.findByEmail("unconfirmed@example.com")).thenReturn(Optional.of(testMemberEntity));
         boolean result = memberService.isEmailConfirmed("unconfirmed@example.com");
         assertFalse(result);
     }
@@ -186,10 +186,10 @@ class MemberServiceImplTest {
 
     @Test
     void findById_WithExistingId_ShouldReturnMember() {
-        when(memberRepository.findById(testMemberId)).thenReturn(Optional.of(testMember));
-        Member result = memberService.findById(testMemberId);
+        when(memberRepository.findById(testMemberId)).thenReturn(Optional.of(testMemberEntity));
+        MemberEntity result = memberService.findById(testMemberId);
         assertNotNull(result);
-        assertEquals(testMember, result);
+        assertEquals(testMemberEntity, result);
     }
 
     @Test
@@ -208,15 +208,15 @@ class MemberServiceImplTest {
                 .email("jean.updated@example.com")
                 .address("456 Nouvelle Adresse")
                 .build();
-        when(memberRepository.findById(testMemberId)).thenReturn(Optional.of(testMember));
-        when(memberRepository.save(any(Member.class))).thenReturn(testMember);
-        Member result = memberService.updateMember(updateRequest);
+        when(memberRepository.findById(testMemberId)).thenReturn(Optional.of(testMemberEntity));
+        when(memberRepository.save(any(MemberEntity.class))).thenReturn(testMemberEntity);
+        MemberEntity result = memberService.updateMember(updateRequest);
         assertNotNull(result);
-        verify(memberRepository).save(testMember);
-        assertEquals("Jean-Updated", testMember.getFirstName());
-        assertEquals("Dupont-Updated", testMember.getLastName());
-        assertEquals("jean.updated@example.com", testMember.getEmail());
-        assertEquals("456 Nouvelle Adresse", testMember.getAddress());
+        verify(memberRepository).save(testMemberEntity);
+        assertEquals("Jean-Updated", testMemberEntity.getFirstName());
+        assertEquals("Dupont-Updated", testMemberEntity.getLastName());
+        assertEquals("jean.updated@example.com", testMemberEntity.getEmail());
+        assertEquals("456 Nouvelle Adresse", testMemberEntity.getAddress());
     }
 
     @Test
@@ -226,21 +226,21 @@ class MemberServiceImplTest {
                 .firstName("Jean-Updated")
                 .email("jean.updated@example.com")
                 .build();
-        when(memberRepository.findById(testMemberId)).thenReturn(Optional.of(testMember));
-        when(memberRepository.save(any(Member.class))).thenReturn(testMember);
-        Member result = memberService.updateMember(updateRequest);
+        when(memberRepository.findById(testMemberId)).thenReturn(Optional.of(testMemberEntity));
+        when(memberRepository.save(any(MemberEntity.class))).thenReturn(testMemberEntity);
+        MemberEntity result = memberService.updateMember(updateRequest);
         assertNotNull(result);
-        assertEquals("Jean-Updated", testMember.getFirstName());
-        assertEquals("jean.updated@example.com", testMember.getEmail());
-        assertEquals("Dupont", testMember.getLastName());
-        assertEquals("123 Rue de la Paix", testMember.getAddress());
+        assertEquals("Jean-Updated", testMemberEntity.getFirstName());
+        assertEquals("jean.updated@example.com", testMemberEntity.getEmail());
+        assertEquals("Dupont", testMemberEntity.getLastName());
+        assertEquals("123 Rue de la Paix", testMemberEntity.getAddress());
     }
 
     @Test
     void deleteMember_WithExistingId_ShouldDeleteMember() {
-        when(memberRepository.findById(testMemberId)).thenReturn(Optional.of(testMember));
+        when(memberRepository.findById(testMemberId)).thenReturn(Optional.of(testMemberEntity));
         memberService.deleteMember(testMemberId);
-        verify(memberRepository).delete(testMember);
+        verify(memberRepository).delete(testMemberEntity);
     }
 
     @Test
@@ -253,14 +253,14 @@ class MemberServiceImplTest {
 
     @Test
     void getAllMembers_ShouldReturnAllMembers() {
-        Member member2 = new Member();
-        member2.setId(UUID.randomUUID());
-        member2.setEmail("member2@example.com");
-        List<Member> expectedMembers = Arrays.asList(testMember, member2);
-        when(memberRepository.findAll()).thenReturn(expectedMembers);
-        List<Member> result = memberService.getAllMembers();
+        MemberEntity memberEntity2 = new MemberEntity();
+        memberEntity2.setId(UUID.randomUUID());
+        memberEntity2.setEmail("memberEntity2@example.com");
+        List<MemberEntity> expectedMemberEntities = Arrays.asList(testMemberEntity, memberEntity2);
+        when(memberRepository.findAll()).thenReturn(expectedMemberEntities);
+        List<MemberEntity> result = memberService.getAllMembers();
         assertNotNull(result);
         assertEquals(2, result.size());
-        assertEquals(expectedMembers, result);
+        assertEquals(expectedMemberEntities, result);
     }
 }

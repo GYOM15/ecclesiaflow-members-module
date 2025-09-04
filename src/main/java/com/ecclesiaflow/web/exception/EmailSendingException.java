@@ -1,9 +1,11 @@
 package com.ecclesiaflow.web.exception;
 
+import com.ecclesiaflow.io.email.EmailServiceImpl;
+
 /**
  * Exception levée lors d'un échec d'envoi d'email par le service de messagerie.
  * <p>
- * Cette exception est utilisée par {@link com.ecclesiaflow.business.services.impl.EmailServiceImpl}
+ * Cette exception est utilisée par {@link EmailServiceImpl}
  * pour signaler les problèmes techniques liés à l'envoi d'emails via le serveur SMTP.
  * Elle encapsule les erreurs de configuration, de connectivité ou de transmission.
  * </p>
@@ -38,7 +40,7 @@ package com.ecclesiaflow.web.exception;
  * 
  * @author EcclesiaFlow Team
  * @since 1.0.0
- * @see com.ecclesiaflow.business.services.impl.EmailServiceImpl
+ * @see EmailServiceImpl
  * @see com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler
  */
 public class EmailSendingException extends RuntimeException {

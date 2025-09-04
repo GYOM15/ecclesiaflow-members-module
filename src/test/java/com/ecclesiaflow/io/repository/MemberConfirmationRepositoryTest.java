@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Vérifie les opérations de persistance et les requêtes personnalisées pour les confirmations.
  */
 @DataJpaTest
-class MemberConfirmationRepositoryTest {
+class MemberEntityConfirmationRepositoryTest {
 
     @Autowired
     private TestEntityManager entityManager;

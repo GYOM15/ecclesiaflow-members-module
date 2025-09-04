@@ -1,5 +1,6 @@
 package com.ecclesiaflow.business.services.impl;
 
+import com.ecclesiaflow.io.email.EmailServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -1,5 +1,7 @@
 package com.ecclesiaflow.web.exception;
 
+import com.ecclesiaflow.io.email.EmailServiceImpl;
+
 /**
  * Exception spécialisée levée lors d'un échec d'envoi d'email de réinitialisation de mot de passe.
  * <p>
@@ -42,7 +44,7 @@ package com.ecclesiaflow.web.exception;
  * @author EcclesiaFlow Team
  * @since 1.0.0
  * @see EmailSendingException
- * @see com.ecclesiaflow.business.services.impl.EmailServiceImpl#sendPasswordResetEmail
+ * @see EmailServiceImpl#sendPasswordResetEmail
  */
 public class PasswordResetEmailException extends EmailSendingException {
     
