@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Vérifie les endpoints de gestion des mots de passe.
  */
 @WebMvcTest(MemberPasswordController.class)
-class MemberPasswordControllerTest {
+class MemberEntityPasswordControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

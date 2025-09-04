@@ -1,6 +1,6 @@
 package com.ecclesiaflow.web.mappers.web;
 
-import com.ecclesiaflow.io.entities.Member;
+import com.ecclesiaflow.io.entities.MemberEntity;
 import com.ecclesiaflow.io.entities.Role;
 import com.ecclesiaflow.web.dto.MemberResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,24 +13,24 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests unitaires pour MemberResponseMapper.
- * Vérifie la conversion des entités Member vers les DTOs de réponse.
+ * Vérifie la conversion des entités MemberEntity vers les DTOs de réponse.
  */
-class MemberResponseMapperTest {
+class MemberEntityResponseMapperTest {
 
-    private Member testMember;
+    private MemberEntity testMemberEntity;
 
     @BeforeEach
     void setUp() {
-        testMember = new Member();
-        testMember.setId(UUID.randomUUID());
-        testMember.setMemberId(UUID.randomUUID());
-        testMember.setFirstName("Jean");
-        testMember.setLastName("Dupont");
-        testMember.setEmail("jean.dupont@example.com");
-        testMember.setAddress("123 Rue de la Paix");
-        testMember.setRole(Role.MEMBER);
-        testMember.setConfirmed(true);
-        testMember.setCreatedAt(LocalDateTime.of(2024, 1, 15, 10, 30));
+        testMemberEntity = new MemberEntity();
+        testMemberEntity.setId(UUID.randomUUID());
+        testMemberEntity.setMemberId(UUID.randomUUID());
+        testMemberEntity.setFirstName("Jean");
+        testMemberEntity.setLastName("Dupont");
+        testMemberEntity.setEmail("jean.dupont@example.com");
+        testMemberEntity.setAddress("123 Rue de la Paix");
+        testMemberEntity.setRole(Role.MEMBER);
+        testMemberEntity.setConfirmed(true);
+        testMemberEntity.setCreatedAt(LocalDateTime.of(2024, 1, 15, 10, 30));
     }
 
     @Test
@@ -40,7 +40,7 @@ class MemberResponseMapperTest {
         String token = "jwt_token_123";
 
         // When
-        MemberResponse response = MemberResponseMapper.fromMember(testMember, message, token);
+        MemberResponse response = MemberResponseMapper.fromMember(testMemberEntity, message, token);
 
         // Then
         assertNotNull(response);
@@ -62,7 +62,7 @@ class MemberResponseMapperTest {
         String message = "Profil récupéré";
 
         // When
-        MemberResponse response = MemberResponseMapper.fromMember(testMember, message);
+        MemberResponse response = MemberResponseMapper.fromMember(testMemberEntity, message);
 
         // Then
         assertNotNull(response);
@@ -81,11 +81,11 @@ class MemberResponseMapperTest {
     @Test
     void fromMember_WithNullRole_ShouldMapToUnknown() {
         // Given
-        testMember.setRole(null);
+        testMemberEntity.setRole(null);
         String message = "Test message";
 
         // When
-        MemberResponse response = MemberResponseMapper.fromMember(testMember, message);
+        MemberResponse response = MemberResponseMapper.fromMember(testMemberEntity, message);
 
         // Then
         assertNotNull(response);
@@ -95,11 +95,11 @@ class MemberResponseMapperTest {
     @Test
     void fromMember_WithUnconfirmedMember_ShouldMapConfirmedFalse() {
         // Given
-        testMember.setConfirmed(false);
+        testMemberEntity.setConfirmed(false);
         String message = "Membre non confirmé";
 
         // When
-        MemberResponse response = MemberResponseMapper.fromMember(testMember, message);
+        MemberResponse response = MemberResponseMapper.fromMember(testMemberEntity, message);
 
         // Then
         assertNotNull(response);
@@ -116,11 +116,11 @@ class MemberResponseMapperTest {
     @Test
     void fromMember_WithAdminRole_ShouldMapAdminRole() {
         // Given
-        testMember.setRole(Role.ADMIN);
+        testMemberEntity.setRole(Role.ADMIN);
         String message = "Admin connecté";
 
         // When
-        MemberResponse response = MemberResponseMapper.fromMember(testMember, message);
+        MemberResponse response = MemberResponseMapper.fromMember(testMemberEntity, message);
 
         // Then
         assertNotNull(response);
@@ -130,14 +130,14 @@ class MemberResponseMapperTest {
     @Test
     void fromMember_WithEmptyFields_ShouldMapEmptyValues() {
         // Given
-        testMember.setFirstName("");
-        testMember.setLastName("");
-        testMember.setEmail("");
-        testMember.setAddress("");
+        testMemberEntity.setFirstName("");
+        testMemberEntity.setLastName("");
+        testMemberEntity.setEmail("");
+        testMemberEntity.setAddress("");
         String message = "Test avec champs vides";
 
         // When
-        MemberResponse response = MemberResponseMapper.fromMember(testMember, message);
+        MemberResponse response = MemberResponseMapper.fromMember(testMemberEntity, message);
 
         // Then
         assertNotNull(response);
