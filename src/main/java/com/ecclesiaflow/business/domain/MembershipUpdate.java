@@ -3,7 +3,6 @@ package com.ecclesiaflow.business.domain;
 import lombok.Builder;
 import lombok.Data;
 import com.ecclesiaflow.business.services.MemberService;
-import com.ecclesiaflow.io.entities.Member;
 
 import java.util.UUID;
 
