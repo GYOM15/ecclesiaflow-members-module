@@ -29,7 +29,7 @@ import java.util.UUID;
  * 
  * <p><strong>Dépendances critiques :</strong></p>
  * <ul>
- *   <li>{@link com.ecclesiaflow.io.repository.MemberRepository} - Persistance des données</li>
+ *   <li>{@link com.ecclesiaflow.business.services.repositories.MemberRepository} - Persistance des données</li>
  *   <li>Services de validation métier internes</li>
  * </ul>
  * 
