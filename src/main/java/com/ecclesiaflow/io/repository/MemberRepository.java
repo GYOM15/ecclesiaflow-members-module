@@ -1,7 +1,7 @@
 package com.ecclesiaflow.io.repository;
 
 import com.ecclesiaflow.io.entities.Member;
-import com.ecclesiaflow.io.entities.Role;
+import com.ecclesiaflow.business.domain.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
