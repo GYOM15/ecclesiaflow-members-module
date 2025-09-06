@@ -5,6 +5,7 @@ import com.ecclesiaflow.business.domain.Member;
 import com.ecclesiaflow.business.services.repositories.MemberRepository;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.business.services.EmailService;
+import com.ecclesiaflow.common.code.ConfirmationCodeGenerator;
 import com.ecclesiaflow.io.entities.MemberConfirmation;
 import com.ecclesiaflow.io.repository.MemberConfirmationRepository;
 import com.ecclesiaflow.business.domain.MembershipUpdate;
@@ -67,6 +68,7 @@ public class MemberServiceImpl implements MemberService {
     private final MemberRepository memberRepository;
     private final MemberConfirmationRepository confirmationRepository;
     private final EmailService emailService;
+    private final ConfirmationCodeGenerator confirmationCodeGenerator;
 
     @Override
     @Transactional
@@ -170,7 +172,7 @@ public class MemberServiceImpl implements MemberService {
                     .ifPresent(confirmationRepository::delete);
 
             // Générer un nouveau code à 6 chiffres
-            String confirmationCode = generateConfirmationCode();
+            String confirmationCode = confirmationCodeGenerator.generateCode();
 
             // Créer l'entité de confirmation
             MemberConfirmation confirmation = MemberConfirmation.builder()
@@ -188,20 +190,5 @@ public class MemberServiceImpl implements MemberService {
             // Ne pas faire échouer l'inscription si l'email ne peut pas être envoyé
             // L'utilisateur pourra demander un renvoi du code plus tard
         }
-    }
-
-    /**
-     * Génère un code de confirmation à 6 chiffres aléatoire.
-     * <p>
-     * Utilise {@link Random} pour générer un entier entre 0 et 999999,
-     * puis le formate en chaîne de 6 caractères avec zéros de tête si nécessaire.
-     * </p>
-     * 
-     * @return un code de confirmation de 6 chiffres (ex: "012345", "987654")
-     * 
-     * @implNote Utilise String.format("%06d") pour garantir 6 caractères avec zéros de tête.
-     */
-    private String generateConfirmationCode() {
-        return String.format("%06d", new Random().nextInt(999999));
     }
 }
