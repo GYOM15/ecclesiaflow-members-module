@@ -4,10 +4,10 @@ import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.common.code.ConfirmationCodeGenerator;
 import com.ecclesiaflow.common.notification.ConfirmationNotifier;
 import com.ecclesiaflow.web.security.JwtProcessor;
-import com.ecclesiaflow.io.entities.Member;
-import com.ecclesiaflow.io.entities.MemberConfirmation;
-import com.ecclesiaflow.io.repository.MemberRepository;
-import com.ecclesiaflow.io.repository.MemberConfirmationRepository;
+import com.ecclesiaflow.business.domain.Member;
+import com.ecclesiaflow.business.domain.MemberConfirmation;
+import com.ecclesiaflow.business.services.repositories.MemberRepository;
+import com.ecclesiaflow.business.services.repositories.MemberConfirmationRepository;
 import com.ecclesiaflow.business.domain.MembershipConfirmationResult;
 import com.ecclesiaflow.business.domain.MembershipConfirmation;
 import com.ecclesiaflow.web.exception.ExpiredConfirmationCodeException;
@@ -93,8 +93,7 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
         MemberConfirmation confirmation = validateConfirmationCode(memberId, code);
 
         // Marquer le membre comme confirmé
-        member.setConfirmed(true);
-        member.setConfirmedAt(LocalDateTime.now());
+        member.confirm();
         memberRepository.save(member);
 
         // Supprimer le code utilisé
