@@ -57,7 +57,7 @@ public class MemberResponseMapper {
                 .role(member.getRole() != null ? member.getRole().name() : "UNKNOWN")
                 .token(token)
                 .confirmed(member.isConfirmed())
-                .createdAt(member.getCreatedAt().toString())
+                .createdAt(member.getCreatedAt() != null ? member.getCreatedAt().toString() : null)
                 .confirmedAt(member.getConfirmedAt() != null ? member.getConfirmedAt().toString() : null)
                 .build();
     }
