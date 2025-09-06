@@ -87,52 +87,6 @@ public class AuthClient {
         }
     }
 
-    /**
-     * Définit le mot de passe initial d'un utilisateur avec un token temporaire.
-     * <p>
-     * Appelle le module d'authentification pour définir le mot de passe
-     * d'un utilisateur nouvellement confirmé. Nécessite un token temporaire
-     * valide obtenu après confirmation du compte.
-     * </p>
-     * 
-     * @param email l'email de l'utilisateur, non null
-     * @param password le nouveau mot de passe, non null
-     * @param temporaryToken le token temporaire valide, non null
-     * 
-     * @implNote Les erreurs sont silencieuses pour éviter d'interrompre
-     *           le flux utilisateur en cas de problème de communication.
-     */
-    public void setPassword(String email, String password, String temporaryToken) {
-        try {
-            Map<String, String> body = new java.util.HashMap<>();
-            body.put("email", email);
-            body.put("password", password);
-            body.put("temporaryToken", temporaryToken);
-            postVoid("/ecclesiaflow/auth/password", body).block();
-        } catch (Exception e) {}
-    }
-
-    /**
-     * Change le mot de passe d'un utilisateur authentifié.
-     * <p>
-     * Appelle le module d'authentification pour changer le mot de passe
-     * d'un utilisateur. Nécessite le mot de passe actuel pour validation.
-     * </p>
-     * 
-     * @param email l'email de l'utilisateur, non null
-     * @param currentPassword le mot de passe actuel pour validation, non null
-     * @param newPassword le nouveau mot de passe, non null
-     * 
-     * @throws RuntimeException si l'opération échoue (mot de passe incorrect, etc.)
-     */
-    public void changePassword(String email, String currentPassword, String newPassword) {
-        postVoid("/ecclesiaflow/auth/new-password", Map.of(
-                "email", email,
-                "currentPassword", currentPassword,
-                "newPassword", newPassword
-        )).block();
-    }
-
     // === Méthodes utilitaires ===
 
     /**
@@ -159,28 +113,5 @@ public class AuthClient {
                         response.createException().flatMap(Mono::error)
                 )
                 .bodyToMono(Map.class);
-    }
-
-    /**
-     * Effectue un appel POST vers le module d'authentification sans réponse attendue.
-     * <p>
-     * Méthode utilitaire pour les appels HTTP POST qui n'attendent pas de réponse
-     * spécifique du module d'authentification. Gère toutes les erreurs HTTP.
-     * </p>
-     * 
-     * @param path le chemin de l'endpoint (ex: "/ecclesiaflow/auth/set-password")
-     * @param body le corps de la requête sous forme de Map
-     * @return un Mono<Void> pour la completion de l'opération
-     */
-    private Mono<Void> postVoid(String path, Map<String, String> body) {
-        return authWebClient
-                .post()
-                .uri(path)
-                .bodyValue(body)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response ->
-                        response.createException().flatMap(Mono::error)
-                )
-                .bodyToMono(Void.class);
     }
 }
