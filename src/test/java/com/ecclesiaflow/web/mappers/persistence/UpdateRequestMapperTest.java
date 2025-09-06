@@ -2,6 +2,7 @@ package com.ecclesiaflow.web.mappers.persistence;
 
 import com.ecclesiaflow.business.domain.MembershipUpdate;
 import com.ecclesiaflow.web.dto.UpdateMemberRequest;
+import com.ecclesiaflow.web.mappers.web.UpdateRequestMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -10,17 +11,17 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests unitaires pour MemberUpdateMapper.
+ * Tests unitaires pour UpdateRequestMapper.
  * Vérifie la conversion des DTOs de mise à jour vers les objets métier.
  */
-class MemberUpdateMapperTest {
+class UpdateRequestMapperTest {
 
-    private MemberUpdateMapper mapper;
+    private UpdateRequestMapper mapper;
     private UUID testMemberId;
 
     @BeforeEach
     void setUp() {
-        mapper = new MemberUpdateMapper();
+        mapper = new UpdateRequestMapper();
         testMemberId = UUID.randomUUID();
     }
 

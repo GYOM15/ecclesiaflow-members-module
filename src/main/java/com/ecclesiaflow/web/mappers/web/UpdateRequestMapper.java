@@ -1,4 +1,4 @@
-package com.ecclesiaflow.web.mappers.persistence;
+package com.ecclesiaflow.web.mappers.web;
 
 import com.ecclesiaflow.business.domain.MembershipUpdate;
 import com.ecclesiaflow.web.dto.UpdateMemberRequest;
@@ -24,7 +24,7 @@ import java.util.UUID;
  * @since 1.0.0
  */
 @Component
-public class MemberUpdateMapper {
+public class UpdateRequestMapper {
 
     /**
      * Transforme un DTO de modification et un memberId en objet métier.

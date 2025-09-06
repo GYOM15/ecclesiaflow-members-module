@@ -1,4 +1,4 @@
-package com.ecclesiaflow.web.mappers.persistence;
+package com.ecclesiaflow.web.mappers.web;
 
 import com.ecclesiaflow.business.domain.MembershipRegistration;
 import com.ecclesiaflow.web.dto.SignUpRequest;
@@ -30,7 +30,7 @@ import com.ecclesiaflow.web.dto.SignUpRequest;
  * @author EcclesiaFlow Team
  * @since 1.0.0
  */
-public class MemberMapper {
+public class SignUpRequestMapper {
     
     /**
      * Convertit une requête d'inscription web en objet métier MembershipRegistration.
