@@ -1,8 +1,8 @@
 package com.ecclesiaflow.business.services;
 
+import com.ecclesiaflow.business.domain.Member;
 import com.ecclesiaflow.business.domain.MembershipRegistration;
 import com.ecclesiaflow.business.domain.MembershipUpdate;
-import com.ecclesiaflow.io.entities.Member;
 
 import java.util.List;
 import java.util.UUID;
@@ -55,11 +55,10 @@ public interface MemberService {
      * de manière sécurisée et persiste le nouveau membre en base de données.
      * Vérifie l'unicité de l'email avant l'enregistrement.
      * </p>
-     * 
+     *
      * @param registration les données d'enregistrement du membre, non null
      * @return le membre créé avec son identifiant généré
      * @throws IllegalArgumentException si l'email existe déjà ou si les données sont invalides
-     * 
      * @implNote Opération transactionnelle en écriture.
      */
     Member registerMember(MembershipRegistration registration);
@@ -103,12 +102,11 @@ public interface MemberService {
      * à partir de son UUID. Utilisée pour les opérations de consultation
      * et de mise à jour des profils.
      * </p>
-     * 
+     *
      * @param id l'identifiant unique du membre, non null
      * @return le membre correspondant avec toutes ses informations
      * @throws com.ecclesiaflow.web.exception.MemberNotFoundException si aucun membre avec cet ID n'existe
-     * @throws IllegalArgumentException si id est null
-     * 
+     * @throws IllegalArgumentException                               si id est null
      * @implNote Opération de lecture par clé primaire (optimisée).
      */
     Member findById(UUID id);
@@ -120,15 +118,14 @@ public interface MemberService {
      * d'un membre. Seuls les champs fournis sont mis à jour (patch partiel).
      * L'email et le statut de confirmation ne peuvent pas être modifiés.
      * </p>
-     * 
-     * @param updateRequest les données de mise à jour, non null
+     *
+     * @param update les données de mise à jour, non null
      * @return le membre mis à jour avec les nouvelles informations
      * @throws com.ecclesiaflow.web.exception.MemberNotFoundException si le membre n'existe pas
-     * @throws IllegalArgumentException si updateRequest est null ou invalide
-     * 
+     * @throws IllegalArgumentException                               si updateRequest est null ou invalide
      * @implNote Opération transactionnelle en écriture avec validation métier.
      */
-    Member updateMember(MembershipUpdate updateRequest);
+    Member updateMember(MembershipUpdate update);
     
     /**
      * Supprime définitivement un membre du système.
@@ -153,9 +150,8 @@ public interface MemberService {
      * confirmés ou non. Utilisée pour les interfaces d'administration
      * et les rapports. Pour les gros volumes, préférer une approche paginée.
      * </p>
-     * 
+     *
      * @return la liste de tous les membres, peut être vide mais jamais null
-     * 
      * @implNote Opération de lecture potentiellement coûteuse sur gros volumes.
      * @deprecated Utiliser une approche paginée pour les gros volumes
      */

@@ -1,9 +1,8 @@
 package com.ecclesiaflow.business.services.impl;
 
 import com.ecclesiaflow.business.domain.MembershipRegistration;
-import com.ecclesiaflow.io.entities.Member;
-import com.ecclesiaflow.io.entities.Role;
-import com.ecclesiaflow.io.repository.MemberRepository;
+import com.ecclesiaflow.business.domain.Member;
+import com.ecclesiaflow.business.services.repositories.MemberRepository;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.business.services.EmailService;
 import com.ecclesiaflow.io.entities.MemberConfirmation;
@@ -16,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 
 /**
@@ -26,9 +24,9 @@ import java.util.UUID;
  * CRUD pour la gestion des membres : inscription, consultation, mise à jour, suppression.
  * Gère également la génération automatique des codes de confirmation lors de l'inscription.
  * </p>
- * 
+ *
  * <p><strong>Rôle architectural :</strong> Implémentation de service - Logique métier des membres</p>
- * 
+ *
  * <p><strong>Responsabilités principales :</strong></p>
  * <ul>
  *   <li>Inscription de nouveaux membres avec validation d'unicité email</li>
@@ -37,14 +35,14 @@ import java.util.UUID;
  *   <li>Validation du statut de confirmation des comptes</li>
  *   <li>Orchestration avec les services d'email pour les notifications</li>
  * </ul>
- * 
+ *
  * <p><strong>Dépendances critiques :</strong></p>
  * <ul>
  *   <li>{@link MemberRepository} - Persistance et requêtes sur les membres</li>
  *   <li>{@link MemberConfirmationRepository} - Gestion des codes de confirmation</li>
  *   <li>{@link EmailService} - Envoi des emails de confirmation</li>
  * </ul>
- * 
+ *
  * <p><strong>Flux d'inscription typique :</strong></p>
  * <ol>
  *   <li>Vérification de l'unicité de l'email</li>
@@ -53,9 +51,9 @@ import java.util.UUID;
  *   <li>Génération d'un code de confirmation à 6 chiffres</li>
  *   <li>Envoi automatique de l'email de confirmation</li>
  * </ol>
- * 
+ *
  * <p><strong>Garanties :</strong> Thread-safe, transactionnel, gestion d'erreurs robuste.</p>
- * 
+ *
  * @author EcclesiaFlow Team
  * @since 1.0.0
  * @see MemberService
@@ -105,22 +103,20 @@ public class MemberServiceImpl implements MemberService {
      * les valeurs par défaut : rôle MEMBER, statut non confirmé, et génère
      * un UUID unique pour l'intégration avec le module d'authentification.
      * </p>
-     * 
+     *
      * @param registration les données d'inscription validées, non null
      * @return une entité Member initialisée prête pour la persistance
-     * 
+     *
      * @implNote Génère automatiquement un memberId UUID pour l'intégration inter-modules.
      */
     private Member createMemberFromRegistration(MembershipRegistration registration) {
-        Member member = new Member();
-        member.setEmail(registration.email());
-        member.setFirstName(registration.firstName());
-        member.setLastName(registration.lastName());
-        member.setAddress(registration.address());
-        member.setRole(Role.MEMBER);
-        member.setMemberId(java.util.UUID.randomUUID()); // Générer un ID unique pour le module d'auth
-        member.setConfirmed(false); // Par défaut non confirmé
-        return member;
+        return Member.builder().
+                memberId(UUID.randomUUID()).
+                firstName(registration.firstName()).
+                lastName(registration.lastName()).
+                email(registration.email()).
+                address(registration.address()).
+                build();
     }
 
     @Override
@@ -132,23 +128,10 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     @Transactional
-    public Member updateMember(MembershipUpdate updateRequest) {
-        Member member = findById(updateRequest.getMemberId());
-
-        if (updateRequest.getFirstName() != null) {
-            member.setFirstName(updateRequest.getFirstName());
-        }
-        if (updateRequest.getLastName() != null) {
-            member.setLastName(updateRequest.getLastName());
-        }
-        if (updateRequest.getAddress() != null) {
-            member.setAddress(updateRequest.getAddress());
-        }
-        if (updateRequest.getEmail() != null) {
-            member.setEmail(updateRequest.getEmail());
-        }
-
-        return memberRepository.save(member);
+    public Member updateMember(MembershipUpdate update) {
+        Member member = findById(update.getMemberId());
+        Member updatedMember = member.withUpdatedFields(update);
+        return memberRepository.save(updatedMember);
     }
 
     @Override
@@ -171,12 +154,12 @@ public class MemberServiceImpl implements MemberService {
      * suppression de l'ancien code s'il existe, génération d'un nouveau code
      * à 6 chiffres, persistance avec expiration 24h, et envoi par email.
      * </p>
-     * 
+     *
      * <p><strong>Gestion d'erreurs :</strong> Les erreurs d'envoi d'email ne font pas
      * échouer l'inscription. L'utilisateur peut demander un renvoi ultérieurement.</p>
-     * 
+     *
      * @param member le membre nouvellement inscrit, non null
-     * 
+     *
      * @implNote Opération non-bloquante : l'échec d'envoi d'email n'affecte pas l'inscription.
      */
     private void generateAndSendConfirmationCode(Member member) {
