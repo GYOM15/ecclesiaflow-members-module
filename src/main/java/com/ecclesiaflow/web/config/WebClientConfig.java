@@ -1,6 +1,5 @@
 package com.ecclesiaflow.web.config;
 
-import com.ecclesiaflow.business.services.MemberPasswordService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -46,7 +45,6 @@ import org.springframework.web.reactive.function.client.WebClient;
  * 
  * @author EcclesiaFlow Team
  * @since 1.0.0
- * @see MemberPasswordService
  */
 @ConditionalOnProperty(name = "ecclesiaflow.auth.module.enabled", havingValue = "true", matchIfMissing = true)
 @Configuration
