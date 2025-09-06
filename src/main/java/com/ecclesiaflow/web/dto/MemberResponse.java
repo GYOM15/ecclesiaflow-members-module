@@ -23,7 +23,7 @@ import lombok.Data;
  * 
  * <p><strong>Flux de génération :</strong></p>
  * <ol>
- *   <li>Service métier retourne entité {@link com.ecclesiaflow.io.entities.Member}</li>
+ *   <li>Service métier retourne entité {@link com.ecclesiaflow.business.domain.Member}</li>
  *   <li>Mapper convertit en MemberResponse</li>
  *   <li>Contrôleur retourne la réponse au client</li>
  * </ol>
@@ -43,7 +43,7 @@ import lombok.Data;
  * 
  * @author EcclesiaFlow Team
  * @since 1.0.0
- * @see com.ecclesiaflow.io.entities.Member
+ * @see com.ecclesiaflow.business.domain.Member
  * @see com.ecclesiaflow.web.controller.MembersController
  */
 @Data
@@ -75,37 +75,15 @@ public class MemberResponse {
     private String address;
     
     /**
-     * Champ mot de passe (ne devrait jamais être rempli pour des raisons de sécurité).
-     * @deprecated Ce champ ne devrait pas être utilisé dans les réponses
-     */
-    @Deprecated
-    private String password;
-    
-    /**
      * Rôle du membre dans l'application.
      */
     private String role;
-    
-    /**
-     * Indique si le compte n'est pas verrouillé.
-     */
-    private boolean accountNonLocked;
-    
-    /**
-     * Indique si le compte est activé.
-     */
-    private boolean enabled;
-    
+
     /**
      * Token d'authentification (si applicable).
      */
     private String token;
-    
-    /**
-     * Nom d'utilisateur (généralement l'email).
-     */
-    private String username;
-    
+
     /**
      * Indique si le compte a été confirmé par email.
      */
@@ -115,17 +93,10 @@ public class MemberResponse {
      * Date de création du compte (format ISO).
      */
     private String createdAt;
-    
-    /**
-     * Indique si le compte n'a pas expiré.
-     */
-    private boolean accountNonExpired;
-    
-    /**
-     * Indique si les informations d'identification n'ont pas expiré.
-     */
-    private boolean credentialsNonExpired;
 
+    /**
+     * Date de confirmation du compte (format ISO).
+     */
     private String confirmedAt;
 }
 
