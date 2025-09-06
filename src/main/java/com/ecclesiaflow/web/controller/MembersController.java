@@ -4,11 +4,11 @@ import com.ecclesiaflow.business.domain.MembershipRegistration;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.web.dto.MemberResponse;
 import com.ecclesiaflow.web.dto.SignUpRequest;
-import com.ecclesiaflow.io.entities.Member;
-import com.ecclesiaflow.web.mappers.persistence.MemberMapper;
+import com.ecclesiaflow.business.domain.Member;
+import com.ecclesiaflow.web.mappers.web.SignUpRequestMapper;
 import com.ecclesiaflow.web.mappers.web.MemberResponseMapper;
 import com.ecclesiaflow.web.dto.UpdateMemberRequest;
-import com.ecclesiaflow.web.mappers.persistence.MemberUpdateMapper;
+import com.ecclesiaflow.web.mappers.web.UpdateRequestMapper;
 import com.ecclesiaflow.business.domain.MembershipUpdate;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -78,7 +78,7 @@ import java.util.UUID;
 @Tag(name = "Members (Temporary)", description = "API temporaire - sera migrée vers le module de gestion des membres")
 public class MembersController {
     private final MemberService memberService;
-    private final MemberUpdateMapper memberUpdateMapper;
+    private final UpdateRequestMapper updateRequestMapper;
 
     /**
      * Endpoint de test d'authentification pour les membres.
@@ -150,7 +150,7 @@ public class MembersController {
      * @implNote Utilise le pattern Mapper pour la transformation DTO → Objet métier → DTO.
      */
     public ResponseEntity<MemberResponse> registerMember(@Valid @RequestBody SignUpRequest signUpRequest) {
-        MembershipRegistration registration = MemberMapper.fromSignUpRequest(signUpRequest);
+        MembershipRegistration registration = SignUpRequestMapper.fromSignUpRequest(signUpRequest);
         Member member = memberService.registerMember(registration);
         MemberResponse response = MemberResponseMapper.fromMember(member, "Member registered (temporary - approval system coming)");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -206,7 +206,7 @@ public class MembersController {
     })
     public ResponseEntity<MemberResponse> updateMember( @PathVariable UUID memberId,
             @Valid @RequestBody UpdateMemberRequest updateRequest) {
-        MembershipUpdate businessRequest = memberUpdateMapper.fromUpdateMemberRequest(memberId, updateRequest);
+        MembershipUpdate businessRequest = updateRequestMapper.fromUpdateMemberRequest(memberId, updateRequest);
         Member updatedMember = memberService.updateMember(businessRequest);
         MemberResponse response = MemberResponseMapper.fromMember(updatedMember, "Membre modifié avec succès");
         return ResponseEntity.ok(response);
@@ -253,7 +253,7 @@ public class MembersController {
         return ResponseEntity.ok(Map.of("confirmed", isConfirmed));
     }
 
-    @DeleteMapping(value = "/members/{memberId}", produces = "application/vnd.ecclesiaflow.members.v1+json")
+    @DeleteMapping(value = "/members/{id}", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @Operation(
             summary = "Supprimer un membre",
             description = "Supprimer définitivement un membre"
@@ -269,8 +269,8 @@ public class MembersController {
                     description = "Membre non trouvé"
             )
     })
-    public ResponseEntity<Void> deleteMember(@PathVariable UUID memberId) {
-        memberService.deleteMember(memberId);
+    public ResponseEntity<Void> deleteMember(@PathVariable UUID id) {
+        memberService.deleteMember(id);
         return ResponseEntity.noContent().build();
     }
 
