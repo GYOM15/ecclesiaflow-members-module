@@ -1,7 +1,6 @@
 package com.ecclesiaflow.business.services;
 
 import com.ecclesiaflow.web.exception.ConfirmationEmailException;
-import com.ecclesiaflow.web.exception.PasswordResetEmailException;
 import com.ecclesiaflow.web.exception.WelcomeEmailException;
 
 /**
@@ -80,21 +79,4 @@ public interface EmailService {
      */
     void sendWelcomeEmail(String email, String firstName) throws WelcomeEmailException;
     
-    /**
-     * Envoie un email de récupération de mot de passe avec lien sécurisé.
-     * <p>
-     * Cette méthode génère et envoie un email contenant un lien sécurisé
-     * permettant au membre de réinitialiser son mot de passe. Le lien
-     * contient un token temporaire avec expiration.
-     * </p>
-     * 
-     * @param email l'adresse email du membre, non null et valide
-     * @param resetLink le lien sécurisé de réinitialisation avec token, non null
-     * @param firstName le prénom du membre pour personnalisation, non null
-     * @throws PasswordResetEmailException si l'envoi échoue (SMTP, réseau, etc.)
-     * @throws IllegalArgumentException si un paramètre est null ou invalide
-     * 
-     * @implNote Utilise le template 'password-reset-email.html' avec lien temporaire.
-     */
-    void sendPasswordResetEmail(String email, String resetLink, String firstName) throws PasswordResetEmailException;
 }

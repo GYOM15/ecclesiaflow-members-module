@@ -2,7 +2,6 @@ package com.ecclesiaflow.io.email;
 
 import com.ecclesiaflow.business.services.EmailService;
 import com.ecclesiaflow.web.exception.ConfirmationEmailException;
-import com.ecclesiaflow.web.exception.PasswordResetEmailException;
 import com.ecclesiaflow.web.exception.WelcomeEmailException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
@@ -95,21 +94,6 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
-    @Override
-    public void sendPasswordResetEmail(String email, String resetLink, String firstName) throws PasswordResetEmailException {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(email);
-            message.setSubject("Réinitialisation de mot de passe - " + appName);
-            message.setText(buildPasswordResetEmailText(resetLink, firstName));
-
-            mailSender.send(message);
-        } catch (Exception e) {
-            throw new PasswordResetEmailException("Impossible d'envoyer l'email de réinitialisation",e);
-        }
-    }
-
     /**
      * Construit le contenu textuel de l'email de confirmation.
      * <p>
@@ -162,35 +146,5 @@ public class EmailServiceImpl implements EmailService {
                 Cordialement,
                 L'équipe %s
                 """, firstName, appName, appName);
-    }
-
-    /**
-     * Construit le contenu textuel de l'email de réinitialisation de mot de passe.
-     * <p>
-     * Génère un message contenant le lien sécurisé de réinitialisation,
-     * les instructions d'utilisation, et la durée de validité (1h).
-     * Inclut des avertissements de sécurité appropriés.
-     * </p>
-     * 
-     * @param resetLink le lien sécurisé de réinitialisation, non null
-     * @param firstName le prénom du destinataire pour personnalisation, non null
-     * @return le contenu complet de l'email de réinitialisation formaté
-     */
-    private String buildPasswordResetEmailText(String resetLink, String firstName) {
-        return String.format("""
-                Bonjour %s,
-                
-                Une demande de réinitialisation de mot de passe a été effectuée pour votre compte.
-                
-                Cliquez sur le lien suivant pour réinitialiser votre mot de passe :
-                %s
-                
-                Ce lien est valable pendant 1 heure.
-                
-                Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet email.
-                
-                Cordialement,
-                L'équipe %s
-                """, firstName, resetLink, appName);
     }
 }
