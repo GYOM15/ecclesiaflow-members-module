@@ -1,7 +1,7 @@
 package com.ecclesiaflow.web.mappers.web;
 
 import com.ecclesiaflow.web.dto.MemberResponse;
-import com.ecclesiaflow.io.entities.Member;
+import com.ecclesiaflow.business.domain.Member;
 
 /**
  * Mapper statique pour la conversion des entités Member vers les DTOs de réponse web.
@@ -54,11 +54,11 @@ public class MemberResponseMapper {
                 .firstName(member.getFirstName())
                 .lastName(member.getLastName())
                 .email(member.getEmail())
-                .role(member.getRole() != null ? member.getRole().name() : "UNKNOWN") // Protection null
-                .username(member.getUsername())
+                .role(member.getRole() != null ? member.getRole().name() : "UNKNOWN")
                 .token(token)
                 .confirmed(member.isConfirmed())
                 .createdAt(member.getCreatedAt().toString())
+                .confirmedAt(member.getConfirmedAt() != null ? member.getConfirmedAt().toString() : null)
                 .build();
     }
     

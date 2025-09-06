@@ -125,5 +125,7 @@ public class MemberResponse {
      * Indique si les informations d'identification n'ont pas expiré.
      */
     private boolean credentialsNonExpired;
+
+    private String confirmedAt;
 }
 
