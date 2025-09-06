@@ -2,15 +2,16 @@ package com.ecclesiaflow.web.mappers.persistence;
 
 import com.ecclesiaflow.business.domain.MembershipRegistration;
 import com.ecclesiaflow.web.dto.SignUpRequest;
+import com.ecclesiaflow.web.mappers.web.SignUpRequestMapper;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests unitaires pour MemberMapper.
+ * Tests unitaires pour SignUpRequestMapper.
  * Vérifie la conversion correcte des DTOs vers les objets métier.
  */
-class MemberMapperTest {
+class SignUpRequestMapperTest {
 
     @Test
     void fromSignUpRequest_WithValidData_ShouldMapCorrectly() {
@@ -22,7 +23,7 @@ class MemberMapperTest {
         request.setAddress("123 Rue de la Paix, Paris");
 
         // When
-        MembershipRegistration result = MemberMapper.fromSignUpRequest(request);
+        MembershipRegistration result = SignUpRequestMapper.fromSignUpRequest(request);
 
         // Then
         assertNotNull(result);
@@ -36,7 +37,7 @@ class MemberMapperTest {
     void fromSignUpRequest_WithNullRequest_ShouldThrowNullPointerException() {
         // When & Then
         assertThrows(NullPointerException.class, () -> 
-            MemberMapper.fromSignUpRequest(null));
+            SignUpRequestMapper.fromSignUpRequest(null));
     }
 
     @Test
@@ -49,7 +50,7 @@ class MemberMapperTest {
         request.setAddress("");
 
         // When
-        MembershipRegistration result = MemberMapper.fromSignUpRequest(request);
+        MembershipRegistration result = SignUpRequestMapper.fromSignUpRequest(request);
 
         // Then
         assertNotNull(result);
@@ -66,7 +67,7 @@ class MemberMapperTest {
         // Tous les champs restent null par défaut
 
         // When
-        MembershipRegistration result = MemberMapper.fromSignUpRequest(request);
+        MembershipRegistration result = SignUpRequestMapper.fromSignUpRequest(request);
 
         // Then
         assertNotNull(result);
@@ -86,7 +87,7 @@ class MemberMapperTest {
         request.setAddress("123 Rue de l'Église, Montréal, QC");
 
         // When
-        MembershipRegistration result = MemberMapper.fromSignUpRequest(request);
+        MembershipRegistration result = SignUpRequestMapper.fromSignUpRequest(request);
 
         // Then
         assertNotNull(result);
