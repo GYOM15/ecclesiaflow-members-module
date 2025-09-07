@@ -1,6 +1,6 @@
 package com.ecclesiaflow.web.mappers.web;
 
-import com.ecclesiaflow.business.domain.MembershipRegistration;
+import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.web.dto.SignUpRequest;
 
 /**

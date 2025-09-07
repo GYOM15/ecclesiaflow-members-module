@@ -1,8 +1,8 @@
 package com.ecclesiaflow.business.services;
 
-import com.ecclesiaflow.business.domain.Member;
-import com.ecclesiaflow.business.domain.MembershipRegistration;
-import com.ecclesiaflow.business.domain.MembershipUpdate;
+import com.ecclesiaflow.business.domain.member.Member;
+import com.ecclesiaflow.business.domain.member.MembershipRegistration;
+import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 
 import java.util.List;
 import java.util.UUID;

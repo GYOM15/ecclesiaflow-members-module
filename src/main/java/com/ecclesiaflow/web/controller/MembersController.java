@@ -1,15 +1,15 @@
 package com.ecclesiaflow.web.controller;
 
-import com.ecclesiaflow.business.domain.MembershipRegistration;
+import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.web.dto.SignUpResponse;
 import com.ecclesiaflow.web.dto.SignUpRequest;
-import com.ecclesiaflow.business.domain.Member;
+import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.web.mappers.web.SignUpRequestMapper;
 import com.ecclesiaflow.web.mappers.web.MemberResponseMapper;
 import com.ecclesiaflow.web.dto.UpdateMemberRequest;
 import com.ecclesiaflow.web.mappers.web.UpdateRequestMapper;
-import com.ecclesiaflow.business.domain.MembershipUpdate;
+import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;

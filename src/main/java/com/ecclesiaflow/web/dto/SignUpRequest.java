@@ -1,6 +1,6 @@
 package com.ecclesiaflow.web.dto;
 
-import com.ecclesiaflow.business.domain.MembershipRegistration;
+import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
