@@ -2,7 +2,7 @@ package com.ecclesiaflow.web.controller;
 
 import com.ecclesiaflow.business.domain.MembershipRegistration;
 import com.ecclesiaflow.business.services.MemberService;
-import com.ecclesiaflow.web.dto.MemberResponse;
+import com.ecclesiaflow.web.dto.SignUpResponse;
 import com.ecclesiaflow.web.dto.SignUpRequest;
 import com.ecclesiaflow.business.domain.Member;
 import com.ecclesiaflow.web.mappers.web.SignUpRequestMapper;
@@ -123,7 +123,7 @@ public class MembersController {
             description = "Membre créé avec succès (temporaire - sera un système d'approbation)",
             content = @Content(
                 mediaType = "application/json",
-                schema = @Schema(implementation = MemberResponse.class)
+                schema = @Schema(implementation = SignUpResponse.class)
             )
         ),
         @ApiResponse(
@@ -143,16 +143,16 @@ public class MembersController {
      * <p><strong>⚠️ TEMPORAIRE :</strong> Sera remplacé par un système d'approbation admin.</p>
      * 
      * @param signUpRequest les données d'inscription du membre, validées automatiquement
-     * @return {@link ResponseEntity} avec {@link MemberResponse} et statut HTTP 201
+     * @return {@link ResponseEntity} avec {@link SignUpResponse} et statut HTTP 201
      * @throws org.springframework.web.bind.MethodArgumentNotValidException si les données sont invalides
      * @throws IllegalArgumentException si l'email existe déjà
      * 
      * @implNote Utilise le pattern Mapper pour la transformation DTO → Objet métier → DTO.
      */
-    public ResponseEntity<MemberResponse> registerMember(@Valid @RequestBody SignUpRequest signUpRequest) {
+    public ResponseEntity<SignUpResponse> registerMember(@Valid @RequestBody SignUpRequest signUpRequest) {
         MembershipRegistration registration = SignUpRequestMapper.fromSignUpRequest(signUpRequest);
         Member member = memberService.registerMember(registration);
-        MemberResponse response = MemberResponseMapper.fromMember(member, "Member registered (temporary - approval system coming)");
+        SignUpResponse response = MemberResponseMapper.fromMember(member, "Member registered (temporary - approval system coming)");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -168,7 +168,7 @@ public class MembersController {
                     description = "Membre trouvé",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = MemberResponse.class)
+                            schema = @Schema(implementation = SignUpResponse.class)
                     )
             ),
             @ApiResponse(
@@ -177,9 +177,9 @@ public class MembersController {
                     content = @Content
             )
     })
-    public ResponseEntity<MemberResponse> getMember(@PathVariable UUID memberId) {
+    public ResponseEntity<SignUpResponse> getMember(@PathVariable UUID memberId) {
         Member member = memberService.findById(memberId);
-        MemberResponse response = MemberResponseMapper.fromMember(member, "Membre trouvé");
+        SignUpResponse response = MemberResponseMapper.fromMember(member, "Membre trouvé");
         return ResponseEntity.ok(response);
     }
 
@@ -195,7 +195,7 @@ public class MembersController {
                     description = "Membre modifié avec succès",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = MemberResponse.class)
+                            schema = @Schema(implementation = SignUpResponse.class)
                     )
             ),
             @ApiResponse(
@@ -204,11 +204,11 @@ public class MembersController {
                     content = @Content
             )
     })
-    public ResponseEntity<MemberResponse> updateMember( @PathVariable UUID memberId,
-            @Valid @RequestBody UpdateMemberRequest updateRequest) {
+    public ResponseEntity<SignUpResponse> updateMember(@PathVariable UUID memberId,
+                                                       @Valid @RequestBody UpdateMemberRequest updateRequest) {
         MembershipUpdate businessRequest = updateRequestMapper.fromUpdateMemberRequest(memberId, updateRequest);
         Member updatedMember = memberService.updateMember(businessRequest);
-        MemberResponse response = MemberResponseMapper.fromMember(updatedMember, "Membre modifié avec succès");
+        SignUpResponse response = MemberResponseMapper.fromMember(updatedMember, "Membre modifié avec succès");
         return ResponseEntity.ok(response);
     }
 

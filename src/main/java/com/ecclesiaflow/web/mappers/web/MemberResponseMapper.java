@@ -1,13 +1,13 @@
 package com.ecclesiaflow.web.mappers.web;
 
-import com.ecclesiaflow.web.dto.MemberResponse;
+import com.ecclesiaflow.web.dto.SignUpResponse;
 import com.ecclesiaflow.business.domain.Member;
 
 /**
  * Mapper statique pour la conversion des entités Member vers les DTOs de réponse web.
  * <p>
  * Cette classe fournit des méthodes utilitaires pour transformer les entités Member
- * en objets de réponse web {@link MemberResponse} avec des informations contextuelles
+ * en objets de réponse web {@link SignUpResponse} avec des informations contextuelles
  * comme les messages et tokens. Respecte le pattern Static Utility Class.
  * </p>
  * 
@@ -44,11 +44,11 @@ public class MemberResponseMapper {
      * @param member l'entité Member à convertir, non null
      * @param message le message contextuel à inclure, non null
      * @param token le token JWT à inclure, peut être null
-     * @return un {@link MemberResponse} contenant toutes les informations du membre
+     * @return un {@link SignUpResponse} contenant toutes les informations du membre
      * @throws NullPointerException si member ou message est null
      */
-    public static MemberResponse fromMember(Member member, String message, String token) {
-        return MemberResponse.builder()
+    public static SignUpResponse fromMember(Member member, String message, String token) {
+        return SignUpResponse.builder()
                 .message(message)
                 .address(member.getAddress())
                 .firstName(member.getFirstName())
@@ -71,10 +71,10 @@ public class MemberResponseMapper {
      * 
      * @param member l'entité Member à convertir, non null
      * @param message le message contextuel à inclure, non null
-     * @return un {@link MemberResponse} sans token
+     * @return un {@link SignUpResponse} sans token
      * @throws NullPointerException si member ou message est null
      */
-    public static MemberResponse fromMember(Member member, String message) {
+    public static SignUpResponse fromMember(Member member, String message) {
         return fromMember(member, message, null);
     }
 }

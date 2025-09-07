@@ -24,7 +24,7 @@ import lombok.Data;
  * <p><strong>Flux de génération :</strong></p>
  * <ol>
  *   <li>Service métier retourne entité {@link com.ecclesiaflow.business.domain.Member}</li>
- *   <li>Mapper convertit en MemberResponse</li>
+ *   <li>Mapper convertit en SignUpResponse</li>
  *   <li>Contrôleur retourne la réponse au client</li>
  * </ol>
  * 
@@ -48,7 +48,7 @@ import lombok.Data;
  */
 @Data
 @Builder
-public class MemberResponse {
+public class SignUpResponse {
     /**
      * Message informatif pour l'utilisateur (optionnel).
      */
