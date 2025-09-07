@@ -2,7 +2,7 @@ package com.ecclesiaflow.io.persistence.repositories.impl;
 
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmation;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
-import com.ecclesiaflow.io.persistence.entities.MemberConfirmationEntity;
+import com.ecclesiaflow.io.persistence.jpa.MemberConfirmationEntity;
 import com.ecclesiaflow.io.persistence.mappers.MemberConfirmationPersistenceMapper;
 import com.ecclesiaflow.io.persistence.repositories.SpringDataMemberConfirmationRepository;
 import lombok.RequiredArgsConstructor;

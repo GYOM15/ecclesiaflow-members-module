@@ -1,7 +1,7 @@
 package com.ecclesiaflow.io.persistence.mappers;
 
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmation;
-import com.ecclesiaflow.io.persistence.entities.MemberConfirmationEntity;
+import com.ecclesiaflow.io.persistence.jpa.MemberConfirmationEntity;
 import org.springframework.stereotype.Component;
 
 /**

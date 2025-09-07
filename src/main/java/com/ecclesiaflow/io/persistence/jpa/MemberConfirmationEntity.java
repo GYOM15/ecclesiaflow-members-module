@@ -1,4 +1,4 @@
-package com.ecclesiaflow.io.persistence.entities;
+package com.ecclesiaflow.io.persistence.jpa;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
