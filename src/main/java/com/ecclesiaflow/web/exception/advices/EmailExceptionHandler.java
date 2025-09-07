@@ -1,6 +1,6 @@
 package com.ecclesiaflow.web.exception.advices;
 
-import com.ecclesiaflow.io.email.EmailServiceImpl;
+import com.ecclesiaflow.io.communication.email.EmailServiceImpl;
 import com.ecclesiaflow.web.exception.*;
 import com.ecclesiaflow.web.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
