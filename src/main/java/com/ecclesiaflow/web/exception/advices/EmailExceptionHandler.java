@@ -25,7 +25,6 @@ import java.time.LocalDateTime;
  * <ul>
  *   <li>{@link ConfirmationEmailException} - Erreurs d'envoi de confirmation</li>
  *   <li>{@link WelcomeEmailException} - Erreurs d'envoi de bienvenue</li>
- *   <li>{@link PasswordResetEmailException} - Erreurs d'envoi de réinitialisation</li>
  *   <li>{@link EmailSendingException} - Erreurs génériques d'envoi</li>
  * </ul>
  * 
@@ -73,18 +72,6 @@ public class EmailExceptionHandler {
     @ExceptionHandler(WelcomeEmailException.class)
     public ResponseEntity<ErrorResponse> handleWelcomeEmailException(WelcomeEmailException ex, HttpServletRequest request) {
         return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur lors de l'envoi de l'email de bienvenue.", request.getRequestURI(), ex);
-    }
-
-    /**
-     * Gère les exceptions d'envoi d'email de réinitialisation de mot de passe.
-     * 
-     * @param ex l'exception de réinitialisation email capturée
-     * @param request la requête HTTP qui a causé l'exception
-     * @return réponse d'erreur HTTP 500 avec détails spécifiques
-     */
-    @ExceptionHandler(PasswordResetEmailException.class)
-    public ResponseEntity<ErrorResponse> handlePasswordResetEmailException(PasswordResetEmailException ex, HttpServletRequest request) {
-        return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur lors de l'envoi de l'email de réinitialisation de mot de passe.", request.getRequestURI(), ex);
     }
 
     /**
