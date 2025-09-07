@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
  * 
  * <p><strong>Utilisation :</strong></p>
  * <ul>
- *   <li>Gestion centralisée des erreurs via {@link com.ecclesiaflow.web.exception.GlobalExceptionHandler}</li>
+ *   <li>Gestion centralisée des erreurs via {@link com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler}</li>
  *   <li>Réponses d'erreur de validation</li>
  *   <li>Erreurs métier et techniques</li>
  *   <li>Documentation OpenAPI des réponses d'erreur</li>
@@ -40,7 +40,7 @@ import java.time.LocalDateTime;
  * 
  * @author EcclesiaFlow Team
  * @since 1.0.0
- * @see com.ecclesiaflow.web.exception.GlobalExceptionHandler
+ * @see com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler
  */
 public record ErrorResponse(LocalDateTime timestamp,
                             int status,
