@@ -1,6 +1,6 @@
 package com.ecclesiaflow.io.persistence.repositories;
 
-import com.ecclesiaflow.io.persistence.entities.MemberConfirmationEntity;
+import com.ecclesiaflow.io.persistence.jpa.MemberConfirmationEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

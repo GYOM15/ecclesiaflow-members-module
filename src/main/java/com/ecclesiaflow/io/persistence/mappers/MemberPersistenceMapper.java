@@ -1,7 +1,7 @@
 package com.ecclesiaflow.io.persistence.mappers;
 
 import com.ecclesiaflow.business.domain.member.Member;
-import com.ecclesiaflow.io.persistence.entities.MemberEntity;
+import com.ecclesiaflow.io.persistence.jpa.MemberEntity;
 import org.springframework.stereotype.Component;
 
 @Component
