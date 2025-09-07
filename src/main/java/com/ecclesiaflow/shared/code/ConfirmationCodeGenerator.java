@@ -1,4 +1,4 @@
-package com.ecclesiaflow.common.code;
+package com.ecclesiaflow.shared.code;
 
 import org.springframework.stereotype.Service;
 

@@ -1,7 +1,7 @@
 package com.ecclesiaflow.business.services.impl;
 
 import com.ecclesiaflow.business.services.MemberConfirmationService;
-import com.ecclesiaflow.common.code.ConfirmationCodeGenerator;
+import com.ecclesiaflow.shared.code.ConfirmationCodeGenerator;
 import com.ecclesiaflow.business.domain.communication.ConfirmationNotifier;
 import com.ecclesiaflow.web.security.JwtProcessor;
 import com.ecclesiaflow.business.domain.member.Member;
