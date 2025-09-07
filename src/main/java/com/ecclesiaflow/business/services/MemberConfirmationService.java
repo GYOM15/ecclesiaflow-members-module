@@ -4,6 +4,7 @@ import com.ecclesiaflow.business.domain.communication.EmailService;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
+import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
 
 import java.util.UUID;
@@ -68,7 +69,7 @@ public interface MemberConfirmationService {
      * @implNote Opération transactionnelle avec mise à jour du statut et invalidation du code.
      */
     MembershipConfirmationResult confirmMember(MembershipConfirmation confirmationRequest);
-    
+
     /**
      * Génère et envoie un nouveau code de confirmation pour un membre.
      * <p>
@@ -76,13 +77,31 @@ public interface MemberConfirmationService {
      * l'associe au membre spécifié, et orchestre l'envoi de l'email
      * de confirmation via le service d'email. Invalide les codes précédents.
      * </p>
-     * 
+     *
+     * @param member le membre pour lequel générer un code, non null
+     * @throws com.ecclesiaflow.web.exception.MemberNotFoundException si le membre n'existe pas
+     * @throws com.ecclesiaflow.web.exception.MemberAlreadyConfirmedException si le membre est déjà confirmé
+     * @throws com.ecclesiaflow.web.exception.ConfirmationEmailException si l'envoi de l'email échoue
+     * @throws IllegalArgumentException si memberId est null
+     *
+     * @implNote Opération transactionnelle avec génération aléatoire sécurisée et envoi email.
+     */
+    void sendConfirmationCode(Member member);
+
+    /**
+     * Génère et envoie un nouveau code de confirmation pour un membre.
+     * <p>
+     * Cette méthode génère un nouveau code de confirmation à 6 chiffres,
+     * l'associe au membre spécifié, et orchestre l'envoi de l'email
+     * de confirmation via le service d'email. Invalide les codes précédents.
+     * </p>
+     *
      * @param memberId l'identifiant du membre pour lequel générer un code, non null
      * @throws com.ecclesiaflow.web.exception.MemberNotFoundException si le membre n'existe pas
      * @throws com.ecclesiaflow.web.exception.MemberAlreadyConfirmedException si le membre est déjà confirmé
      * @throws com.ecclesiaflow.web.exception.ConfirmationEmailException si l'envoi de l'email échoue
      * @throws IllegalArgumentException si memberId est null
-     * 
+     *
      * @implNote Opération transactionnelle avec génération aléatoire sécurisée et envoi email.
      */
     void sendConfirmationCode(UUID memberId);

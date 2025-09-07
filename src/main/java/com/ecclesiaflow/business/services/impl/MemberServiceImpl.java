@@ -77,7 +77,7 @@ public class MemberServiceImpl implements MemberService {
         }
         Member member = createMemberFromRegistration(registration);
         Member savedMember = memberRepository.save(member);
-        confirmationService.sendConfirmationCode(savedMember.getMemberId());
+        confirmationService.sendConfirmationCode(savedMember);
         
         return savedMember;
     }
