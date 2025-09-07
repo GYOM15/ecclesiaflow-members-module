@@ -1,6 +1,5 @@
-package com.ecclesiaflow.io.persistence.repositories;
+package com.ecclesiaflow.io.persistence.jpa;
 
-import com.ecclesiaflow.io.persistence.jpa.MemberEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
