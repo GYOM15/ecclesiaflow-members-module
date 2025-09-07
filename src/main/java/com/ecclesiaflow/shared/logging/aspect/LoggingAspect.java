@@ -1,6 +1,6 @@
-package com.ecclesiaflow.common.logging.aspect;
+package com.ecclesiaflow.shared.logging.aspect;
 
-import com.ecclesiaflow.common.logging.annotation.LogExecution;
+import com.ecclesiaflow.shared.logging.annotation.LogExecution;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -67,7 +67,7 @@ public class LoggingAspect {
     /**
      * Pointcut pour les méthodes annotées avec @LogExecution
      */
-    @Pointcut("@annotation(com.ecclesiaflow.common.logging.annotation.LogExecution)")
+    @Pointcut("@annotation(com.ecclesiaflow.shared.logging.annotation.LogExecution)")
     public void logExecutionAnnotatedMethods() {}
 
     /**

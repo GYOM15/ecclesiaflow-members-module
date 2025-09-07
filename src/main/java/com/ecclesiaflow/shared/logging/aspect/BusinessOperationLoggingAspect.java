@@ -1,4 +1,4 @@
-package com.ecclesiaflow.common.logging.aspect;
+package com.ecclesiaflow.shared.logging.aspect;
 
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
