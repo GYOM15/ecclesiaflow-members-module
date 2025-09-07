@@ -1,4 +1,4 @@
-package com.ecclesiaflow.business.domain;
+package com.ecclesiaflow.business.domain.member;
 
 /**
  * Objet métier représentant les données d'inscription d'un nouveau membre EcclesiaFlow.

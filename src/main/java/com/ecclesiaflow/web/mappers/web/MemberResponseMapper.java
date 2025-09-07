@@ -1,7 +1,7 @@
 package com.ecclesiaflow.web.mappers.web;
 
 import com.ecclesiaflow.web.dto.SignUpResponse;
-import com.ecclesiaflow.business.domain.Member;
+import com.ecclesiaflow.business.domain.member.Member;
 
 /**
  * Mapper statique pour la conversion des entités Member vers les DTOs de réponse web.

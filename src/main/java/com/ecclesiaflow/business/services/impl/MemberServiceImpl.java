@@ -1,14 +1,14 @@
 package com.ecclesiaflow.business.services.impl;
 
-import com.ecclesiaflow.business.domain.MembershipRegistration;
-import com.ecclesiaflow.business.domain.Member;
+import com.ecclesiaflow.business.domain.member.MembershipRegistration;
+import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.services.repositories.MemberRepository;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.business.services.EmailService;
 import com.ecclesiaflow.common.code.ConfirmationCodeGenerator;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmation;
 import com.ecclesiaflow.business.services.repositories.MemberConfirmationRepository;
-import com.ecclesiaflow.business.domain.MembershipUpdate;
+import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import com.ecclesiaflow.web.exception.MemberNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

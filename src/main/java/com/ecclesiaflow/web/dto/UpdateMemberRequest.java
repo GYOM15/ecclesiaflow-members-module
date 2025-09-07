@@ -1,5 +1,6 @@
 package com.ecclesiaflow.web.dto;
 
+import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -32,7 +33,7 @@ import lombok.Data;
  * <ol>
  *   <li>Réception de la requête par le contrôleur</li>
  *   <li>Validation des contraintes de taille</li>
- *   <li>Conversion vers objet métier {@link com.ecclesiaflow.business.domain.MembershipUpdate}</li>
+ *   <li>Conversion vers objet métier {@link MembershipUpdate}</li>
  *   <li>Traitement par le service métier</li>
  * </ol>
  * 
@@ -40,7 +41,7 @@ import lombok.Data;
  * 
  * @author EcclesiaFlow Team
  * @since 1.0.0
- * @see com.ecclesiaflow.business.domain.MembershipUpdate
+ * @see MembershipUpdate
  * @see com.ecclesiaflow.web.controller.MembersController
  */
 @Data

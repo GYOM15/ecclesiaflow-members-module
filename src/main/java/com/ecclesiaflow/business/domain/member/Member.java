@@ -1,4 +1,4 @@
-package com.ecclesiaflow.business.domain;
+package com.ecclesiaflow.business.domain.member;
 
 import lombok.Builder;
 import lombok.Getter;

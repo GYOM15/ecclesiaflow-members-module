@@ -1,6 +1,6 @@
 package com.ecclesiaflow.business.services.repositories;
 
-import com.ecclesiaflow.business.domain.Member;
+import com.ecclesiaflow.business.domain.member.Member;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

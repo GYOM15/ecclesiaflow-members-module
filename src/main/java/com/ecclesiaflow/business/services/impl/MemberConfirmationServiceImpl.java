@@ -4,7 +4,7 @@ import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.common.code.ConfirmationCodeGenerator;
 import com.ecclesiaflow.common.notification.ConfirmationNotifier;
 import com.ecclesiaflow.web.security.JwtProcessor;
-import com.ecclesiaflow.business.domain.Member;
+import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmation;
 import com.ecclesiaflow.business.services.repositories.MemberRepository;
 import com.ecclesiaflow.business.services.repositories.MemberConfirmationRepository;
