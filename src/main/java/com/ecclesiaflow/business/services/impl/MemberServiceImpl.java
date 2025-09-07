@@ -78,7 +78,7 @@ public class MemberServiceImpl implements MemberService {
         }
         Member member = createMemberFromRegistration(registration);
         Member savedMember = memberRepository.save(member);
-        generateAndSendConfirmationCode(savedMember);
+        sendConfirmationCode(savedMember);
         
         return savedMember;
     }
@@ -164,7 +164,7 @@ public class MemberServiceImpl implements MemberService {
      *
      * @implNote Opération non-bloquante : l'échec d'envoi d'email n'affecte pas l'inscription.
      */
-    private void generateAndSendConfirmationCode(Member member) {
+    private void sendConfirmationCode(Member member) {
         try {
 
             // Supprimer l'ancien code s'il existe
