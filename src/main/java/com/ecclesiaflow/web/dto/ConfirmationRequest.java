@@ -1,6 +1,7 @@
 package com.ecclesiaflow.web.dto;
 
 
+import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
@@ -26,7 +27,7 @@ import lombok.Data;
  * <ol>
  *   <li>Réception du code via API REST</li>
  *   <li>Validation automatique par Spring Boot</li>
- *   <li>Conversion en objet métier {@link com.ecclesiaflow.business.domain.MembershipConfirmation}</li>
+ *   <li>Conversion en objet métier {@link MembershipConfirmation}</li>
  *   <li>Traitement par {@link com.ecclesiaflow.business.services.MemberConfirmationService}</li>
  * </ol>
  * 
@@ -37,7 +38,7 @@ import lombok.Data;
  * 
  * @author EcclesiaFlow Team
  * @since 1.0.0
- * @see com.ecclesiaflow.business.domain.MembershipConfirmation
+ * @see MembershipConfirmation
  * @see com.ecclesiaflow.web.controller.MembersConfirmationController
  */
 @Data

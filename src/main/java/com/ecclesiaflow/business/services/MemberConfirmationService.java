@@ -1,7 +1,7 @@
 package com.ecclesiaflow.business.services;
 
-import com.ecclesiaflow.business.domain.MembershipConfirmationResult;
-import com.ecclesiaflow.business.domain.MembershipConfirmation;
+import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
+import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
 
 import java.util.UUID;
 
