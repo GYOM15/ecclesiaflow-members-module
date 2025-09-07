@@ -2,7 +2,7 @@ package com.ecclesiaflow.business.services.impl;
 
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.Member;
-import com.ecclesiaflow.business.services.repositories.MemberRepository;
+import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.business.services.EmailService;
 import com.ecclesiaflow.common.code.ConfirmationCodeGenerator;

@@ -1,6 +1,7 @@
 package com.ecclesiaflow.business.services;
 
 import com.ecclesiaflow.business.domain.member.Member;
+import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 
@@ -29,7 +30,7 @@ import java.util.UUID;
  * 
  * <p><strong>Dépendances critiques :</strong></p>
  * <ul>
- *   <li>{@link com.ecclesiaflow.business.services.repositories.MemberRepository} - Persistance des données</li>
+ *   <li>{@link MemberRepository} - Persistance des données</li>
  *   <li>Services de validation métier internes</li>
  * </ul>
  * 

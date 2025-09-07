@@ -3,6 +3,7 @@ package com.ecclesiaflow.business.services;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
+import com.ecclesiaflow.business.domain.member.MemberRepository;
 
 import java.util.UUID;
 
@@ -27,7 +28,7 @@ import java.util.UUID;
  * 
  * <p><strong>Dépendances critiques :</strong></p>
  * <ul>
- *   <li>{@link com.ecclesiaflow.business.services.repositories.MemberRepository} - Accès aux données membres</li>
+ *   <li>{@link MemberRepository} - Accès aux données membres</li>
  *   <li>{@link MemberConfirmationRepository} - Gestion des codes</li>
  *   <li>{@link EmailService} - Envoi des emails de confirmation</li>
  * </ul>

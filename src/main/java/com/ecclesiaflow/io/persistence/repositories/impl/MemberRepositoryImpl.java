@@ -1,7 +1,7 @@
 package com.ecclesiaflow.io.persistence.repositories.impl;
 
 import com.ecclesiaflow.business.domain.member.Member;
-import com.ecclesiaflow.business.services.repositories.MemberRepository;
+import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.io.persistence.entities.MemberEntity;
 import com.ecclesiaflow.io.persistence.mappers.MemberPersistenceMapper;
 import com.ecclesiaflow.io.persistence.repositories.SpringDataMemberRepository;
