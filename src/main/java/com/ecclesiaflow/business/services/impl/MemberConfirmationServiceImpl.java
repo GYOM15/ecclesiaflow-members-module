@@ -1,7 +1,7 @@
 package com.ecclesiaflow.business.services.impl;
 
+import com.ecclesiaflow.business.domain.communication.CodeGenerator;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
-import com.ecclesiaflow.shared.code.ConfirmationCodeGenerator;
 import com.ecclesiaflow.business.domain.communication.ConfirmationNotifier;
 import com.ecclesiaflow.web.security.JwtProcessor;
 import com.ecclesiaflow.business.domain.member.Member;
@@ -47,7 +47,7 @@ import java.util.UUID;
  *   <li>{@link MemberConfirmationRepository} - Persistance des codes de confirmation</li>
  *   <li>{@link JwtProcessor} - Génération de tokens temporaires</li>
  *   <li>{@link ConfirmationNotifier} - Envoi des codes de confirmation</li>
- *   <li>{@link ConfirmationCodeGenerator} - Génération de codes aléatoires</li>
+ *   <li>{@link CodeGenerator} - Génération de codes aléatoires</li>
  * </ul>
  * 
  * <p><strong>Flux de confirmation typique :</strong></p>
@@ -70,7 +70,7 @@ import java.util.UUID;
  * @see MemberConfirmationService
  * @see JwtProcessor
  * @see ConfirmationNotifier
- * @see ConfirmationCodeGenerator
+ * @see CodeGenerator
  */
 @Service
 @RequiredArgsConstructor
@@ -80,7 +80,7 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
     private final MemberConfirmationRepository confirmationRepository;
     private final JwtProcessor jwtProcessor;
     private final ConfirmationNotifier confirmationNotifier;
-    private final ConfirmationCodeGenerator codeGenerator;
+    private final CodeGenerator codeGenerator;
 
     @Override
     @Transactional
