@@ -1,4 +1,4 @@
-package com.ecclesiaflow.common.notification.email;
+package com.ecclesiaflow.io.notification.email;
 
 import com.ecclesiaflow.business.domain.communication.ConfirmationNotifier;
 import com.ecclesiaflow.business.domain.communication.EmailService;
