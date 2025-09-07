@@ -4,6 +4,7 @@ import com.ecclesiaflow.business.domain.communication.CodeGenerator;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
+import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.business.domain.communication.EmailService;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmation;
@@ -66,9 +67,7 @@ import java.util.UUID;
 public class MemberServiceImpl implements MemberService {
     
     private final MemberRepository memberRepository;
-    private final MemberConfirmationRepository confirmationRepository;
-    private final EmailService emailService;
-    private final CodeGenerator codeGenerator;
+    private MemberConfirmationService confirmationService;
 
     @Override
     @Transactional
@@ -78,7 +77,7 @@ public class MemberServiceImpl implements MemberService {
         }
         Member member = createMemberFromRegistration(registration);
         Member savedMember = memberRepository.save(member);
-        sendConfirmationCode(savedMember);
+        confirmationService.sendConfirmationCode(savedMember.getMemberId());
         
         return savedMember;
     }
@@ -147,48 +146,5 @@ public class MemberServiceImpl implements MemberService {
     @Transactional(readOnly = true)
     public List<Member> getAllMembers() {
         return memberRepository.findAll();
-    }
-
-    /**
-     * Génère et envoie automatiquement un code de confirmation par email.
-     * <p>
-     * Cette méthode orchestre le processus complet de génération du code :
-     * suppression de l'ancien code s'il existe, génération d'un nouveau code
-     * à 6 chiffres, persistance avec expiration 24h, et envoi par email.
-     * </p>
-     *
-     * <p><strong>Gestion d'erreurs :</strong> Les erreurs d'envoi d'email ne font pas
-     * échouer l'inscription. L'utilisateur peut demander un renvoi ultérieurement.</p>
-     *
-     * @param member le membre nouvellement inscrit, non null
-     *
-     * @implNote Opération non-bloquante : l'échec d'envoi d'email n'affecte pas l'inscription.
-     */
-    private void sendConfirmationCode(Member member) {
-        try {
-
-            // Supprimer l'ancien code s'il existe
-            confirmationRepository.findByMemberId(member.getId())
-                    .ifPresent(confirmationRepository::delete);
-
-            // Générer un nouveau code à 6 chiffres
-            String confirmationCode = codeGenerator.generateCode();
-
-            // Créer l'entité de confirmation
-            MemberConfirmation confirmation = MemberConfirmation.builder()
-                    .memberId(member.getId())
-                    .code(confirmationCode)
-                    .expiresAt(LocalDateTime.now().plusHours(24))
-                    .build();
-
-            confirmationRepository.save(confirmation);
-
-            // Envoyer le code par email
-            emailService.sendConfirmationCode(member.getEmail(), confirmationCode, member.getFirstName());
-
-        } catch (Exception e) {
-            // Ne pas faire échouer l'inscription si l'email ne peut pas être envoyé
-            // L'utilisateur pourra demander un renvoi du code plus tard
-        }
     }
 }
