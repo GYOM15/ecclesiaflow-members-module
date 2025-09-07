@@ -1,5 +1,6 @@
 package com.ecclesiaflow.business.services;
 
+import com.ecclesiaflow.business.domain.communication.EmailService;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;

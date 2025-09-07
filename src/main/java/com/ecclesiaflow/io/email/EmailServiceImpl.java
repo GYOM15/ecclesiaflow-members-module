@@ -1,6 +1,6 @@
 package com.ecclesiaflow.io.email;
 
-import com.ecclesiaflow.business.services.EmailService;
+import com.ecclesiaflow.business.domain.communication.EmailService;
 import com.ecclesiaflow.web.exception.ConfirmationEmailException;
 import com.ecclesiaflow.web.exception.WelcomeEmailException;
 import lombok.RequiredArgsConstructor;
