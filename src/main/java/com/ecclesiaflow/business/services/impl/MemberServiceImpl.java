@@ -1,13 +1,11 @@
 package com.ecclesiaflow.business.services.impl;
 
-import com.ecclesiaflow.business.domain.communication.CodeGenerator;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.business.domain.communication.EmailService;
-import com.ecclesiaflow.business.domain.confirmation.MemberConfirmation;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import com.ecclesiaflow.web.exception.MemberNotFoundException;
@@ -15,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -96,20 +93,6 @@ public class MemberServiceImpl implements MemberService {
                 .orElse(false);
     }
 
-    /**
-     * Crée une entité Member à partir des données d'inscription.
-     * <p>
-     * Cette méthode transforme un objet métier {@link MembershipRegistration}
-     * en entité JPA {@link Member} prête pour la persistance. Initialise
-     * les valeurs par défaut : rôle MEMBER, statut non confirmé, et génère
-     * un UUID unique pour l'intégration avec le module d'authentification.
-     * </p>
-     *
-     * @param registration les données d'inscription validées, non null
-     * @return une entité Member initialisée prête pour la persistance
-     *
-     * @implNote Génère automatiquement un memberId UUID pour l'intégration inter-modules.
-     */
     private Member createMemberFromRegistration(MembershipRegistration registration) {
         return Member.builder().
                 memberId(UUID.randomUUID()).

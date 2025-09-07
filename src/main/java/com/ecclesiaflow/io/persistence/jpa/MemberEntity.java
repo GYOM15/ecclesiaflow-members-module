@@ -12,6 +12,54 @@ import com.ecclesiaflow.business.domain.member.Role;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Entité JPA représentant un membre EcclesiaFlow en base de données.
+ * <p>
+ * Cette entité gère la persistance des informations des membres dans la base de données.
+ * Elle contient toutes les annotations JPA nécessaires pour le mapping objet-relationnel,
+ * les contraintes de validation et la gestion automatique des horodatages.
+ * </p>
+ * 
+ * <p><strong>Rôle architectural :</strong> Entité JPA - Modèle de données des membres</p>
+ * 
+ * <p><strong>Responsabilités principales :</strong></p>
+ * <ul>
+ *   <li>Persistance des données des membres en base de données</li>
+ *   <li>Gestion des contraintes d'intégrité et d'unicité</li>
+ *   <li>Horodatage automatique des créations et modifications</li>
+ *   <li>Validation des données au niveau persistance</li>
+ * </ul>
+ * 
+ * <p><strong>Contraintes de base de données :</strong></p>
+ * <ul>
+ *   <li>Email unique et obligatoire</li>
+ *   <li>MemberId unique et immutable</li>
+ *   <li>Prénom, nom et adresse obligatoires</li>
+ *   <li>Rôle obligatoire avec énumération</li>
+ *   <li>Identifiants UUID pour la scalabilité</li>
+ * </ul>
+ * 
+ * <p><strong>États de confirmation :</strong></p>
+ * <ul>
+ *   <li>confirmed : false par défaut, true après validation email</li>
+ *   <li>confirmedAt : null jusqu'à confirmation, puis horodatage</li>
+ *   <li>passwordSet : false par défaut, true après définition mot de passe</li>
+ * </ul>
+ * 
+ * <p><strong>Cycle de vie JPA :</strong></p>
+ * <ol>
+ *   <li>Création avec @CreationTimestamp automatique</li>
+ *   <li>Mise à jour avec @UpdateTimestamp automatique</li>
+ *   <li>Validation des contraintes à chaque persistance</li>
+ * </ol>
+ * 
+ * <p><strong>Garanties :</strong> Thread-safe pour lecture, gestion transactionnelle JPA,
+ * contraintes d'intégrité, horodatage automatique, validation des données.</p>
+ * 
+ * @author EcclesiaFlow Team
+ * @since 1.0.0
+ * @see Role
+ */
 @Entity
 @Table(name = "member")
 @Data
