@@ -1,4 +1,4 @@
-package com.ecclesiaflow.business.domain;
+package com.ecclesiaflow.business.domain.confirmation;
 
 import lombok.Builder;
 import lombok.Data;

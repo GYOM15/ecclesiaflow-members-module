@@ -1,5 +1,6 @@
 package com.ecclesiaflow.web.dto;
 
+import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import lombok.Builder;
 import lombok.Data;
 
@@ -22,7 +23,7 @@ import lombok.Data;
  * 
  * <p><strong>Flux de génération :</strong></p>
  * <ol>
- *   <li>Service métier génère {@link com.ecclesiaflow.business.domain.MembershipConfirmationResult}</li>
+ *   <li>Service métier génère {@link MembershipConfirmationResult}</li>
  *   <li>Mapper convertit en ConfirmationResponse</li>
  *   <li>Contrôleur retourne la réponse au client</li>
  * </ol>
@@ -38,7 +39,7 @@ import lombok.Data;
  * 
  * @author EcclesiaFlow Team
  * @since 1.0.0
- * @see com.ecclesiaflow.business.domain.MembershipConfirmationResult
+ * @see MembershipConfirmationResult
  * @see com.ecclesiaflow.web.controller.MembersConfirmationController
  */
 @Data

@@ -6,7 +6,7 @@ import com.ecclesiaflow.business.services.repositories.MemberRepository;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.business.services.EmailService;
 import com.ecclesiaflow.common.code.ConfirmationCodeGenerator;
-import com.ecclesiaflow.business.domain.MemberConfirmation;
+import com.ecclesiaflow.business.domain.confirmation.MemberConfirmation;
 import com.ecclesiaflow.business.services.repositories.MemberConfirmationRepository;
 import com.ecclesiaflow.business.domain.MembershipUpdate;
 import com.ecclesiaflow.web.exception.MemberNotFoundException;

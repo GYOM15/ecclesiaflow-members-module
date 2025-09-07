@@ -1,6 +1,6 @@
 package com.ecclesiaflow.web.mappers.web;
 
-import com.ecclesiaflow.business.domain.MembershipConfirmationResult;
+import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import com.ecclesiaflow.web.dto.ConfirmationResponse;
 import org.springframework.stereotype.Component;
 
