@@ -1,6 +1,6 @@
 package com.ecclesiaflow.common.notification.email;
 
-import com.ecclesiaflow.common.notification.ConfirmationNotifier;
+import com.ecclesiaflow.business.domain.communication.ConfirmationNotifier;
 import com.ecclesiaflow.business.domain.communication.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
