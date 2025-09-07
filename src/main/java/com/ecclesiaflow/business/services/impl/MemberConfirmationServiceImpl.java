@@ -6,7 +6,7 @@ import com.ecclesiaflow.common.notification.ConfirmationNotifier;
 import com.ecclesiaflow.web.security.JwtProcessor;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmation;
-import com.ecclesiaflow.business.services.repositories.MemberRepository;
+import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
