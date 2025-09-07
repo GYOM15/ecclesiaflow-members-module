@@ -129,7 +129,10 @@ public class MembersController {
         @ApiResponse(
             responseCode = "400",
             description = "Données d'enregistrement invalides ou email déjà utilisé",
-            content = @Content
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(ref = "#/components/schemas/BadRequestError")
+            )
         )
     })
     /**
@@ -174,7 +177,10 @@ public class MembersController {
             @ApiResponse(
                     responseCode = "404",
                     description = "Membre non trouvé",
-                    content = @Content
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(ref = "#/components/schemas/NotFoundError")
+                    )
             )
     })
     public ResponseEntity<SignUpResponse> getMember(@PathVariable UUID memberId) {
@@ -201,7 +207,10 @@ public class MembersController {
             @ApiResponse(
                     responseCode = "404",
                     description = "Membre non trouvé",
-                    content = @Content
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(ref = "#/components/schemas/NotFoundError")
+                    )
             )
     })
     public ResponseEntity<SignUpResponse> updateMember(@PathVariable UUID memberId,

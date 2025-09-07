@@ -92,17 +92,26 @@ public class MembersConfirmationController {
             @ApiResponse(
                     responseCode = "400",
                     description = "Code de confirmation invalide ou expiré",
-                    content = @Content
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(ref = "#/components/schemas/BadRequestError")
+                    )
             ),
             @ApiResponse(
                     responseCode = "404",
                     description = "Membre non trouvé",
-                    content = @Content
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(ref = "#/components/schemas/NotFoundError")
+                    )
             ),
             @ApiResponse(
                     responseCode = "409",
                     description = "Compte déjà confirmé",
-                    content = @Content
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(ref = "#/components/schemas/ConflictError")
+                    )
             )
     })
     public ResponseEntity<ConfirmationResponse> confirmMember(

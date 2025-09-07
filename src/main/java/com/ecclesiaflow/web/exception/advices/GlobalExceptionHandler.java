@@ -104,9 +104,8 @@ public class GlobalExceptionHandler {
             .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
             .message("Erreur de validation des données")
             .path(((ServletWebRequest) request).getRequest().getRequestURI())
+            .errors(errors)
             .build();
-            
-        errorResponse.errors().addAll(errors);
         
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
@@ -134,84 +133,103 @@ public class GlobalExceptionHandler {
             .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
             .message("Erreur de validation des contraintes")
             .path(((ServletWebRequest) request).getRequest().getRequestURI())
+            .errors(errors)
             .build();
-            
-        errorResponse.errors().addAll(errors);
         
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, WebRequest request) {
-        String error = "Requête JSON mal formée";
-        
-        ApiErrorResponse errorResponse = ApiErrorResponse.builder()
-            .status(HttpStatus.BAD_REQUEST.value())
-            .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
-            .message(error)
-            .path(((ServletWebRequest) request).getRequest().getRequestURI())
-            .build();
-            
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        return buildBadRequestErrorResponse("Requête JSON mal formée", request);
     }
 
     @ExceptionHandler(MissingRequestHeaderException.class)
     public ResponseEntity<ApiErrorResponse> handleMissingRequestHeader(MissingRequestHeaderException ex, WebRequest request) {
         String error = "En-tête requis manquant: " + ex.getHeaderName();
-        
-        ApiErrorResponse errorResponse = ApiErrorResponse.builder()
-            .status(HttpStatus.BAD_REQUEST.value())
-            .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
-            .message(error)
-            .path(((ServletWebRequest) request).getRequest().getRequestURI())
-            .build();
-            
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        return buildBadRequestErrorResponse(error, request);
     }
 
     @ExceptionHandler(InvalidRequestException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidRequest(InvalidRequestException ex, WebRequest request) {
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        return buildBadRequestErrorResponse(ex.getMessage(), request);
     }
 
     @ExceptionHandler(MemberNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleMemberNotFound(MemberNotFoundException ex, WebRequest request) {
-        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+        return buildSimpleErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
     @ExceptionHandler(InvalidConfirmationCodeException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidConfirmationCode(InvalidConfirmationCodeException ex, WebRequest request) {
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        return buildBadRequestErrorResponse(ex.getMessage(), request);
     }
 
     @ExceptionHandler(ExpiredConfirmationCodeException.class)
     public ResponseEntity<ApiErrorResponse> handleExpiredConfirmationCode(ExpiredConfirmationCodeException ex, WebRequest request) {
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        return buildBadRequestErrorResponse(ex.getMessage(), request);
     }
 
     @ExceptionHandler(MemberAlreadyConfirmedException.class)
     public ResponseEntity<ApiErrorResponse> handleMemberAlreadyConfirmed(MemberAlreadyConfirmedException ex, WebRequest request) {
-        return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+        return buildSimpleErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiErrorResponse> handleIllegalArgument(IllegalArgumentException ex, WebRequest request) {
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        return buildBadRequestErrorResponse(ex.getMessage(), request);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleAllExceptions(Exception ex, WebRequest request) {
-        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Une erreur interne est survenue", request);
+        return buildSimpleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Une erreur interne est survenue", request);
     }
 
-    private ResponseEntity<ApiErrorResponse> buildErrorResponse(HttpStatus status, String message, WebRequest request) {
+    /**
+     * Construit une réponse d'erreur 400 Bad Request avec des erreurs de validation.
+     * Utilisé pour les erreurs qui peuvent contenir des détails de validation.
+     */
+    private ResponseEntity<ApiErrorResponse> buildBadRequestErrorResponse(String message, WebRequest request) {
+        // Pour les erreurs 400, on peut avoir des erreurs de validation
+        // Si c'est une erreur simple, on crée une ValidationError générique
+        List<ValidationError> errors = new ArrayList<>();
+        errors.add(new ValidationError(
+            message,
+            "request",
+            "validation",
+            "BadRequest",
+            message,
+            "BAD_REQUEST",
+            null,
+            null
+        ));
+
+        ApiErrorResponse errorResponse = ApiErrorResponse.builder()
+            .status(HttpStatus.BAD_REQUEST.value())
+            .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+            .message(message)
+            .path(((ServletWebRequest) request).getRequest().getRequestURI())
+            .errors(errors)
+            .build();
+        
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Construit une réponse d'erreur simple sans erreurs de validation.
+     * Utilisé pour les erreurs 404, 409, 500, etc. où le champ errors doit être null.
+     */
+    private ResponseEntity<ApiErrorResponse> buildSimpleErrorResponse(HttpStatus status, String message, WebRequest request) {
         ApiErrorResponse errorResponse = ApiErrorResponse.builder()
             .status(status.value())
             .error(status.getReasonPhrase())
             .message(message)
             .path(((ServletWebRequest) request).getRequest().getRequestURI())
+            .errors(null)  // Explicitement null pour respecter le contrat OpenAPI
             .build();
             
+        // Pour ces types d'erreurs (404, 409, 500), errors est null selon le contrat OpenAPI
+        
         return new ResponseEntity<>(errorResponse, status);
     }
 }
