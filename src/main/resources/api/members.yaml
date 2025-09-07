@@ -53,13 +53,18 @@ paths:
             text/plain:
               schema:
                 type: string
-                example: "Hi Member"
         '401':
           description: Token d'authentification invalide ou manquant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       security:
         - BearerAuth: []
 
@@ -141,46 +146,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                invalid_query_params:
-                  summary: Exemples de paramètres invalides
-                  value:
-                    timestamp: "2024-01-15T10:35:00Z"
-                    status: 400
-                    error: "Bad Request"
-                    message: "Le paramètre de page doit être supérieur ou égal à zéro."
-                    path: "/ecclesiaflow/members"
+                $ref: '#/components/schemas/BadRequestError'
         '401':
           description: Token d'authentification invalide ou manquant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                missing_auth_token:
-                  summary: Token manquant ou invalide
-                  value:
-                    timestamp: "2024-01-15T10:36:00Z"
-                    status: 401
-                    error: "Unauthorized"
-                    message: "Authentification requise pour accéder à cette ressource."
-                    path: "/ecclesiaflow/members"
+                $ref: '#/components/schemas/UnauthorizedError'
         '403':
           description: Permissions insuffisantes pour accéder aux membres
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                insufficient_permissions:
-                  summary: Autorisations insuffisantes
-                  value:
-                    timestamp: "2024-01-15T10:37:00Z"
-                    status: 403
-                    error: "Forbidden"
-                    message: "Vous n'avez pas les autorisations nécessaires pour effectuer cette action."
-                    path: "/ecclesiaflow/members"
+                $ref: '#/components/schemas/ForbiddenError'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
 
     post:
       tags:
@@ -228,7 +212,6 @@ paths:
               description: URL du nouveau membre créé
               schema:
                 type: string
-                example: "/members/550e8400-e29b-41d4-a716-446655440000"
           content:
             application/vnd.ecclesiaflow.members.v1+json:
               schema:
@@ -238,56 +221,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                invalid_input:
-                  summary: Données d'entrée malformées
-                  value:
-                    timestamp: "2024-01-15T10:38:00Z"
-                    status: 400
-                    error: "Bad Request"
-                    message: "Erreur de validation des données"
-                    path: "/ecclesiaflow/members"
-                    errors:
-                      - message: "Le prénom est obligatoire"
-                        path: "firstName"
-                        type: "validation"
-                        code: "NotBlank"
+                $ref: '#/components/schemas/BadRequestError'
         '409':
           description: Un membre avec cette adresse email existe déjà
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                email_conflict:
-                  summary: Email déjà utilisé
-                  value:
-                    timestamp: "2024-01-15T10:39:00Z"
-                    status: 409
-                    error: "Conflict"
-                    message: "Un membre avec cet email existe déjà"
-                    path: "/ecclesiaflow/members"
-        '422':
-          description: Erreur de validation des données
+                $ref: '#/components/schemas/ConflictError'
+        '500':
+          description: Erreur interne du serveur
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                validation_error:
-                  summary: Erreur de validation
-                  value:
-                    timestamp: "2024-01-15T10:40:00Z"
-                    status: 422
-                    error: "Unprocessable Entity"
-                    message: "Le champ 'email' n'est pas au bon format"
-                    path: "/ecclesiaflow/members"
-                    errors:
-                      - message: "Format d'email invalide"
-                        path: "email"
-                        type: "validation"
-                        code: "Pattern"
+                $ref: '#/components/schemas/InternalServerError'
 
   /ecclesiaflow/members/{memberId}:
     get:
@@ -324,16 +270,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                member_not_found:
-                  summary: Membre introuvable
-                  value:
-                    timestamp: "2024-01-15T10:41:00Z"
-                    status: 404
-                    error: "Not Found"
-                    message: "Le membre avec l'ID spécifié n'existe pas."
-                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000"
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
 
     patch:
       tags:
@@ -379,56 +322,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                invalid_update_data:
-                  summary: Données de mise à jour invalides
-                  value:
-                    timestamp: "2024-01-15T10:42:00Z"
-                    status: 400
-                    error: "Bad Request"
-                    message: "Erreur de validation des données"
-                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000"
-                    errors:
-                      - message: "Le prénom doit avoir au moins 2 caractères"
-                        path: "firstName"
-                        type: "validation"
-                        code: "MinLength"
+                $ref: '#/components/schemas/BadRequestError'
         '404':
           description: Membre introuvable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                member_not_found:
-                  summary: Membre introuvable
-                  value:
-                    timestamp: "2024-01-15T10:43:00Z"
-                    status: 404
-                    error: "Not Found"
-                    message: "Le membre avec l'ID spécifié n'existe pas."
-                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000"
-        '422':
-          description: Erreur de validation des données
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Erreur interne du serveur
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                validation_error:
-                  summary: Erreur de validation
-                  value:
-                    timestamp: "2024-01-15T10:44:00Z"
-                    status: 422
-                    error: "Unprocessable Entity"
-                    message: "Le numéro de téléphone n'est pas au bon format"
-                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000"
-                    errors:
-                      - message: "Format de téléphone invalide"
-                        path: "phoneNumber"
-                        type: "validation"
-                        code: "Pattern"
+                $ref: '#/components/schemas/InternalServerError'
 
 
   /ecclesiaflow/members/{memberId}/confirmation:
@@ -473,51 +379,36 @@ paths:
             application/vnd.ecclesiaflow.members.v1+json:
               schema:
                 $ref: '#/components/schemas/ConfirmationResponse'
+        '400':
+          description: Code de confirmation invalide ou expiré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
         '404':
           description: Membre introuvable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                member_not_found:
-                  summary: Membre introuvable
-                  value:
-                    timestamp: "2024-01-15T10:47:00Z"
-                    status: 404
-                    error: "Not Found"
-                    message: "Le membre avec l'ID spécifié n'existe pas."
-                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation-code"
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Membre déjà confirmé
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                member_already_confirmed:
-                  summary: Compte déjà confirmé
-                  value:
-                    timestamp: "2024-01-15T10:48:00Z"
-                    status: 409
-                    error: "Conflict"
-                    message: "Ce compte est déjà confirmé."
-                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation-code"
+                $ref: '#/components/schemas/ConflictError'
         '429':
           description: Trop de tentatives de renvoi (rate limiting)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                rate_limit_exceeded:
-                  summary: Limite de tentatives dépassée
-                  value:
-                    timestamp: "2024-01-15T10:49:00Z"
-                    status: 429
-                    error: "Too Many Requests"
-                    message: "Trop de tentatives de renvoi de code. Veuillez réessayer plus tard."
-                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation-code"
+                $ref: '#/components/schemas/TooManyRequestsError'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
 
   /ecclesiaflow/members/{memberId}/confirmation-code:
     post:
@@ -556,61 +447,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                invalid_code:
-                  summary: Code invalide ou expiré
-                  value:
-                    timestamp: "2024-01-15T10:50:00Z"
-                    status: 400
-                    error: "Bad Request"
-                    message: "Le code de confirmation est invalide ou a expiré."
-                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation"
+                $ref: '#/components/schemas/BadRequestError'
         '404':
           description: Membre introuvable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                member_not_found:
-                  summary: Membre introuvable
-                  value:
-                    timestamp: "2024-01-15T10:51:00Z"
-                    status: 404
-                    error: "Not Found"
-                    message: "Le membre avec l'ID spécifié n'existe pas."
-                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation"
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Membre déjà confirmé
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                member_already_confirmed:
-                  summary: Compte déjà confirmé
-                  value:
-                    timestamp: "2024-01-15T10:52:00Z"
-                    status: 409
-                    error: "Conflict"
-                    message: "Ce compte est déjà confirmé."
-                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation"
-        '422':
-          description: Erreur de validation du code
+                $ref: '#/components/schemas/ConflictError'
+        '500':
+          description: Erreur interne du serveur
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                validation_error:
-                  summary: Erreur de validation du code
-                  value:
-                    timestamp: "2024-01-15T10:53:00Z"
-                    status: 422
-                    error: "Unprocessable Entity"
-                    message: "Le code de confirmation doit comporter 6 chiffres."
-                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation"
+                $ref: '#/components/schemas/InternalServerError'
 
   /ecclesiaflow/members/{memberId}/password:
     post:
@@ -656,51 +511,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                invalid_password:
-                  summary: Ancien mot de passe invalide
-                  value:
-                    timestamp: "2024-01-15T10:54:00Z"
-                    status: 400
-                    error: "Bad Request"
-                    message: "L'ancien mot de passe fourni est incorrect."
-                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/password"
+                $ref: '#/components/schemas/BadRequestError'
         '404':
           description: Membre introuvable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                member_not_found:
-                  summary: Membre introuvable
-                  value:
-                    timestamp: "2024-01-15T10:55:00Z"
-                    status: 404
-                    error: "Not Found"
-                    message: "Le membre avec l'ID spécifié n'existe pas."
-                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/password"
-        '422':
-          description: Nouveau mot de passe ne respecte pas les règles
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Erreur interne du serveur
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
-              examples:
-                password_validation_error:
-                  summary: Validation du nouveau mot de passe échouée
-                  value:
-                    timestamp: "2024-01-15T10:56:00Z"
-                    status: 422
-                    error: "Unprocessable Entity"
-                    message: "Le nouveau mot de passe ne respecte pas les règles de complexité."
-                    path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/password"
-                    errors:
-                      - message: "Le mot de passe doit contenir au moins un chiffre"
-                        path: "newPassword"
-                        type: "validation"
-                        code: "Pattern"
+                $ref: '#/components/schemas/InternalServerError'
 
 
 components:
@@ -785,9 +608,9 @@ components:
     ConfirmationRequest:
       type: object
       required:
-        - Code
+        - code
       properties:
-        Code:
+        code:
           type: string
           description: Code de confirmation à 6 chiffres
           pattern: "^\\d{6}$"
@@ -921,6 +744,115 @@ components:
           description: Liste des erreurs de validation détaillées
           items:
             $ref: '#/components/schemas/ValidationError'
+
+    # Specific Error Schemas
+    BadRequestError:
+      allOf:
+        - $ref: '#/components/schemas/ApiErrorResponse'
+        - type: object
+          properties:
+            status:
+              example: 400
+            error:
+              example: "Bad Request"
+            message:
+              example: "Les données fournies sont invalides ou malformées"
+            errors:
+              type: array
+              description: Liste des erreurs de validation détaillées
+              items:
+                $ref: '#/components/schemas/ValidationError'
+              minItems: 1
+
+    UnauthorizedError:
+      allOf:
+        - $ref: '#/components/schemas/ApiErrorResponse'
+        - type: object
+          properties:
+            status:
+              example: 401
+            error:
+              example: "Unauthorized"
+            message:
+              example: "Authentification requise pour accéder à cette ressource"
+            errors:
+              description: Not applicable to this error type.
+              type: "null"
+
+    ForbiddenError:
+      allOf:
+        - $ref: '#/components/schemas/ApiErrorResponse'
+        - type: object
+          properties:
+            status:
+              example: 403
+            error:
+              example: "Forbidden"
+            message:
+              example: "Permissions insuffisantes pour effectuer cette action"
+            errors:
+              description: Not applicable to this error type.
+              type: "null"
+
+    NotFoundError:
+      allOf:
+        - $ref: '#/components/schemas/ApiErrorResponse'
+        - type: object
+          properties:
+            status:
+              example: 404
+            error:
+              example: "Not Found"
+            message:
+              example: "La ressource demandée n'existe pas"
+            errors:
+              description: Not applicable to this error type.
+              type: "null"
+
+    ConflictError:
+      allOf:
+        - $ref: '#/components/schemas/ApiErrorResponse'
+        - type: object
+          properties:
+            status:
+              example: 409
+            error:
+              example: "Conflict"
+            message:
+              example: "Conflit avec l'état actuel de la ressource"
+            errors:
+              description: Not applicable to this error type.
+              type: "null"
+
+    TooManyRequestsError:
+      allOf:
+        - $ref: '#/components/schemas/ApiErrorResponse'
+        - type: object
+          properties:
+            status:
+              example: 429
+            error:
+              example: "Too Many Requests"
+            message:
+              example: "Trop de requêtes. Veuillez réessayer plus tard"
+            errors:
+              description: Not applicable to this error type.
+              type: "null"
+
+    InternalServerError:
+      allOf:
+        - $ref: '#/components/schemas/ApiErrorResponse'
+        - type: object
+          properties:
+            status:
+              example: 500
+            error:
+              example: "Internal Server Error"
+            message:
+              example: "Une erreur interne du serveur s'est produite"
+            errors:
+              description: Not applicable to this error type.
+              type: "null"
 
     ValidationError:
       type: object
