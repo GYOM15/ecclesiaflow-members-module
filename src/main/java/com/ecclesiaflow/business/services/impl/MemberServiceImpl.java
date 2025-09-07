@@ -1,11 +1,11 @@
 package com.ecclesiaflow.business.services.impl;
 
+import com.ecclesiaflow.business.domain.communication.CodeGenerator;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.business.domain.communication.EmailService;
-import com.ecclesiaflow.shared.code.ConfirmationCodeGenerator;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmation;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
@@ -68,7 +68,7 @@ public class MemberServiceImpl implements MemberService {
     private final MemberRepository memberRepository;
     private final MemberConfirmationRepository confirmationRepository;
     private final EmailService emailService;
-    private final ConfirmationCodeGenerator confirmationCodeGenerator;
+    private final CodeGenerator codeGenerator;
 
     @Override
     @Transactional
@@ -172,13 +172,13 @@ public class MemberServiceImpl implements MemberService {
                     .ifPresent(confirmationRepository::delete);
 
             // Générer un nouveau code à 6 chiffres
-            String confirmationCode = confirmationCodeGenerator.generateCode();
+            String confirmationCode = codeGenerator.generateCode();
 
             // Créer l'entité de confirmation
             MemberConfirmation confirmation = MemberConfirmation.builder()
                     .memberId(member.getId())
                     .code(confirmationCode)
-                    .expiresAt(LocalDateTime.now().plusHours(24)) // Expire dans 24h
+                    .expiresAt(LocalDateTime.now().plusHours(24))
                     .build();
 
             confirmationRepository.save(confirmation);
