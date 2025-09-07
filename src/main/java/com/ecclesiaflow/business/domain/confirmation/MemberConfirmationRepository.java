@@ -1,6 +1,4 @@
-package com.ecclesiaflow.business.services.repositories;
-
-import com.ecclesiaflow.business.domain.confirmation.MemberConfirmation;
+package com.ecclesiaflow.business.domain.confirmation;
 
 import java.util.List;
 import java.util.Optional;

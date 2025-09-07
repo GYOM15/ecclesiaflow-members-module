@@ -7,7 +7,7 @@ import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.business.services.EmailService;
 import com.ecclesiaflow.common.code.ConfirmationCodeGenerator;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmation;
-import com.ecclesiaflow.business.services.repositories.MemberConfirmationRepository;
+import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import com.ecclesiaflow.web.exception.MemberNotFoundException;
 import lombok.RequiredArgsConstructor;
