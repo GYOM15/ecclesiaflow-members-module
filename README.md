@@ -6,26 +6,26 @@
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenAPI](https://img.shields.io/badge/OpenAPI-3.1.1-green.svg)](https://swagger.io/specification/)
 
-> **Module de gestion des membres pour la plateforme EcclesiaFlow**
+> **Member management module for the EcclesiaFlow platform**
 
-Module microservice dédié à la gestion complète des membres d'églises : inscription, confirmation par email, gestion des profils et intégration avec le module d'authentification. Conçu selon les principes de Clean Architecture avec une séparation claire des responsabilités.
+Microservice dedicated to comprehensive church member management: registration, email confirmation, profile management and integration with the authentication module. Designed following Clean Architecture principles with clear separation of responsibilities.
 
 ---
 
-## Table des matières
+## Table of Contents
 
 - [Overview](#overview)
-- [Fonctionnalités du Module](#fonctionnalités-du-module)
-- [Structure du Projet](#structure-du-projet)
-- [Architecture Multi-Tenant](#architecture-multi-tenant)
-- [Architecture Clean - 4 Couches](#architecture-clean---4-couches)
-- [Écosystème EcclesiaFlow](#écosystème-ecclesiaflow)
-- [Stack Technologique](#stack-technologique)
+- [Module Features](#module-features)
+- [Project Structure](#project-structure)
+- [Multi-Tenant Architecture](#multi-tenant-architecture)
+- [Clean Architecture - 4 Layers](#clean-architecture---4-layers)
+- [EcclesiaFlow Ecosystem](#ecclesiaflow-ecosystem)
+- [Technology Stack](#technology-stack)
 - [Quick Start](#quick-start)
-- [Exemples d'API (cURL + jq)](#exemples-dapi-curl--jq)
+- [API Examples (cURL + jq)](#api-examples-curl--jq)
 - [Configuration](#configuration)
-- [Déploiement Docker](#déploiement-docker)
-- [Tests et Qualité](#tests-et-qualité)
+- [Docker Deployment](#docker-deployment)
+- [Testing and Quality](#testing-and-quality)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -33,15 +33,15 @@ Module microservice dédié à la gestion complète des membres d'églises : ins
 
 ## 🚀 Overview
 
-Le **EcclesiaFlow Members Module** est un microservice spécialisé dans la gestion complète des membres d'églises. Il fait partie de l'écosystème EcclesiaFlow, une plateforme SaaS multi-tenant où chaque église fonctionne comme un tenant indépendant.
+The **EcclesiaFlow Members Module** is a specialized microservice for comprehensive church member management. It is part of the EcclesiaFlow ecosystem, a multi-tenant SaaS platform where each church operates as an independent tenant.
 
-### 🎯 **Responsabilités du Module**
+### 🎯 **Module Responsibilities**
 
-- **Gestion des membres** : Inscription, profils, mise à jour des informations
-- **Processus de confirmation** : Validation par email avec codes temporaires  
-- **Intégration Auth** : Communication avec le module d'authentification pour les tokens
-- **Notifications** : Envoi automatique d'emails de confirmation
-- **Architecture Clean** : Séparation claire des couches (Web, Business, IO, Shared)
+- **Member Management**: Registration, profiles, information updates
+- **Confirmation Process**: Email validation with temporary codes  
+- **Auth Integration**: Communication with authentication module for tokens
+- **Notifications**: Automatic confirmation email sending
+- **Clean Architecture**: Clear separation of layers (Web, Business, IO, Shared)
 
 ```mermaid
 sequenceDiagram
@@ -50,38 +50,39 @@ sequenceDiagram
     participant Auth as Auth Module (8081)
     participant Email as Email Service
 
-    Note over Client,Email: Processus d'inscription et confirmation
+    Note over Client,Email: Registration → confirmation → password → final token
 
     Client->>Members: POST /ecclesiaflow/members
-    Members->>Email: Envoi code confirmation
-    Members-->>Client: 201 Created + memberId
+    Members->>Email: Send confirmation code
+    Members-->>Client: 201 Created
 
-    Client->>Members: POST /ecclesiaflow/members/{id}/confirmation
-    Members->>Auth: Demande token temporaire
-    Auth-->>Members: Token temporaire
-    Members-->>Client: 200 OK + token temporaire
+    Client->>Members: POST /ecclesiaflow/members/:memberId/confirmation { code }
+    Members->>Auth: Request temporary token
+    Auth-->>Members: Temporary token
+    Members-->>Client: 200 OK + temporary token
 
-    Client->>Auth: POST /set-password (avec token temp)
-    Auth-->>Client: Mot de passe défini
+    Client->>Auth: POST /password
+    Note right of Client: Authorization: Bearer temporaryToken<br/>Body: { newPassword }
+    Auth-->>Client: 200 OK { accessToken, refreshToken }
 ```
 
 ---
 
-## ✨ Fonctionnalités du Module
+## ✨ Module Features
 
-* 👥 **Gestion des Membres** – CRUD complet des profils membres avec validation métier
-* ✉️ **Confirmation par Email** – Processus sécurisé avec codes temporaires (6 chiffres)
-* 🔗 **Intégration Auth Module** – Communication WebClient pour tokens temporaires
-* 📧 **Notifications Email** – Service SMTP intégré avec templates personnalisables
-* 🏗️ **Clean Architecture** – 4 couches : Web, Business, IO, Shared
-* 📚 **API-First Design** – Documentation OpenAPI complète avec schémas détaillés
-* 🧪 **Tests Complets** – Couverture JaCoCo avec tests unitaires et d'intégration
-* 🔄 **Logging AOP** – Aspects métier et techniques pour monitoring
-* 🛡️ **Gestion d'Erreurs** – GlobalExceptionHandler avec réponses standardisées
+* 👥 **Member Management** – Complete member profile CRUD with business validation
+* ✉️ **Email Confirmation** – Secure process with temporary codes (6 digits)
+* 🔗 **Auth Module Integration** – WebClient communication for temporary tokens
+* 📧 **Email Notifications** – Integrated SMTP service with customizable templates
+* 🏗️ **Clean Architecture** – 4 layers: Web, Business, IO, Shared
+* 📚 **API-First Design** – Complete OpenAPI documentation with detailed schemas
+* 🧪 **Comprehensive Testing** – JaCoCo coverage with unit and integration tests
+* 🔄 **AOP Logging** – Business and technical aspects for monitoring
+* 🛡️ **Error Handling** – GlobalExceptionHandler with standardized responses
 
 ---
 
-## 📁 Structure du Projet
+## 📁 Project Structure
 
 ```
 ecclesiaflow-members-module/
@@ -89,17 +90,17 @@ ecclesiaflow-members-module/
 │   ├── main/
 │   │   ├── java/com/ecclesiaflow/
 │   │   │   ├── MembersModuleApplication.java
-│   │   │   ├── business/                    # Couche Business
+│   │   │   ├── business/                    # Business Layer
 │   │   │   │   ├── domain/
 │   │   │   │   └── services/
-│   │   │   ├── io/                          # Couche IO
+│   │   │   ├── io/                          # IO Layer
 │   │   │   │   ├── persistence/
 │   │   │   │   ├── communication/
 │   │   │   │   └── notification/
-│   │   │   ├── shared/                      # Couche Shared
+│   │   │   ├── shared/                      # Shared Layer
 │   │   │   │   ├── code/
 │   │   │   │   └── logging/
-│   │   │   └── web/                         # Couche Web
+│   │   │   └── web/                         # Web Layer
 │   │   │       ├── controller/
 │   │   │       ├── dto/
 │   │   │       ├── mappers/
@@ -124,124 +125,124 @@ ecclesiaflow-members-module/
 
 ---
 
-## 🏛️ Architecture Multi-Tenant
+## 🏛️ Multi-Tenant Architecture
 
-### Architecture Cible
+### Target Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    SUPER ADMIN                              │
 ├─────────────────────────────────────────────────────────────┤
-│  TENANT 1 (Église A)    │  TENANT 2 (Église B)    │ ...    │
+│  TENANT 1 (Church A)    │  TENANT 2 (Church B)    │ ...    │
 │  ┌─────────────────────┐ │ ┌─────────────────────┐  │        │
 │  │ Pastor (Admin)      │ │ │ Pastor (Admin)      │  │        │
 │  │ ├─ Member 1         │ │ │ ├─ Member 1         │  │        │
 │  │ ├─ Member 2         │ │ │ ├─ Member 2         │  │        │
 │  │ └─ ...              │ │ │ └─ ...              │  │        │
-│  └─────────────────────┘ │ └─────────────────────┘  │        │
+│  │ └─────────────────────┘ │ └─────────────────────┘  │        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Rôles et Responsabilités
+### Roles and Responsibilities
 
-- **Super Admin** : Gestion globale de tous les tenants (églises)
-- **Pastor (Admin Tenant)** : Administration de son église, gestion des membres
-- **Members** : Membres de l'église avec profils et participations
+- **Super Admin**: Global management of all tenants (churches)
+- **Pastor (Tenant Admin)**: Church administration, member management
+- **Members**: Church members with profiles and participation
 
 ---
 
-## 🏗️ Architecture Clean - 4 Couches
+## 🏗️ Clean Architecture - 4 Layers
 
-Le module suit les principes de **Clean Architecture** avec une séparation claire des responsabilités :
+The module follows **Clean Architecture** principles with clear separation of responsibilities:
 
-### 📱 **Couche Web** (`com.ecclesiaflow.web`)
-- **Controllers** : `MembersController`, `MembersConfirmationController`
-- **DTOs** : `SignUpRequest`, `SignUpResponse`, `ConfirmationRequest`, `ConfirmationResponse`
-- **Mappers** : Conversion entre DTOs et objets domaine
-- **Config** : `OpenApiConfig`, `WebClientConfig`
-- **Exceptions** : `GlobalExceptionHandler`, exceptions métier
+### 📱 **Web Layer** (`com.ecclesiaflow.web`)
+- **Controllers**: `MembersController`, `MembersConfirmationController`
+- **DTOs**: `SignUpRequest`, `SignUpResponse`, `ConfirmationRequest`, `ConfirmationResponse`
+- **Mappers**: Conversion between DTOs and domain objects
+- **Config**: `OpenApiConfig`, `WebClientConfig`
+- **Exceptions**: `GlobalExceptionHandler`, business exceptions
 
-### 🏢 **Couche Business** (`com.ecclesiaflow.business`)
-- **Services** : `MemberService`, `MemberConfirmationService`
-- **Domain** : `Member`, `MemberRepository`, `MemberConfirmation`
-- **Interfaces** : Contrats pour les services externes
+### 🏢 **Business Layer** (`com.ecclesiaflow.business`)
+- **Services**: `MemberService`, `MemberConfirmationService`
+- **Domain**: `Member`, `MemberRepository`, `MemberConfirmation`
+- **Interfaces**: Contracts for external services
 
-### 💾 **Couche IO** (`com.ecclesiaflow.io`)
-- **Persistence** : Entités JPA, repositories Spring Data
-- **Communication** : `EmailServiceImpl`, `AuthClient`
-- **Mappers** : Conversion entre entités et objets domaine
+### 💾 **IO Layer** (`com.ecclesiaflow.io`)
+- **Persistence**: JPA entities, Spring Data repositories
+- **Communication**: `EmailServiceImpl`, `AuthClient`
+- **Mappers**: Conversion between entities and domain objects
 
-### 🔧 **Couche Shared** (`com.ecclesiaflow.shared`)
-- **Logging** : Aspects AOP pour logging métier et technique
-- **Utils** : `ConfirmationCodeGenerator`, annotations communes
+### 🔧 **Shared Layer** (`com.ecclesiaflow.shared`)
+- **Logging**: AOP aspects for business and technical logging
+- **Utils**: `ConfirmationCodeGenerator`, common annotations
 
-## 📦 Écosystème EcclesiaFlow
+## 📦 EcclesiaFlow Ecosystem
 
-* **Members Module** (Ce module)
+* **Members Module** (This module)
   **Port**: 8080
-  **Rôle**: Gestion des membres et confirmation par email
+  **Role**: Member management and email confirmation
 
 * **Authentication Module**
   🔗 [GitHub Repo](https://github.com/GYOM15/ecclesiaflow-auth-module)
   **Port**: 8081
-  **Rôle**: Authentification JWT et gestion des mots de passe
+  **Role**: JWT authentication and password management
 
 ---
 
-## 🛠 Stack Technologique
+## 🛠 Technology Stack
 
 * **Backend**: Java 21, Spring Boot 3.5.5
-* **Base de Données**: MySQL 9.0.0 avec Spring Data JPA
+* **Database**: MySQL 9.0.0 with Spring Data JPA
 * **Communication**: Spring WebFlux, WebClient (Auth Module)
-* **Email**: Spring Boot Mail avec SMTP Gmail
+* **Email**: Spring Boot Mail with Gmail SMTP
 * **Documentation**: OpenAPI 3.1.1, SpringDoc, Swagger UI
-* **Build**: Maven 3.14.0 avec plugins optimisés
-* **Tests**: JUnit 5, Mockito 5.14.2, JaCoCo 0.8.11
-* **Logging**: AOP avec AspectJ, SLF4J
+* **Build**: Maven 3.14.0 with optimized plugins
+* **Testing**: JUnit 5, Mockito 5.14.2, JaCoCo 0.8.11
+* **Logging**: AOP with AspectJ, SLF4J
 * **Architecture**: Clean Architecture, Microservices, SOLID
 
 ---
 
 ## ⚡ Quick Start
 
-### 1. Prérequis
+### 1. Prerequisites
 
-* **Java 21+** (OpenJDK ou Oracle JDK)
-* **Maven 3.8+** pour la gestion des dépendances
-* **MySQL 9.0+** (ou MySQL 8.0+ compatible)
-* **IDE** (IntelliJ IDEA recommandé avec support Lombok)
-* **Auth Module** en cours d'exécution sur le port 8081
+* **Java 21+** (OpenJDK or Oracle JDK)
+* **Maven 3.8+** for dependency management
+* **MySQL 9.0+** (or MySQL 8.0+ compatible)
+* **IDE** (IntelliJ IDEA recommended with Lombok support)
+* **Auth Module** running on port 8081
 
-### 2. Clone du Projet
+### 2. Clone Project
 
 ```bash
 git clone https://github.com/GYOM15/ecclesiaflow-members-module.git
 cd ecclesiaflow-members-module
 ```
 
-### 3. Configuration Base de Données
+### 3. Database Configuration
 
 ```sql
--- Base de données Members Module
+-- Members Module Database
 CREATE DATABASE ecclesiaflow_members;
 CREATE USER 'ecclesiaflow'@'localhost' IDENTIFIED BY 'your_secure_password';
 GRANT ALL PRIVILEGES ON ecclesiaflow_members.* TO 'ecclesiaflow'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-### 4. Configuration de l'Application
+### 4. Application Configuration
 
 ```bash
-# Copier le fichier de configuration exemple
+# Copy example configuration file
 cp src/main/resources/application.properties.example src/main/resources/application.properties
 
-# Éditer avec vos vraies valeurs
+# Edit with your actual values
 nano src/main/resources/application.properties
 ```
 
-**Variables obligatoires à configurer :**
+**Required variables to configure:**
 ```properties
-# Base de données
+# Database
 spring.datasource.url=jdbc:mysql://localhost:3306/ecclesiaflow_members
 spring.datasource.username=ecclesiaflow
 spring.datasource.password=your_secure_password
@@ -254,26 +255,26 @@ spring.mail.password=your_gmail_app_password
 ecclesiaflow.auth.module.base-url=http://localhost:8081
 ```
 
-### 5. Démarrage du Module
+### 5. Start Module
 
 ```bash
-# Compilation et tests
+# Compile and test
 mvn clean compile test
 
-# Démarrage en mode développement
+# Start in development mode
 mvn spring-boot:run
 
-# Ou avec profil spécifique
+# Or with specific profile
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-### 6. Vérification du Démarrage
+### 6. Verify Startup
 
 ```bash
 # Health check
 curl http://localhost:8080/actuator/health
 
-# Documentation API
+# API documentation
 open http://localhost:8080/swagger-ui.html
 
 # Test endpoint
@@ -282,44 +283,44 @@ curl http://localhost:8080/ecclesiaflow/hello
 
 ---
 
-## 🔑 Exemples d'API (cURL + jq)
+## 🔑 API Examples (cURL + jq)
 
-### 📝 **Inscription d'un Membre**
+### 📝 **Member Registration**
 
 ```bash
-# 1. Inscription d'un nouveau membre
+# 1. Register new member
 curl -X POST "http://localhost:8080/ecclesiaflow/members" \
   -H "Content-Type: application/vnd.ecclesiaflow.members.v1+json" \
   -d '{
-    "firstName": "Jean",
-    "lastName": "Dupont", 
-    "email": "jean.dupont@example.com",
-    "address": "123 Rue de la Paix, Paris"
+    "firstName": "John",
+    "lastName": "Doe", 
+    "email": "john.doe@example.com",
+    "address": "123 Peace Street, Paris"
   }' | jq .
 ```
 
-### ✅ **Confirmation du Compte**
+### ✅ **Account Confirmation**
 
 ```bash
-# 2. Confirmation avec le code reçu par email
+# 2. Confirmation with code received by email
 curl -X POST "http://localhost:8080/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation" \
   -H "Content-Type: application/vnd.ecclesiaflow.members.v1+json" \
   -d '{
     "code": "123456"
   }' | jq .
 
-# Réponse : 200 OK
+# Response: 200 OK
 # {
-#   "message": "Compte confirmé avec succès",
+#   "message": "Account confirmed successfully",
 #   "temporaryToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
 #   "memberId": "550e8400-e29b-41d4-a716-446655440000"
 # }
 ```
 
-### 🔄 **Renvoyer un Code de Confirmation**
+### 🔄 **Resend Confirmation Code**
 
 ```bash
-# 3. Renvoyer un nouveau code de confirmation
+# 3. Resend new confirmation code
 curl -X POST "http://localhost:8080/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation-code" \
   -H "Content-Type: application/vnd.ecclesiaflow.members.v1+json" | jq .
 ```
@@ -328,10 +329,10 @@ curl -X POST "http://localhost:8080/ecclesiaflow/members/550e8400-e29b-41d4-a716
 
 ## ⚙️ Configuration
 
-### 🗃️ **Variables Base de Données**
+### 🗃️ **Database Variables**
 
 ```properties
-# Configuration MySQL
+# MySQL Configuration
 spring.datasource.url=jdbc:mysql://localhost:3306/ecclesiaflow_members
 spring.datasource.username=ecclesiaflow
 spring.datasource.password=your_secure_password
@@ -343,10 +344,10 @@ spring.jpa.show-sql=false
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
 ```
 
-### 📧 **Configuration Email SMTP**
+### 📧 **SMTP Email Configuration**
 
 ```properties
-# Gmail SMTP (recommandé)
+# Gmail SMTP (recommended)
 spring.mail.host=smtp.gmail.com
 spring.mail.port=587
 spring.mail.username=your-email@gmail.com
@@ -354,19 +355,19 @@ spring.mail.password=your_gmail_app_password
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 
-# Configuration EcclesiaFlow
+# EcclesiaFlow Configuration
 ecclesiaflow.mail.from=your-email@gmail.com
 ecclesiaflow.app.name=EcclesiaFlow
 ```
 
-### 🔗 **Intégration Auth Module**
+### 🔗 **Auth Module Integration**
 
 ```properties
-# URL du module d'authentification
+# Authentication module URL
 ecclesiaflow.auth.module.base-url=http://localhost:8081
 ```
 
-### 📚 **Documentation OpenAPI**
+### 📚 **OpenAPI Documentation**
 
 ```properties
 # SpringDoc OpenAPI
@@ -376,10 +377,10 @@ springdoc.paths-to-match=/ecclesiaflow/**
 springdoc.packages-to-scan=com.ecclesiaflow.web.controller
 ```
 
-### 🔧 **Variables d'Environnement (.env)**
+### 🔧 **Environment Variables (.env)**
 
 ```bash
-# Base de données
+# Database
 DB_HOST=localhost
 DB_PORT=3306
 DB_NAME=ecclesiaflow_members
@@ -391,17 +392,17 @@ MAIL_USERNAME=your-email@gmail.com
 MAIL_PASSWORD=your_gmail_app_password
 MAIL_FROM=your-email@gmail.com
 
-# Services externes
+# External services
 AUTH_MODULE_BASE_URL=http://localhost:8081
 
-# Serveur
+# Server
 SERVER_PORT=8080
 SPRING_PROFILES_ACTIVE=dev
 ```
 
 ---
 
-## 🐳 Déploiement Docker
+## 🐳 Docker Deployment
 
 ### **Dockerfile**
 
@@ -410,24 +411,24 @@ FROM openjdk:21-jdk-slim
 
 WORKDIR /app
 
-# Copier les fichiers Maven
+# Copy Maven files
 COPY pom.xml .
 COPY mvnw .
 COPY .mvn .mvn
 
-# Télécharger les dépendances
+# Download dependencies
 RUN ./mvnw dependency:go-offline -B
 
-# Copier le code source
+# Copy source code
 COPY src src
 
-# Construire l'application
+# Build application
 RUN ./mvnw clean package -DskipTests
 
-# Exposer le port
+# Expose port
 EXPOSE 8080
 
-# Démarrer l'application
+# Start application
 CMD ["java", "-jar", "target/ecclesiaflow-members-module-1.0.0-SNAPSHOT.jar"]
 ```
 
@@ -481,98 +482,98 @@ networks:
 
 ---
 
-## 🧪 Tests et Qualité
+## 🧪 Testing and Quality
 
-### **Exécution des Tests**
+### **Running Tests**
 
 ```bash
-# Tests unitaires uniquement
+# Unit tests only
 mvn test
 
-# Tests avec couverture JaCoCo
+# Tests with JaCoCo coverage
 mvn clean test jacoco:report
 
-# Voir le rapport de couverture
+# View coverage report
 open target/site/jacoco/index.html
 
-# Tests d'intégration
+# Integration tests
 mvn verify -P integration-tests
 ```
 
-### **Structure des Tests**
+### **Test Structure**
 
 ```
 src/test/java/com/ecclesiaflow/
 ├── business/
-│   ├── services/impl/          # Tests services métier
-│   └── aspect/                 # Tests aspects AOP
+│   ├── services/impl/          # Business service tests
+│   └── aspect/                 # AOP aspect tests
 ├── web/
-│   ├── controller/             # Tests contrôleurs REST
-│   └── exception/              # Tests gestion d'erreurs
+│   ├── controller/             # REST controller tests
+│   └── exception/              # Error handling tests
 └── io/
-    └── persistence/            # Tests repositories
+    └── persistence/            # Repository tests
 ```
 
-### **Métriques Qualité**
+### **Quality Metrics**
 
-- **Couverture JaCoCo** : Minimum 80% par package
-- **Tests unitaires** : Mockito avec strictness LENIENT
-- **Tests d'intégration** : TestContainers pour MySQL
-- **Architecture** : ArchUnit pour validation des couches
+- **JaCoCo Coverage**: Minimum 80% per package
+- **Unit Tests**: Mockito with LENIENT strictness
+- **Integration Tests**: TestContainers for MySQL
+- **Architecture**: ArchUnit for layer validation
 
 ---
 
 ## 🤝 Contributing
 
-### **Standards de Développement**
+### **Development Standards**
 
-- **Clean Architecture** : Respecter la séparation des 4 couches
-- **SOLID Principles** : Chaque classe a une responsabilité unique
-- **Documentation** : Javadoc complète pour toutes les classes publiques
-- **Tests** : Couverture minimale de 80% avec tests unitaires et d'intégration
+- **Clean Architecture**: Respect the 4-layer separation
+- **SOLID Principles**: Each class has a single responsibility
+- **Documentation**: Complete Javadoc for all public classes
+- **Testing**: Minimum 80% coverage with unit and integration tests
 
-### **Workflow Git**
+### **Git Workflow**
 
 ```bash
-# 1. Partir de la branche de développement
+# 1. Start from development branch
 git checkout members-module-dev
 
-# 2. Créer une branche pour la nouvelle fonctionnalité
-git checkout -b nouvelle-fonctionnalite
+# 2. Create branch for new feature
+git checkout -b new-feature
 
-# 3. Développer avec commits atomiques
+# 3. Develop with atomic commits
 git commit -m "feat(members): Add email validation"
 
-# 4. Tests et qualité
+# 4. Tests and quality
 mvn clean test jacoco:report
 
-# 5. Push et Pull Request vers members-module-dev
-git push origin nouvelle-fonctionnalite
+# 5. Push and Pull Request to members-module-dev
+git push origin new-feature
 ```
 
-### **Convention de Commits**
+### **Commit Convention**
 
-**Format avec type :**
+**Format with type:**
 ```
-type(scope): Description (≤ 50 caractères, 1ere lettre en)
+Type(scope): description (≤ 50 characters, first letter capitalized)
 
-Corps du message (≤ 72 caractères par ligne)
+Message body (≤ 72 characters per line)
 
-Types: feat, fix, docs, style, refactor, test, chore
+Types: Feat, Fix, Docs, Style, Refactor, Test, Chore
 Scopes: members, confirmation, email, persistence, web
 ```
 
-**Format sans type :**
+**Format without type:**
 ```
-Add nouvelle fonctionnalité (≤ 50 caractères, 1ere lettre en majuscule)
+Add new feature (≤ 50 characters, first letter capitalized)
 
-Corps du message détaillé si nécessaire
-(≤ 72 caractères par ligne)
+Detailed message body if necessary
+(≤ 72 characters per line)
 ```
 
-**Exemples :**
-- `feat(members): Add email validation service`
-- `fix(confirmation): Resolve code expiration issue`  
+**Examples:**
+- `Feat(members): add email validation service`
+- `Fix(confirmation): resolve code expiration issue`  
 - `Add comprehensive member profile validation`
 - `Update OpenAPI documentation for new endpoints`
 
@@ -585,4 +586,3 @@ MIT – see [LICENSE](LICENSE)
 ---
 
 **Developed with ❤️ for church communities worldwide**
-
