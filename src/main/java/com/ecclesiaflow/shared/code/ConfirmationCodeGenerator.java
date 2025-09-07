@@ -1,5 +1,6 @@
 package com.ecclesiaflow.shared.code;
 
+import com.ecclesiaflow.business.domain.communication.CodeGenerator;
 import org.springframework.stereotype.Service;
 
 import java.util.Random;
@@ -39,7 +40,7 @@ import java.util.Random;
  * @since 1.0.0
  */
 @Service
-public class ConfirmationCodeGenerator {
+public class ConfirmationCodeGenerator implements CodeGenerator {
 
     private final Random random = new Random();
 
