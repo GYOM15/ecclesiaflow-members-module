@@ -1,7 +1,7 @@
 package com.ecclesiaflow.io.persistence.repositories.impl;
 
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmation;
-import com.ecclesiaflow.business.services.repositories.MemberConfirmationRepository;
+import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
 import com.ecclesiaflow.io.persistence.entities.MemberConfirmationEntity;
 import com.ecclesiaflow.io.persistence.mappers.MemberConfirmationPersistenceMapper;
 import com.ecclesiaflow.io.persistence.repositories.SpringDataMemberConfirmationRepository;
