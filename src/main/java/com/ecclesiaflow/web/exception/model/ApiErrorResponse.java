@@ -74,9 +74,8 @@ public record ApiErrorResponse(
     List<ValidationError> errors
 ) {
     public ApiErrorResponse {
-        if (errors == null) {
-            errors = new ArrayList<>();
-        }
+        // Garde errors null si explicitement passé comme null
+        // Sinon initialise avec une liste vide pour les erreurs de validation
     }
 
     /**
@@ -101,7 +100,7 @@ public record ApiErrorResponse(
         private String error;
         private String message;
         private String path;
-        private List<ValidationError> errors = new ArrayList<>();
+        private List<ValidationError> errors = null;
 
         /**
          * Définit le code de statut HTTP.
@@ -154,7 +153,21 @@ public record ApiErrorResponse(
          * @return ce builder pour chaînage
          */
         public ApiErrorResponseBuilder addValidationError(ValidationError error) {
+            if (this.errors == null) {
+                this.errors = new ArrayList<>();
+            }
             this.errors.add(error);
+            return this;
+        }
+
+        /**
+         * Définit explicitement la liste des erreurs de validation.
+         * 
+         * @param errors la liste des erreurs (peut être null)
+         * @return ce builder pour chaînage
+         */
+        public ApiErrorResponseBuilder errors(List<ValidationError> errors) {
+            this.errors = errors;
             return this;
         }
 
