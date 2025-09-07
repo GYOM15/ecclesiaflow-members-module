@@ -253,7 +253,7 @@ public class MembersController {
         return ResponseEntity.ok(Map.of("confirmed", isConfirmed));
     }
 
-    @DeleteMapping(value = "/members/{id}", produces = "application/vnd.ecclesiaflow.members.v1+json")
+    @DeleteMapping(value = "/members/{memberId}", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @Operation(
             summary = "Supprimer un membre",
             description = "Supprimer définitivement un membre"
@@ -269,8 +269,8 @@ public class MembersController {
                     description = "Membre non trouvé"
             )
     })
-    public ResponseEntity<Void> deleteMember(@PathVariable UUID id) {
-        memberService.deleteMember(id);
+    public ResponseEntity<Void> deleteMember(@PathVariable UUID memberId) {
+        memberService.deleteMember(memberId);
         return ResponseEntity.noContent().build();
     }
 
