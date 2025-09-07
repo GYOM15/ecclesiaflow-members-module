@@ -1,6 +1,6 @@
 package com.ecclesiaflow.web.exception;
 
-import com.ecclesiaflow.io.email.EmailServiceImpl;
+import com.ecclesiaflow.io.communication.email.EmailServiceImpl;
 
 /**
  * Exception spécialisée levée lors d'un échec d'envoi d'email de confirmation d'inscription.

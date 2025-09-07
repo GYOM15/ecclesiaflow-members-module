@@ -1,4 +1,4 @@
-package com.ecclesiaflow.io.email;
+package com.ecclesiaflow.io.communication.email;
 
 import com.ecclesiaflow.business.domain.communication.EmailService;
 import com.ecclesiaflow.web.exception.ConfirmationEmailException;
