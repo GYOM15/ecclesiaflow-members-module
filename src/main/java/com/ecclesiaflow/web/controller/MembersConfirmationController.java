@@ -1,7 +1,7 @@
 package com.ecclesiaflow.web.controller;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
-import com.ecclesiaflow.web.mappers.web.ConfirmationResponseMapper;
-import com.ecclesiaflow.web.mappers.web.ConfirmationRequestMapper;
+import com.ecclesiaflow.web.mappers.ConfirmationResponseMapper;
+import com.ecclesiaflow.web.mappers.ConfirmationRequestMapper;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
 import com.ecclesiaflow.web.dto.ConfirmationRequest;

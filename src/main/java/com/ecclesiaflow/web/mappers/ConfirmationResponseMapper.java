@@ -1,4 +1,4 @@
-package com.ecclesiaflow.web.mappers.web;
+package com.ecclesiaflow.web.mappers;
 
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import com.ecclesiaflow.web.dto.ConfirmationResponse;
