@@ -141,7 +141,27 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, WebRequest request) {
-        return buildBadRequestErrorResponse("Requête JSON mal formée", request);
+        List<ValidationError> errors = new ArrayList<>();
+        errors.add(new ValidationError(
+            "Requête JSON mal formée",
+            "request",
+            "parsing",
+            "MalformedJson",
+            "Requête JSON mal formée",
+            "MalformedJson",
+            null,
+            null
+        ));
+
+        ApiErrorResponse errorResponse = ApiErrorResponse.builder()
+            .status(HttpStatus.BAD_REQUEST.value())
+            .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+            .message("Requête JSON mal formée")
+            .path(((ServletWebRequest) request).getRequest().getRequestURI())
+            .errors(errors)
+            .build();
+        
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(MissingRequestHeaderException.class)
