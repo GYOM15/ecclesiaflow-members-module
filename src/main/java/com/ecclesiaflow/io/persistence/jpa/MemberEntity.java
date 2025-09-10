@@ -105,10 +105,6 @@ public class MemberEntity {
     @Column
     private LocalDateTime confirmedAt;
 
-    @Column(nullable = false)
-    @Builder.Default
-    private boolean passwordSet = false;
-
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

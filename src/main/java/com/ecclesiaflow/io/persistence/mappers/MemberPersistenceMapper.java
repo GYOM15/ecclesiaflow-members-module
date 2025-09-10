@@ -76,7 +76,6 @@ public class MemberPersistenceMapper {
                 .address(entity.getAddress())
                 .role(entity.getRole())
                 .confirmed(entity.isConfirmed())
-                .passwordSet(entity.isPasswordSet())
                 .createdAt(entity.getCreatedAt())
                 .confirmedAt(entity.getConfirmedAt())
                 .updatedAt(entity.getUpdatedAt())
@@ -118,7 +117,6 @@ public class MemberPersistenceMapper {
                 .address(domain.getAddress())
                 .role(domain.getRole())
                 .confirmed(domain.isConfirmed())
-                .passwordSet(domain.isPasswordSet())
                 .createdAt(domain.getCreatedAt())
                 .confirmedAt(domain.getConfirmedAt())
                 .build();

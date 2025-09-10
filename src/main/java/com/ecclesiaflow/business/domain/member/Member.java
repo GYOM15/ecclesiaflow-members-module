@@ -140,19 +140,4 @@ public class Member {
         this.confirmed = true;
         this.confirmedAt = LocalDateTime.now();
     }
-
-    /**
-     * Marque le mot de passe comme défini après sa création par l'utilisateur.
-     * <p>
-     * Cette méthode effectue la transition d'état vers "mot de passe défini"
-     * après que l'utilisateur ait utilisé son token temporaire pour créer
-     * son mot de passe. Ne peut être appelée qu'une seule fois.
-     * </p>
-     * 
-     * @throws IllegalStateException si le mot de passe est déjà défini
-     */
-    public void markPasswordAsSet() {
-        if (this.passwordSet) throw new IllegalStateException("Mot de passe déjà défini.");
-        this.passwordSet = true;
-    }
 }
