@@ -2,7 +2,7 @@ package com.ecclesiaflow.web.dto;
 
 import com.ecclesiaflow.business.domain.member.Member;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 
 /**
  * DTO représentant la réponse contenant les informations d'un membre EcclesiaFlow.
@@ -47,7 +47,7 @@ import lombok.Data;
  * @see Member
  * @see com.ecclesiaflow.web.controller.MembersController
  */
-@Data
+@Getter
 @Builder
 public class SignUpResponse {
     /**

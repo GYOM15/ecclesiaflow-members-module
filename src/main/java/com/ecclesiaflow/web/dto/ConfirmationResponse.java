@@ -2,7 +2,7 @@ package com.ecclesiaflow.web.dto;
 
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 
 /**
  * DTO représentant la réponse après confirmation réussie d'un compte membre.
@@ -42,7 +42,7 @@ import lombok.Data;
  * @see MembershipConfirmationResult
  * @see com.ecclesiaflow.web.controller.MembersConfirmationController
  */
-@Data
+@Getter
 @Builder
 public class ConfirmationResponse {
     /**
