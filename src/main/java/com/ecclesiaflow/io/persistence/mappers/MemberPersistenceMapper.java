@@ -67,6 +67,9 @@ public class MemberPersistenceMapper {
      * @implNote Utilise le pattern Builder pour construire l'objet domaine immutable.
      */
     public Member toDomain(MemberEntity entity) {
+        if (entity == null) {
+            throw new IllegalArgumentException("L'objet domaine ne peut pas être null");
+        }
         return Member.builder()
                 .id(entity.getId())
                 .memberId(entity.getMemberId())
@@ -108,6 +111,9 @@ public class MemberPersistenceMapper {
      * @implNote Utilise le pattern Builder pour construire l'entité JPA.
      */
     public MemberEntity toEntity(Member domain) {
+        if (domain == null) {
+            throw new IllegalArgumentException("L'objet domaine ne peut pas être null");
+        }
         return MemberEntity.builder()
                 .id(domain.getId())
                 .memberId(domain.getMemberId())
