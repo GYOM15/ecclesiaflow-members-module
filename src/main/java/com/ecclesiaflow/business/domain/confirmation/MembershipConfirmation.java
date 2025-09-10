@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.util.UUID;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
+import lombok.Getter;
 
 /**
  * Objet métier représentant une demande de confirmation de membre EcclesiaFlow.
@@ -45,8 +46,8 @@ import com.ecclesiaflow.business.services.MemberConfirmationService;
  * @see MemberConfirmationService
  * @see MembershipConfirmationResult
  */
-@Data
-@Builder
+@Getter
+@Builder(toBuilder = true)
 public class MembershipConfirmation {
     /**
      * Identifiant unique du membre à confirmer.

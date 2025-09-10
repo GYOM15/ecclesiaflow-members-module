@@ -3,6 +3,7 @@ package com.ecclesiaflow.business.domain.member;
 import lombok.Builder;
 import lombok.Data;
 import com.ecclesiaflow.business.services.MemberService;
+import lombok.Getter;
 
 import java.util.UUID;
 
@@ -45,8 +46,8 @@ import java.util.UUID;
  * @see Member
  * @see MemberService
  */
-@Data
-@Builder
+@Getter
+@Builder(toBuilder = true)
 public class MembershipUpdate {
     
     /**

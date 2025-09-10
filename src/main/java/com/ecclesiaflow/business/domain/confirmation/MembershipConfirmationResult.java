@@ -3,6 +3,7 @@ package com.ecclesiaflow.business.domain.confirmation;
 import lombok.Builder;
 import lombok.Data;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
+import lombok.Getter;
 
 /**
  * Objet métier représentant le résultat d'une confirmation de membre EcclesiaFlow.
@@ -43,8 +44,8 @@ import com.ecclesiaflow.business.services.MemberConfirmationService;
  * @see MemberConfirmationService
  * @see MembershipConfirmation
  */
-@Data
-@Builder
+@Getter
+@Builder(toBuilder = true)
 public class MembershipConfirmationResult {
     private String message;
     private String temporaryToken;
