@@ -1,7 +1,6 @@
 package com.ecclesiaflow.business.domain.member;
 
 import lombok.Builder;
-import lombok.Data;
 import com.ecclesiaflow.business.services.MemberService;
 import lombok.Getter;
 

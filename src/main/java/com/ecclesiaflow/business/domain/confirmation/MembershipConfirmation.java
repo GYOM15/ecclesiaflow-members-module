@@ -1,7 +1,6 @@
 package com.ecclesiaflow.business.domain.confirmation;
 
 import lombok.Builder;
-import lombok.Data;
 
 import java.util.UUID;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
