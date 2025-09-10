@@ -64,7 +64,7 @@ import java.util.UUID;
 public class MemberServiceImpl implements MemberService {
     
     private final MemberRepository memberRepository;
-    private MemberConfirmationService confirmationService;
+    private final MemberConfirmationService confirmationService;
 
     @Override
     @Transactional
