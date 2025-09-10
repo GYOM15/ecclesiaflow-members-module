@@ -13,7 +13,7 @@ import com.ecclesiaflow.web.exception.ExpiredConfirmationCodeException;
 import com.ecclesiaflow.web.exception.InvalidConfirmationCodeException;
 import com.ecclesiaflow.web.exception.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.web.exception.MemberNotFoundException;
-import com.ecclesiaflow.web.security.JwtProcessor;
+import com.ecclesiaflow.business.domain.token.TokenGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +27,7 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
 
     private final MemberRepository memberRepository;
     private final MemberConfirmationRepository confirmationRepository;
-    private final JwtProcessor jwtProcessor;
+    private final TokenGenerator tokenGenerator;
     private final ConfirmationNotifier confirmationNotifier;
     private final CodeGenerator codeGenerator;
 
@@ -45,7 +45,7 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
 
         confirmationRepository.delete(confirmation);
 
-        String temporaryToken = jwtProcessor.generateTemporaryToken(member.getEmail());
+        String temporaryToken = tokenGenerator.generateTemporaryToken(member.getEmail());
 
         return MembershipConfirmationResult.builder()
                 .message("Compte confirmé avec succès")
