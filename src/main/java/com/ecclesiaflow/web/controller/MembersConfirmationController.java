@@ -1,7 +1,6 @@
 package com.ecclesiaflow.web.controller;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.web.mappers.ConfirmationResponseMapper;
-import com.ecclesiaflow.web.mappers.ConfirmationRequestMapper;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
 import com.ecclesiaflow.web.payloads.ConfirmationRequestPayload;
@@ -73,7 +72,6 @@ public class MembersConfirmationController {
 
     private final MemberConfirmationService confirmationService;
     private final ConfirmationResponseMapper confirmationResponseMapper;
-    private final ConfirmationRequestMapper confirmationRequestMapper;
 
     @PostMapping(value = "/confirmation", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @RateLimiter(name = "confirmation-resend")
@@ -119,7 +117,10 @@ public class MembersConfirmationController {
     public ResponseEntity<ConfirmationResponse> confirmMember(
             @PathVariable UUID memberId,
             @Valid @RequestBody ConfirmationRequestPayload confirmationRequestPayload) {
-        MembershipConfirmation membershipConfirmation = confirmationRequestMapper.fromConfirmationRequest(memberId, confirmationRequestPayload);
+        MembershipConfirmation membershipConfirmation = MembershipConfirmation.builder().
+                memberId(memberId).
+                confirmationCode(confirmationRequestPayload.getCode()).
+                build();
         MembershipConfirmationResult result = confirmationService.confirmMember(membershipConfirmation);
         ConfirmationResponse response = confirmationResponseMapper.fromMemberConfirmationResult(result);
         return ResponseEntity.ok(response);

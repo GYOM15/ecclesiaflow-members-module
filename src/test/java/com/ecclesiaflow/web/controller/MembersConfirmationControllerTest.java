@@ -9,8 +9,7 @@ import com.ecclesiaflow.business.exceptions.ExpiredConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
-import com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler; // Import du GlobalExceptionHandler
-import com.ecclesiaflow.web.mappers.ConfirmationRequestMapper;
+import com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler;
 import com.ecclesiaflow.web.mappers.ConfirmationResponseMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +25,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -42,8 +40,6 @@ class MembersConfirmationControllerTest {
     @Mock
     private ConfirmationResponseMapper confirmationResponseMapper;
 
-    @Mock
-    private ConfirmationRequestMapper confirmationRequestMapper;
 
     @InjectMocks
     private MembersConfirmationController membersConfirmationController;
@@ -65,12 +61,6 @@ class MembersConfirmationControllerTest {
         ConfirmationRequestPayload request = new ConfirmationRequestPayload();
         request.setCode("123456");
 
-        // Utilisation du builder pour MembershipConfirmation
-        MembershipConfirmation businessConfirmation = MembershipConfirmation.builder()
-                .memberId(memberId)
-                .confirmationCode("123456")
-                .build();
-
         // Utilisation du builder pour MembershipConfirmationResult
         MembershipConfirmationResult serviceResult = MembershipConfirmationResult.builder()
                 .message("Confirmation successful!")
@@ -85,8 +75,6 @@ class MembersConfirmationControllerTest {
                 .expiresIn(3600) // Assurez-vous que le champ est 'expiresIn' dans le DTO
                 .build();
 
-        when(confirmationRequestMapper.fromConfirmationRequest(eq(memberId), any(ConfirmationRequestPayload.class)))
-                .thenReturn(businessConfirmation);
         when(confirmationService.confirmMember(any(MembershipConfirmation.class))).thenReturn(serviceResult);
         when(confirmationResponseMapper.fromMemberConfirmationResult(any(MembershipConfirmationResult.class)))
                 .thenReturn(responseDto);
@@ -100,7 +88,6 @@ class MembersConfirmationControllerTest {
                 .andExpect(jsonPath("$.temporaryToken").value("temp_token"))
                 .andExpect(jsonPath("$.expiresIn").value(3600));
 
-        verify(confirmationRequestMapper).fromConfirmationRequest(eq(memberId), any(ConfirmationRequestPayload.class));
         verify(confirmationService).confirmMember(any(MembershipConfirmation.class));
         verify(confirmationResponseMapper).fromMemberConfirmationResult(any(MembershipConfirmationResult.class));
     }
@@ -122,8 +109,6 @@ class MembersConfirmationControllerTest {
                 .andExpect(jsonPath("$.path").value("/ecclesiaflow/members/" + memberId + "/confirmation"))
                 .andExpect(jsonPath("$.errors").isArray())
                 .andExpect(jsonPath("$.errors[0].path").value("code")); // Le champ 'code' de ConfirmationRequestPayload est en erreur
-
-        verifyNoInteractions(confirmationRequestMapper);
         verifyNoInteractions(confirmationService);
         verifyNoInteractions(confirmationResponseMapper);
     }
@@ -134,14 +119,6 @@ class MembersConfirmationControllerTest {
         ConfirmationRequestPayload request = new ConfirmationRequestPayload();
         request.setCode("123456");
 
-        // Utilisation du builder pour MembershipConfirmation
-        MembershipConfirmation businessConfirmation = MembershipConfirmation.builder()
-                .memberId(memberId)
-                .confirmationCode("123456")
-                .build();
-
-        when(confirmationRequestMapper.fromConfirmationRequest(eq(memberId), any(ConfirmationRequestPayload.class)))
-                .thenReturn(businessConfirmation);
         // Le service simule de lancer l'exception web.exception.*
         when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
                 .thenThrow(new InvalidConfirmationCodeException("Code de confirmation incorrect"));
@@ -160,7 +137,6 @@ class MembersConfirmationControllerTest {
                 .andExpect(jsonPath("$.errors[0].path").value("request"));
 
 
-        verify(confirmationRequestMapper).fromConfirmationRequest(eq(memberId), any(ConfirmationRequestPayload.class));
         verify(confirmationService).confirmMember(any(MembershipConfirmation.class));
         verifyNoInteractions(confirmationResponseMapper);
     }
@@ -171,14 +147,6 @@ class MembersConfirmationControllerTest {
         ConfirmationRequestPayload request = new ConfirmationRequestPayload();
         request.setCode("654321");
 
-        // Utilisation du builder pour MembershipConfirmation
-        MembershipConfirmation businessConfirmation = MembershipConfirmation.builder()
-                .memberId(memberId)
-                .confirmationCode("654321")
-                .build();
-
-        when(confirmationRequestMapper.fromConfirmationRequest(eq(memberId), any(ConfirmationRequestPayload.class)))
-                .thenReturn(businessConfirmation);
         // Le service simule de lancer l'exception web.exception.*
         when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
                 .thenThrow(new ExpiredConfirmationCodeException("Le code de confirmation a expiré"));
@@ -196,7 +164,6 @@ class MembersConfirmationControllerTest {
                 .andExpect(jsonPath("$.errors[0].message").value("Le code de confirmation a expiré"))
                 .andExpect(jsonPath("$.errors[0].path").value("request"));
 
-        verify(confirmationRequestMapper).fromConfirmationRequest(eq(memberId), any(ConfirmationRequestPayload.class));
         verify(confirmationService).confirmMember(any(MembershipConfirmation.class));
         verifyNoInteractions(confirmationResponseMapper);
     }
@@ -207,14 +174,6 @@ class MembersConfirmationControllerTest {
         ConfirmationRequestPayload request = new ConfirmationRequestPayload();
         request.setCode("112233");
 
-        // Utilisation du builder pour MembershipConfirmation
-        MembershipConfirmation businessConfirmation = MembershipConfirmation.builder()
-                .memberId(memberId)
-                .confirmationCode("112233")
-                .build();
-
-        when(confirmationRequestMapper.fromConfirmationRequest(eq(memberId), any(ConfirmationRequestPayload.class)))
-                .thenReturn(businessConfirmation);
         // Le service simule de lancer l'exception web.exception.*
         when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
                 .thenThrow(new MemberNotFoundException("Membre non trouvé"));
@@ -230,7 +189,6 @@ class MembersConfirmationControllerTest {
                 .andExpect(jsonPath("$.path").value("/ecclesiaflow/members/" + memberId + "/confirmation"))
                 .andExpect(jsonPath("$.errors").doesNotExist()); // errors doit être null pour 404
 
-        verify(confirmationRequestMapper).fromConfirmationRequest(eq(memberId), any(ConfirmationRequestPayload.class));
         verify(confirmationService).confirmMember(any(MembershipConfirmation.class));
         verifyNoInteractions(confirmationResponseMapper);
     }
@@ -241,14 +199,6 @@ class MembersConfirmationControllerTest {
         ConfirmationRequestPayload request = new ConfirmationRequestPayload();
         request.setCode("789012");
 
-        // Utilisation du builder pour MembershipConfirmation
-        MembershipConfirmation businessConfirmation = MembershipConfirmation.builder()
-                .memberId(memberId)
-                .confirmationCode("789012")
-                .build();
-
-        when(confirmationRequestMapper.fromConfirmationRequest(eq(memberId), any(ConfirmationRequestPayload.class)))
-                .thenReturn(businessConfirmation);
         // Le service simule de lancer l'exception web.exception.*
         when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
                 .thenThrow(new MemberAlreadyConfirmedException("Le compte est déjà confirmé"));
@@ -264,7 +214,6 @@ class MembersConfirmationControllerTest {
                 .andExpect(jsonPath("$.path").value("/ecclesiaflow/members/" + memberId + "/confirmation"))
                 .andExpect(jsonPath("$.errors").doesNotExist()); // errors doit être null pour 409
 
-        verify(confirmationRequestMapper).fromConfirmationRequest(eq(memberId), any(ConfirmationRequestPayload.class));
         verify(confirmationService).confirmMember(any(MembershipConfirmation.class));
         verifyNoInteractions(confirmationResponseMapper);
     }
