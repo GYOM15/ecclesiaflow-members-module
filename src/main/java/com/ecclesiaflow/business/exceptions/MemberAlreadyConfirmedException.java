@@ -1,4 +1,4 @@
-package com.ecclesiaflow.web.exception;
+package com.ecclesiaflow.business.exceptions;
 
 /**
  * Exception levée lors d'une tentative de confirmation d'un membre déjà confirmé.

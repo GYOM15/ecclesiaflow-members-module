@@ -1,7 +1,9 @@
 package com.ecclesiaflow.web.exception.advices;
 
+import com.ecclesiaflow.io.exception.ConfirmationEmailException;
+import com.ecclesiaflow.io.exception.EmailSendingException;
+import com.ecclesiaflow.io.exception.WelcomeEmailException;
 import com.ecclesiaflow.web.dto.ErrorResponse;
-import com.ecclesiaflow.web.exception.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

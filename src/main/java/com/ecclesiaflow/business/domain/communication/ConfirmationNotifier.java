@@ -1,7 +1,7 @@
 package com.ecclesiaflow.business.domain.communication;
 
 import com.ecclesiaflow.io.notification.email.EmailConfirmationNotifier;
-import com.ecclesiaflow.web.exception.EmailSendingException;
+import com.ecclesiaflow.io.exception.EmailSendingException;
 
 /**
  * Interface définissant le contrat d'envoi de codes de confirmation EcclesiaFlow.

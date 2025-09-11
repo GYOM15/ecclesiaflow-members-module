@@ -5,7 +5,7 @@ import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
-import com.ecclesiaflow.web.exception.MemberNotFoundException;
+import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

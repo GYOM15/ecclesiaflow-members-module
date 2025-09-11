@@ -4,6 +4,7 @@ import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
+import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 
 import java.util.List;
 import java.util.UUID;
@@ -106,7 +107,7 @@ public interface MemberService {
      *
      * @param id l'identifiant unique du membre, non null
      * @return le membre correspondant avec toutes ses informations
-     * @throws com.ecclesiaflow.web.exception.MemberNotFoundException si aucun membre avec cet ID n'existe
+     * @throws MemberNotFoundException si aucun membre avec cet ID n'existe
      * @throws IllegalArgumentException                               si id est null
      * @implNote Opération de lecture par clé primaire (optimisée).
      */
@@ -122,7 +123,7 @@ public interface MemberService {
      *
      * @param update les données de mise à jour, non null
      * @return le membre mis à jour avec les nouvelles informations
-     * @throws com.ecclesiaflow.web.exception.MemberNotFoundException si le membre n'existe pas
+     * @throws MemberNotFoundException si le membre n'existe pas
      * @throws IllegalArgumentException                               si updateRequest est null ou invalide
      * @implNote Opération transactionnelle en écriture avec validation métier.
      */
@@ -137,7 +138,7 @@ public interface MemberService {
      * </p>
      * 
      * @param id l'identifiant du membre à supprimer, non null
-     * @throws com.ecclesiaflow.web.exception.MemberNotFoundException si le membre n'existe pas
+     * @throws MemberNotFoundException si le membre n'existe pas
      * @throws IllegalArgumentException si id est null
      * 
      * @implNote Opération transactionnelle en écriture avec cascade sur données liées.

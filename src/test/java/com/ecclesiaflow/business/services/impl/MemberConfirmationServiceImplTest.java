@@ -6,7 +6,9 @@ import com.ecclesiaflow.business.domain.confirmation.*;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.business.domain.token.AuthenticationService;
-import com.ecclesiaflow.web.exception.*;
+import com.ecclesiaflow.business.exceptions.ExpiredConfirmationCodeException;
+import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
+import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

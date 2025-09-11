@@ -4,7 +4,7 @@ import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import com.ecclesiaflow.business.domain.member.Role;
-import com.ecclesiaflow.web.exception.MemberNotFoundException;
+import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import com.ecclesiaflow.web.exception.InvalidRequestException; // Supposons cette exception pour email déjà utilisé
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.web.payloads.SignUpRequestPayload;

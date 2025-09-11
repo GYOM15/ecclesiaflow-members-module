@@ -1,4 +1,4 @@
-package com.ecclesiaflow.web.exception;
+package com.ecclesiaflow.business.exceptions;
 
 /**
  * Exception levée lorsqu'un membre demandé n'existe pas dans le système.

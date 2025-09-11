@@ -1,7 +1,7 @@
 package com.ecclesiaflow.io.communication.email;
 
-import com.ecclesiaflow.web.exception.ConfirmationEmailException;
-import com.ecclesiaflow.web.exception.WelcomeEmailException;
+import com.ecclesiaflow.io.exception.ConfirmationEmailException;
+import com.ecclesiaflow.io.exception.WelcomeEmailException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;

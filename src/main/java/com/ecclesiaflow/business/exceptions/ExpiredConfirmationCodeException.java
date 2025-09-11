@@ -1,4 +1,4 @@
-package com.ecclesiaflow.web.exception;
+package com.ecclesiaflow.business.exceptions;
 
 /**
  * Exception levée lorsqu'un code de confirmation a dépassé sa durée de validité.
@@ -32,7 +32,7 @@ package com.ecclesiaflow.web.exception;
  * 
  * @author EcclesiaFlow Team
  * @since 1.0.0
- * @see com.ecclesiaflow.web.exception.InvalidConfirmationCodeException
+ * @see InvalidConfirmationCodeException
  * @see com.ecclesiaflow.business.services.MemberConfirmationService
  * @see com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler
  */

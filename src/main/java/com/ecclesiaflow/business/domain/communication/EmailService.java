@@ -1,7 +1,7 @@
 package com.ecclesiaflow.business.domain.communication;
 
-import com.ecclesiaflow.web.exception.ConfirmationEmailException;
-import com.ecclesiaflow.web.exception.WelcomeEmailException;
+import com.ecclesiaflow.io.exception.ConfirmationEmailException;
+import com.ecclesiaflow.io.exception.WelcomeEmailException;
 
 /**
  * Service de domaine pour la gestion des communications email dans EcclesiaFlow.

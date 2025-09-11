@@ -1,8 +1,8 @@
 package com.ecclesiaflow.io.communication.email;
 
 import com.ecclesiaflow.business.domain.communication.EmailService;
-import com.ecclesiaflow.web.exception.ConfirmationEmailException;
-import com.ecclesiaflow.web.exception.WelcomeEmailException;
+import com.ecclesiaflow.io.exception.ConfirmationEmailException;
+import com.ecclesiaflow.io.exception.WelcomeEmailException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;

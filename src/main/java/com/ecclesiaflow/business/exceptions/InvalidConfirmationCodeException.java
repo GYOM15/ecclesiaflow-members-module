@@ -1,4 +1,4 @@
-package com.ecclesiaflow.web.exception;
+package com.ecclesiaflow.business.exceptions;
 
 /**
  * Exception levée lorsqu'un code de confirmation est invalide ou expiré.

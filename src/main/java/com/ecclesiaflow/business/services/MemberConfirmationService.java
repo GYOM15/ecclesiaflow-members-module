@@ -6,6 +6,10 @@ import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResul
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
+import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
+import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
+import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
+import com.ecclesiaflow.io.exception.ConfirmationEmailException;
 
 import java.util.UUID;
 
@@ -61,9 +65,9 @@ public interface MemberConfirmationService {
      * 
      * @param confirmationRequest les données de confirmation (memberId, code), non null
      * @return le résultat de la confirmation avec token temporaire et statut
-     * @throws com.ecclesiaflow.web.exception.MemberNotFoundException si le membre n'existe pas
-     * @throws com.ecclesiaflow.web.exception.InvalidConfirmationCodeException si le code est invalide ou expiré
-     * @throws com.ecclesiaflow.web.exception.MemberAlreadyConfirmedException si le membre est déjà confirmé
+     * @throws MemberNotFoundException si le membre n'existe pas
+     * @throws InvalidConfirmationCodeException si le code est invalide ou expiré
+     * @throws MemberAlreadyConfirmedException si le membre est déjà confirmé
      * @throws IllegalArgumentException si confirmationRequest est null ou invalide
      * 
      * @implNote Opération transactionnelle avec mise à jour du statut et invalidation du code.
@@ -79,9 +83,9 @@ public interface MemberConfirmationService {
      * </p>
      *
      * @param member le membre pour lequel générer un code, non null
-     * @throws com.ecclesiaflow.web.exception.MemberNotFoundException si le membre n'existe pas
-     * @throws com.ecclesiaflow.web.exception.MemberAlreadyConfirmedException si le membre est déjà confirmé
-     * @throws com.ecclesiaflow.web.exception.ConfirmationEmailException si l'envoi de l'email échoue
+     * @throws MemberNotFoundException si le membre n'existe pas
+     * @throws MemberAlreadyConfirmedException si le membre est déjà confirmé
+     * @throws ConfirmationEmailException si l'envoi de l'email échoue
      * @throws IllegalArgumentException si memberId est null
      *
      * @implNote Opération transactionnelle avec génération aléatoire sécurisée et envoi email.
@@ -97,9 +101,9 @@ public interface MemberConfirmationService {
      * </p>
      *
      * @param memberId l'identifiant du membre pour lequel générer un code, non null
-     * @throws com.ecclesiaflow.web.exception.MemberNotFoundException si le membre n'existe pas
-     * @throws com.ecclesiaflow.web.exception.MemberAlreadyConfirmedException si le membre est déjà confirmé
-     * @throws com.ecclesiaflow.web.exception.ConfirmationEmailException si l'envoi de l'email échoue
+     * @throws MemberNotFoundException si le membre n'existe pas
+     * @throws MemberAlreadyConfirmedException si le membre est déjà confirmé
+     * @throws ConfirmationEmailException si l'envoi de l'email échoue
      * @throws IllegalArgumentException si memberId est null
      *
      * @implNote Opération transactionnelle avec génération aléatoire sécurisée et envoi email.

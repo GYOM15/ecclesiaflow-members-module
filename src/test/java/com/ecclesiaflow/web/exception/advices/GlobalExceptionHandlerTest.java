@@ -1,5 +1,9 @@
 package com.ecclesiaflow.web.exception.advices;
 
+import com.ecclesiaflow.business.exceptions.ExpiredConfirmationCodeException;
+import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
+import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
+import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import com.ecclesiaflow.web.dto.ErrorResponse;
 import com.ecclesiaflow.web.exception.*;
 import com.ecclesiaflow.web.exception.model.ApiErrorResponse;

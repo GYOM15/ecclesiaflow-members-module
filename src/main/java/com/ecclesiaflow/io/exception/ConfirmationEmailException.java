@@ -1,4 +1,4 @@
-package com.ecclesiaflow.web.exception;
+package com.ecclesiaflow.io.exception;
 
 import com.ecclesiaflow.io.communication.email.EmailServiceImpl;
 

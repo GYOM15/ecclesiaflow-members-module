@@ -1,7 +1,7 @@
 package com.ecclesiaflow.io.notification.email;
 
 import com.ecclesiaflow.business.domain.communication.EmailService;
-import com.ecclesiaflow.web.exception.ConfirmationEmailException;
+import com.ecclesiaflow.io.exception.ConfirmationEmailException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

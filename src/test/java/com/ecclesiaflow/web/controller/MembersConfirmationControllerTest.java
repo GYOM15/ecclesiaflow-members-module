@@ -5,10 +5,10 @@ import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResul
 import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.web.payloads.ConfirmationRequestPayload;
 import com.ecclesiaflow.web.dto.ConfirmationResponse;
-import com.ecclesiaflow.web.exception.ExpiredConfirmationCodeException;
-import com.ecclesiaflow.web.exception.InvalidConfirmationCodeException;
-import com.ecclesiaflow.web.exception.MemberAlreadyConfirmedException;
-import com.ecclesiaflow.web.exception.MemberNotFoundException;
+import com.ecclesiaflow.business.exceptions.ExpiredConfirmationCodeException;
+import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
+import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
+import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler; // Import du GlobalExceptionHandler
 import com.ecclesiaflow.web.mappers.ConfirmationRequestMapper;
 import com.ecclesiaflow.web.mappers.ConfirmationResponseMapper;

@@ -1,7 +1,9 @@
 package com.ecclesiaflow.web.exception.advices;
 
 import com.ecclesiaflow.io.communication.email.EmailServiceImpl;
-import com.ecclesiaflow.web.exception.*;
+import com.ecclesiaflow.io.exception.ConfirmationEmailException;
+import com.ecclesiaflow.io.exception.EmailSendingException;
+import com.ecclesiaflow.io.exception.WelcomeEmailException;
 import com.ecclesiaflow.web.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;

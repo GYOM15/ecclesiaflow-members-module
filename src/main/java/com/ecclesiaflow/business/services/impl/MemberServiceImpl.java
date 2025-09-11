@@ -8,7 +8,7 @@ import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.business.domain.communication.EmailService;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
-import com.ecclesiaflow.web.exception.MemberNotFoundException;
+import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
