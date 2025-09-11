@@ -1,8 +1,11 @@
 package com.ecclesiaflow.web.exception.advices;
 
+import com.ecclesiaflow.web.dto.ErrorResponse;
 import com.ecclesiaflow.web.exception.*;
 import com.ecclesiaflow.web.exception.model.ApiErrorResponse;
 import com.ecclesiaflow.web.exception.model.ValidationError;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -205,6 +208,17 @@ public class GlobalExceptionHandler {
         return buildSimpleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Une erreur interne est survenue", request);
     }
 
+    @ExceptionHandler(RequestNotPermitted.class)
+    public ResponseEntity<ErrorResponse> handleRateLimitExceeded(RequestNotPermitted ex, HttpServletRequest request) {
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                429,
+                "Too Many Requests",
+                "Trop de tentatives. Veuillez réessayer plus tard.",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(429).body(error);
+    }
     /**
      * Construit une réponse d'erreur 400 Bad Request avec des erreurs de validation.
      * Utilisé pour les erreurs qui peuvent contenir des détails de validation.

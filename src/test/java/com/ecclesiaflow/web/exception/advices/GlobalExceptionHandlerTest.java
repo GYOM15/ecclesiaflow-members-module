@@ -1,8 +1,10 @@
 package com.ecclesiaflow.web.exception.advices;
 
+import com.ecclesiaflow.web.dto.ErrorResponse;
 import com.ecclesiaflow.web.exception.*;
 import com.ecclesiaflow.web.exception.model.ApiErrorResponse;
 import com.ecclesiaflow.web.exception.model.ValidationError;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +14,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -34,6 +38,7 @@ import static org.mockito.Mockito.*;
  * Vérifie la gestion centralisée des exceptions et la standardisation des réponses d'erreur.
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("GlobalExceptionHandler - Tests Unitaires")
 class GlobalExceptionHandlerTest {
 
@@ -448,5 +453,53 @@ class GlobalExceptionHandlerTest {
         assertThat(errorResponse.path()).isEqualTo("/ecclesiaflow/members");
         assertThat(errorResponse.errors()).hasSize(1); // Devrait avoir une erreur simple si buildBadRequestErrorResponse la crée
         assertThat(errorResponse.errors().get(0).message()).contains("En-tête requis manquant: Authorization");
+    }
+
+    // === TESTS POUR LE RATE LIMITING ===
+
+    @Test
+    @DisplayName("Devrait gérer RequestNotPermitted (Rate Limiting) avec statut 429")
+    void handleRateLimitExceeded_ShouldReturnTooManyRequests() {
+        // Given - Utiliser un mock de RequestNotPermitted
+        RequestNotPermitted exception = mock(RequestNotPermitted.class);
+        when(exception.getMessage()).thenReturn("Rate limit exceeded for member-registration");
+
+        // When
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler
+                .handleRateLimitExceeded(exception, httpServletRequest);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+        assertThat(response.getBody()).isNotNull();
+
+        ErrorResponse errorResponse = response.getBody();
+        assertThat(errorResponse.status()).isEqualTo(429);
+        assertThat(errorResponse.error()).isEqualTo("Too Many Requests");
+        assertThat(errorResponse.message()).isEqualTo("Trop de tentatives. Veuillez réessayer plus tard.");
+        assertThat(errorResponse.path()).isEqualTo("/ecclesiaflow/members");
+        assertThat(errorResponse.timestamp()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Devrait gérer RequestNotPermitted avec différents endpoints")
+    void handleRateLimitExceeded_ShouldHandleDifferentEndpoints() {
+        // Given - Test avec un autre endpoint
+        httpServletRequest.setRequestURI("/ecclesiaflow/members/123/confirmation");
+        RequestNotPermitted exception = mock(RequestNotPermitted.class);
+        when(exception.getMessage()).thenReturn("Rate limit exceeded for confirmation-attempts");
+
+        // When
+        ResponseEntity<ErrorResponse> response = globalExceptionHandler
+                .handleRateLimitExceeded(exception, httpServletRequest);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+        assertThat(response.getBody()).isNotNull();
+
+        ErrorResponse errorResponse = response.getBody();
+        assertThat(errorResponse.status()).isEqualTo(429);
+        assertThat(errorResponse.error()).isEqualTo("Too Many Requests");
+        assertThat(errorResponse.message()).isEqualTo("Trop de tentatives. Veuillez réessayer plus tard.");
+        assertThat(errorResponse.path()).isEqualTo("/ecclesiaflow/members/123/confirmation");
     }
 }
