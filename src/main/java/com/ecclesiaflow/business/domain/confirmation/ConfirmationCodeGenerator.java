@@ -1,4 +1,4 @@
-package com.ecclesiaflow.application.code;
+package com.ecclesiaflow.business.domain.confirmation;
 
 import com.ecclesiaflow.business.domain.communication.CodeGenerator;
 import org.springframework.stereotype.Service;

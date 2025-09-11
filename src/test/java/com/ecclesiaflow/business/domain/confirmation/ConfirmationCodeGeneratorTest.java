@@ -1,4 +1,4 @@
-package com.ecclesiaflow.application.code;
+package com.ecclesiaflow.business.domain.confirmation;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
