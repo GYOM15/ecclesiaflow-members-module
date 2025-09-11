@@ -97,4 +97,15 @@ public class MembershipUpdate {
      * </p>
      */
     private String email;
+
+    /**
+     * Nouveau numéro de téléphone du membre (optionnel).
+     * <p>
+     * Si non-null, remplace le numero existant du membre.
+     * Si null, le numero actuel est conservé sans modification.
+     * <strong>Attention :</strong> La modification du numero  peut nécessiter
+     * une nouvelle confirmation selon les règles métier.
+     * </p>
+     */
+    private String phoneNumber;
 }

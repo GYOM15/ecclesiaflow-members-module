@@ -45,10 +45,11 @@ public class SignUpRequestMapper {
      */
     public static MembershipRegistration fromSignUpRequest(SignUpRequestPayload req) {
         return new MembershipRegistration(
-            req.getFirstName(),
-            req.getLastName(),
-            req.getEmail(),
-            req.getAddress()
+                req.getFirstName(),
+                req.getLastName(),
+                req.getEmail(),
+                req.getAddress(),
+                req.getPhoneNumber()
         );
     }
 }

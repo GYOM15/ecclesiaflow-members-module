@@ -1,6 +1,7 @@
 package com.ecclesiaflow.web.payloads;
 
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -69,4 +70,10 @@ public class UpdateMemberRequestPayload {
      */
     @Size(max = 100, message = "L'email ne peut pas dépasser 100 caractères")
     private String email;
+
+    /**
+     * Nouveau numero du membre (optionnelle).
+     */
+    @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$", message = "Format de téléphone invalide")
+    private String phoneNumber;
 }

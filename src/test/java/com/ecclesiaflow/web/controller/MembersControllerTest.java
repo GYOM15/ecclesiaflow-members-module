@@ -81,7 +81,7 @@ class MembersControllerTest {
         request.setEmail("john.doe@mail.com");
         request.setAddress("123 Main St");
         
-        MembershipRegistration registration = new MembershipRegistration("John", "Doe", "john.doe@mail.com", "123 Main St");
+        MembershipRegistration registration = new MembershipRegistration("John", "Doe", "john.doe@mail.com", "123 Main St",null );
         Member member = Member.builder()
                 .memberId(UUID.randomUUID())
                 .firstName("John")
@@ -144,9 +144,10 @@ class MembersControllerTest {
         request.setFirstName("Jane");
         request.setLastName("Doe");
         request.setEmail("jane.doe@mail.com");
-        request.setAddress("456 Blvd");
+        request.setAddress("456 Boulevard des Lilas");
+        request.setPhoneNumber("+1234567890");
 
-        MembershipRegistration registration = new MembershipRegistration("Jane", "Doe", "jane.doe@mail.com", "456 Blvd");
+        MembershipRegistration registration = new MembershipRegistration("Jane", "Doe", "jane.doe@mail.com", "456 Boulevard des Lilas","+1234567890" );
 
         when(memberService.registerMember(any(MembershipRegistration.class)))
                 .thenThrow(new InvalidRequestException("Email already in use")); // Simulez l'exception métier

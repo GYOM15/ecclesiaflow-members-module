@@ -73,6 +73,7 @@ public class Member {
     private LocalDateTime confirmedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String phoneNumber;
 
     @Builder.Default
     private final Role role = Role.MEMBER;
@@ -104,6 +105,7 @@ public class Member {
                 .lastName(chooseUpdatedValue(update.getLastName(), this.lastName))
                 .email(chooseUpdatedValue(update.getEmail(), this.email))
                 .address(chooseUpdatedValue(update.getAddress(), this.address))
+                .phoneNumber(chooseUpdatedValue(update.getPhoneNumber(), this.phoneNumber))
                 .createdAt(this.createdAt)
                 .confirmedAt(this.confirmedAt)
                 .updatedAt(LocalDateTime.now())

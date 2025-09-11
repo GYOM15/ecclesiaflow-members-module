@@ -57,20 +57,21 @@ public class UpdateRequestMapper {
      * </p>
      * 
      * @param memberId l'identifiant unique du membre à modifier, non null
-     * @param updateRequest le DTO contenant les nouvelles données, non null
+     * @param payload le DTO contenant les nouvelles données, non null
      * @return un {@link MembershipUpdate} prêt pour le traitement métier
      * @throws IllegalArgumentException si memberId ou updateRequest est null
      * 
      * @implNote Les champs null dans le DTO sont préservés pour permettre
      *           les mises à jour partielles au niveau du service métier.
      */
-    public MembershipUpdate fromUpdateMemberRequest(UUID memberId, UpdateMemberRequestPayload updateRequest) {
+    public MembershipUpdate fromUpdateMemberRequest(UUID memberId, UpdateMemberRequestPayload payload) {
         return MembershipUpdate.builder()
                 .memberId(memberId)
-                .firstName(updateRequest.getFirstName())
-                .lastName(updateRequest.getLastName())
-                .address(updateRequest.getAddress())
-                .email(updateRequest.getEmail())
+                .firstName(payload.getFirstName())
+                .lastName(payload.getLastName())
+                .address(payload.getAddress())
+                .email(payload.getEmail())
+                .phoneNumber(payload.getPhoneNumber())
                 .build();
     }
 }

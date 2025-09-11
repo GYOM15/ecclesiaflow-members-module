@@ -34,7 +34,7 @@ class MemberServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        registration = new MembershipRegistration("John", "Doe", "john.doe@mail.com", "123 Street");
+        registration = new MembershipRegistration("John", "Doe", "john.doe@mail.com", "123 Street",null );
     }
 
     @Test

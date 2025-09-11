@@ -3,6 +3,7 @@ package com.ecclesiaflow.web.payloads;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -68,6 +69,14 @@ public class SignUpRequestPayload {
      * <p>
      * Optionnelle, maximum 200 caractères.
      */
-    @Size(max = 200, message = "L'adresse ne peut pas dépasser 200 caractères")
+    @Size(min = 10, max = 200, message = "L'adresse doit contenir entre 10 et 200 caractères")
     private String address;
+
+    /**
+     * Adresse du membre.
+     * <p>
+     * Optionnelle
+     */
+    @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$", message = "Format de téléphone invalide")
+    private String phoneNumber;
 }

@@ -16,11 +16,11 @@ package com.ecclesiaflow.business.domain.member;
  *
  * <p><strong>Garanties :</strong> Immutable, thread-safe par défaut (Record Java).</p>
  *
- * @param firstName le prénom du membre, non null
- * @param lastName le nom de famille du membre, non null
- * @param email l'adresse email du membre (doit être valide et unique), non null
- * @param address l'adresse du membre, peut être null
- *
+ * @param firstName   le prénom du membre, non null
+ * @param lastName    le nom de famille du membre, non null
+ * @param email       l'adresse email du membre (doit être valide et unique), non null
+ * @param address     l'adresse du membre, peut être null
+ * @param phoneNumber
  * @author EcclesiaFlow Team
  * @since 1.0.0
  */
@@ -28,5 +28,5 @@ public record MembershipRegistration(
     String firstName,
     String lastName,
     String email,
-    String address
-) {}
+    String address,
+    String phoneNumber) {}
