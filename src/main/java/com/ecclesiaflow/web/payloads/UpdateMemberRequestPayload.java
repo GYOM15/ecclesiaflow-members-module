@@ -1,6 +1,7 @@
 package com.ecclesiaflow.web.payloads;
 
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -68,6 +69,7 @@ public class UpdateMemberRequestPayload {
     /**
      * Nouvelle adresse email du membre (optionnelle).
      */
+    @Email(message = "L'email doit être valide")
     @Size(max = 100, message = "L'email ne peut pas dépasser 100 caractères")
     private String email;
 
