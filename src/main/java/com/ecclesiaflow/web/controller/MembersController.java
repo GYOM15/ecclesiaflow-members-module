@@ -10,6 +10,7 @@ import com.ecclesiaflow.web.mappers.MemberResponseMapper;
 import com.ecclesiaflow.web.payloads.UpdateMemberRequestPayload;
 import com.ecclesiaflow.web.mappers.UpdateRequestMapper;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -113,6 +114,7 @@ public class MembersController {
     }
 
     @PostMapping(value = "/members", produces = "application/vnd.ecclesiaflow.members.v1+json")
+    @RateLimiter(name = "member-registration")
     @Operation(
         summary = "[TEMPORAIRE] Auto-enregistrement d'un membre",
         description = "SERA REMPLACÉ par un système d'approbation admin dans le module de gestion des membres"

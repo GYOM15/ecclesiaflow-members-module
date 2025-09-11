@@ -6,6 +6,7 @@ import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResul
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
 import com.ecclesiaflow.web.payloads.ConfirmationRequestPayload;
 import com.ecclesiaflow.web.dto.ConfirmationResponse;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -75,6 +76,7 @@ public class MembersConfirmationController {
     private final ConfirmationRequestMapper confirmationRequestMapper;
 
     @PostMapping(value = "/confirmation", produces = "application/vnd.ecclesiaflow.members.v1+json")
+    @RateLimiter(name = "confirmation-resend")
     @Operation(
             summary = "Confirmer le compte d'un membre",
             description = "Confirmer l'inscription d'un membre avec le code reçu par email. " +
@@ -124,6 +126,7 @@ public class MembersConfirmationController {
     }
 
     @PostMapping(value = "/confirmation-code", produces = "application/vnd.ecclesiaflow.members.v1+json")
+    @RateLimiter(name = "confirmation-attempts")
     @Operation(
             summary = "Renvoyer le code de confirmation",
             description = "Renvoyer un nouveau code de confirmation par email"
