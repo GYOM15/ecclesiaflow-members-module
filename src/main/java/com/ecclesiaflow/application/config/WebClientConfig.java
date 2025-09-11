@@ -1,4 +1,4 @@
-package com.ecclesiaflow.web.config;
+package com.ecclesiaflow.application.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

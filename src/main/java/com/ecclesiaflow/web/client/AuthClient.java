@@ -1,5 +1,6 @@
 package com.ecclesiaflow.web.client;
 
+import com.ecclesiaflow.application.config.WebClientConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatusCode;
@@ -36,7 +37,7 @@ import java.util.Map;
  * <p><strong>Configuration :</strong></p>
  * <ul>
  *   <li>ecclesiaflow.auth.module.enabled - Active/désactive l'intégration</li>
- *   <li>Configuration WebClient dans {@link com.ecclesiaflow.web.config.WebClientConfig}</li>
+ *   <li>Configuration WebClient dans {@link WebClientConfig}</li>
  * </ul>
  * 
  * <p><strong>Endpoints du module d'auth :</strong></p>
@@ -54,7 +55,7 @@ import java.util.Map;
  * @author EcclesiaFlow Team
  * @since 1.0.0
  * @see WebClient
- * @see com.ecclesiaflow.web.config.WebClientConfig
+ * @see WebClientConfig
  */
 @Service
 @RequiredArgsConstructor

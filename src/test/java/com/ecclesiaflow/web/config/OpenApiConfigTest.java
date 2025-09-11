@@ -1,5 +1,6 @@
 package com.ecclesiaflow.web.config;
 
+import com.ecclesiaflow.application.config.OpenApiConfig;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
@@ -13,8 +14,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springdoc.core.customizers.OpenApiCustomizer;
-
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.*;
 

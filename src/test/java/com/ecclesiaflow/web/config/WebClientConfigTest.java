@@ -1,5 +1,6 @@
 package com.ecclesiaflow.web.config;
 
+import com.ecclesiaflow.application.config.WebClientConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
