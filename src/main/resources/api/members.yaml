@@ -187,7 +187,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SignUpRequest'
+              $ref: '#/components/schemas/SignUpRequestPayload'
             examples:
               basic_member:
                 summary: Membre basique
@@ -215,7 +215,7 @@ paths:
           content:
             application/vnd.ecclesiaflow.members.v1+json:
               schema:
-                $ref: '#/components/schemas/MemberResponseV1'
+                $ref: '#/components/schemas/SignUpResponse'
         '400':
           description: Données d'entrée invalides
           content:
@@ -264,7 +264,7 @@ paths:
           content:
             application/vnd.ecclesiaflow.members.v1+json:
               schema:
-                $ref: '#/components/schemas/MemberResponseV1'
+                $ref: '#/components/schemas/SignUpResponse'
         '404':
           description: Membre introuvable
           content:
@@ -309,14 +309,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateMemberRequest'
+              $ref: '#/components/schemas/UpdateMemberRequestPayload'
       responses:
         '200':
           description: Membre mis à jour avec succès
           content:
             application/vnd.ecclesiaflow.members.v1+json:
               schema:
-                $ref: '#/components/schemas/MemberResponseV1'
+                $ref: '#/components/schemas/SignUpResponse'
         '400':
           description: Données d'entrée invalides
           content:
@@ -366,7 +366,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ConfirmationRequest'
+              $ref: '#/components/schemas/ConfirmationRequestPayload'
             examples:
               valid_code:
                 summary: Code valide
@@ -467,63 +467,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalServerError'
 
-  /ecclesiaflow/members/{memberId}/password:
-    post:
-      tags:
-        - Password Management
-      summary: Définir le mot de passe
-      description: |
-        Permet à un membre de définir son mot de passe après confirmation du compte.
-        Utilise un token temporaire généré lors de la confirmation.
-
-        **Sécurité:**
-        - Token temporaire requis (généré lors de la confirmation)
-        - Validation que l'email correspond au memberId
-        - Nouveau mot de passe doit respecter les règles de complexité
-        - Hachage sécurisé avec BCrypt
-
-        **Règles du mot de passe:**
-        - Minimum 8 caractères
-        - Au moins une minuscule
-        - Au moins une majuscule
-        - Au moins un chiffre
-      operationId: setPassword
-      parameters:
-        - name: memberId
-          in: path
-          description: Identifiant unique du membre
-          required: true
-          schema:
-            type: string
-            format: uuid
-            example: "550e8400-e29b-41d4-a716-446655440000"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetPasswordRequest'
-      responses:
-        '200':
-          description: Mot de passe défini avec succès
-        '400':
-          description: Ancien mot de passe incorrect
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BadRequestError'
-        '404':
-          description: Membre introuvable
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotFoundError'
-        '500':
-          description: Erreur interne du serveur
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InternalServerError'
 
 
 components:
@@ -541,138 +484,137 @@ components:
 
   schemas:
     # Request Schemas
-    SignUpRequest:
+    SignUpRequestPayload:
       type: object
+      description: "Données d'inscription d'un nouveau membre EcclesiaFlow"
       required:
         - firstName
         - lastName
         - email
-        - address
       properties:
         firstName:
           type: string
-          description: Prénom du membre
+          description: "Prénom du membre"
           minLength: 2
           maxLength: 50
           example: "Jean"
         lastName:
           type: string
-          description: Nom de famille du membre
+          description: "Nom de famille du membre"
           minLength: 2
           maxLength: 50
           example: "Dupont"
         email:
           type: string
           format: email
-          description: Adresse email unique du membre
+          description: "Adresse email du membre (doit être unique)"
+          maxLength: 100
           example: "jean.dupont@example.com"
         address:
           type: string
-          description: Adresse complète du membre
+          description: "Adresse physique du membre (optionnelle)"
           minLength: 10
           maxLength: 200
-          example: "123 Rue de la Paix, Montréal, H3A 1B2"
+          example: "123 Rue de la Paix, 75001 Paris"
         phoneNumber:
           type: string
-          description: Numéro de téléphone (optionnel)
+          description: "Numéro de téléphone au format international (optionnel)"
           pattern: "^\\+?[1-9]\\d{1,14}$"
-          example: "+1-514-555-0123"
+          example: "+33123456789"
 
-    UpdateMemberRequest:
+    UpdateMemberRequestPayload:
       type: object
+      description: "Données de mise à jour d'un membre (tous les champs sont optionnels)"
       properties:
         firstName:
           type: string
-          description: Prénom du membre
-          minLength: 2
+          description: "Nouveau prénom du membre"
           maxLength: 50
           example: "Jean"
         lastName:
           type: string
-          description: Nom de famille du membre
-          minLength: 2
+          description: "Nouveau nom de famille du membre"
           maxLength: 50
-          example: "Dupont"
+          example: "Martin"
+        email:
+          type: string
+          format: email
+          description: "Nouvelle adresse email du membre"
+          maxLength: 100
+          example: "jean.martin@example.com"
         address:
           type: string
-          description: Adresse complète du membre
-          minLength: 10
+          description: "Nouvelle adresse physique du membre"
           maxLength: 200
-          example: "456 Avenue des Érables, Québec, G1R 2S3"
+          example: "456 Avenue des Champs, 75008 Paris"
         phoneNumber:
           type: string
-          description: Numéro de téléphone
+          description: "Nouveau numéro de téléphone au format international"
           pattern: "^\\+?[1-9]\\d{1,14}$"
-          example: "+1-418-555-0456"
+          example: "+33987654321"
 
-    ConfirmationRequest:
+    ConfirmationRequestPayload:
       type: object
+      description: "Code de confirmation à 6 chiffres pour valider l'adresse email"
       required:
         - code
       properties:
         code:
           type: string
-          description: Code de confirmation à 6 chiffres
-          pattern: "^\\d{6}$"
+          description: "Code de confirmation à 6 chiffres reçu par email"
+          pattern: "\\d{6}"
+          minLength: 6
+          maxLength: 6
           example: "123456"
 
-    ChangePasswordRequest:
-      type: object
-      required:
-        - currentPassword
-        - newPassword
-      properties:
-        currentPassword:
-          type: string
-          format: password
-          description: Mot de passe actuel
-          example: "ancienMotDePasse123"
-        newPassword:
-          type: string
-          format: password
-          description: Nouveau mot de passe
-          minLength: 8
-          pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$"
-          example: "nouveauMotDePasse456"
 
-    SetPasswordRequest:
-      type: object
-      required:
-        - password
-      properties:
-        password:
-          type: string
-          format: password
-          description: Nouveau mot de passe
-          minLength: 8
-          pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$"
-          example: "motDePasseSecurise789"
 
     # Response Schemas
-    MemberResponseV1:
+    SignUpResponse:
       type: object
+      description: "Réponse contenant les informations d'un membre EcclesiaFlow"
       properties:
-        id:
+        message:
           type: string
-          format: uuid
-          example: "550e8400-e29b-41d4-a716-446655440000"
-        firstName:
-          type: string
-          example: "Jean"
-        lastName:
-          type: string
-          example: "Dupont"
+          description: "Message informatif pour l'utilisateur (optionnel)"
+          example: "Inscription réussie"
         email:
           type: string
           format: email
+          description: "Adresse email du membre"
           example: "jean.dupont@example.com"
+        firstName:
+          type: string
+          description: "Prénom du membre"
+          example: "Jean"
+        lastName:
+          type: string
+          description: "Nom de famille du membre"
+          example: "Dupont"
+        address:
+          type: string
+          description: "Adresse physique du membre (optionnelle)"
+          example: "123 Rue de la Paix, 75001 Paris"
+        role:
+          type: string
+          description: "Rôle du membre dans l'application"
+          example: "MEMBER"
+        token:
+          type: string
+          description: "Token d'authentification (si applicable)"
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         confirmed:
           type: boolean
-          example: true
+          description: "Indique si le compte a été confirmé par email"
+          example: false
         createdAt:
           type: string
-          format: date-time
+          description: "Date de création du compte (format ISO)"
           example: "2024-01-15T10:30:00Z"
+        confirmedAt:
+          type: string
+          description: "Date de confirmation du compte (format ISO)"
+          example: "2024-01-15T10:45:00Z"
 
     MemberPageResponseV1:
       type: object
@@ -680,7 +622,7 @@ components:
         members:
           type: array
           items:
-            $ref: '#/components/schemas/MemberResponseV1'
+            $ref: '#/components/schemas/SignUpResponse'
         totalCount:
           type: integer
           example: 157
@@ -693,20 +635,21 @@ components:
 
     ConfirmationResponse:
       type: object
+      description: "Réponse après confirmation réussie d'un compte membre"
       properties:
         message:
           type: string
-          description: Message de confirmation
-          example: "Code de confirmation envoyé avec succès"
-        expiresAt:
+          description: "Message de confirmation pour l'utilisateur"
+          example: "Compte confirmé avec succès. Vous pouvez maintenant définir votre mot de passe."
+        temporaryToken:
           type: string
-          format: date-time
-          description: Date d'expiration du code
-          example: "2024-01-15T10:45:00Z"
-        attemptsRemaining:
+          description: "Token temporaire pour définir le mot de passe"
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+        expiresIn:
           type: integer
-          description: Nombre de tentatives restantes
-          example: 3
+          format: int64
+          description: "Durée de validité du token temporaire en secondes"
+          example: 3600
 
     # Error Response Schemas
     ApiErrorResponse:
@@ -948,18 +891,3 @@ tags:
       - Codes à 6 chiffres avec expiration (15 minutes)
       - Rate limiting pour prévenir les abus
       - Tentatives limitées de validation
-
-  - name: Password Management
-    description: |
-      Gestion sécurisée des mots de passe
-
-      **Fonctionnalités:**
-      - Changement de mot de passe pour les comptes existants
-      - Définition de mot de passe initial
-      - Validation des règles de complexité
-      - Hachage sécurisé avec BCrypt
-
-      **Règles de sécurité:**
-      - Minimum 8 caractères
-      - Au moins une minuscule, une majuscule et un chiffre
-      - Protection contre les mots de passe communs
