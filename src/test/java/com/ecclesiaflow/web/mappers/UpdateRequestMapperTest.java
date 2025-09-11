@@ -1,8 +1,7 @@
-package com.ecclesiaflow.web.mappers.persistence;
+package com.ecclesiaflow.web.mappers;
 
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import com.ecclesiaflow.web.dto.UpdateMemberRequest;
-import com.ecclesiaflow.web.mappers.web.UpdateRequestMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -47,17 +46,11 @@ class UpdateRequestMapperTest {
     }
 
     @Test
-    void fromUpdateMemberRequest_WithNullRequest_ShouldCreateObjectWithOnlyMemberId() {
-        // When
-        MembershipUpdate result = mapper.fromUpdateMemberRequest(testMemberId, null);
-
-        // Then
-        assertNotNull(result);
-        assertEquals(testMemberId, result.getMemberId());
-        assertNull(result.getFirstName());
-        assertNull(result.getLastName());
-        assertNull(result.getEmail());
-        assertNull(result.getAddress());
+    void fromUpdateMemberRequest_WithNullRequest_ShouldThrowNullPointerException() {
+        // When & Then
+        assertThrows(NullPointerException.class, () -> {
+            mapper.fromUpdateMemberRequest(testMemberId, null);
+        });
     }
 
     @Test

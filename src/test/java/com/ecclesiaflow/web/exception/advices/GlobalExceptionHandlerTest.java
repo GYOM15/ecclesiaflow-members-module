@@ -20,6 +20,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.context.request.ServletWebRequest;
 
 import java.util.List;
@@ -249,6 +250,10 @@ class GlobalExceptionHandlerTest {
         assertThat(errorResponse.status()).isEqualTo(400);
         assertThat(errorResponse.message()).isEqualTo("Requête JSON mal formée");
         assertThat(errorResponse.path()).isEqualTo("/ecclesiaflow/members");
+
+        assertThat(errorResponse.errors().getFirst().type()).isEqualTo("parsing");
+        assertThat(errorResponse.errors().getFirst().code()).isEqualTo("MalformedJson");
+
     }
 
     // === TESTS POUR LES EXCEPTIONS MÉTIER ===
@@ -420,7 +425,28 @@ class GlobalExceptionHandlerTest {
 
         // Then
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().errors()).isNotNull();
-        assertThat(response.getBody().errors()).isEmpty();
+        assertThat(response.getBody().errors()).isNull();
+    }
+
+    // Exemple de test à ajouter
+    @Test
+    @DisplayName("Devrait gérer MissingRequestHeaderException avec statut 400")
+    void handleMissingRequestHeader_ShouldReturnBadRequest() {
+        // Given
+        MissingRequestHeaderException exception = new MissingRequestHeaderException("Authorization", null); // Mockez selon votre besoin
+
+        // When
+        ResponseEntity<ApiErrorResponse> response = globalExceptionHandler
+                .handleMissingRequestHeader(exception, webRequest);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        ApiErrorResponse errorResponse = response.getBody();
+        assertThat(errorResponse.status()).isEqualTo(400);
+        assertThat(errorResponse.message()).contains("En-tête requis manquant: Authorization");
+        assertThat(errorResponse.path()).isEqualTo("/ecclesiaflow/members");
+        assertThat(errorResponse.errors()).hasSize(1); // Devrait avoir une erreur simple si buildBadRequestErrorResponse la crée
+        assertThat(errorResponse.errors().get(0).message()).contains("En-tête requis manquant: Authorization");
     }
 }

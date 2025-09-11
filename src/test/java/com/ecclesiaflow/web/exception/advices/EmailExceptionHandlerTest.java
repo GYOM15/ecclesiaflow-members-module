@@ -4,17 +4,21 @@ import com.ecclesiaflow.web.dto.ErrorResponse;
 import com.ecclesiaflow.web.exception.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 
+import java.util.stream.Stream;
+
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /**
  * Tests unitaires pour EmailExceptionHandler.
@@ -29,271 +33,250 @@ class EmailExceptionHandlerTest {
 
     private MockHttpServletRequest httpServletRequest;
 
+    // Constantes pour éviter la duplication
+    private static final String DEFAULT_URI = "/ecclesiaflow/members";
+    private static final String ALTERNATIVE_URI = "/ecclesiaflow/members/123/confirmation";
+    private static final int INTERNAL_SERVER_ERROR_CODE = 500;
+    private static final String INTERNAL_SERVER_ERROR_MESSAGE = "Internal Server Error";
+
     @BeforeEach
     void setUp() {
         httpServletRequest = new MockHttpServletRequest();
-        httpServletRequest.setRequestURI("/ecclesiaflow/members");
+        httpServletRequest.setRequestURI(DEFAULT_URI);
     }
 
-    // === TESTS POUR LES EXCEPTIONS D'EMAIL DE CONFIRMATION ===
+    // === MÉTHODES UTILITAIRES POUR LES TESTS ===
 
-    @Test
-    @DisplayName("Devrait gérer ConfirmationEmailException avec statut 500")
-    void handleConfirmationEmailException_ShouldReturnInternalServerError() {
-        // Given
-        String originalMessage = "Échec d'envoi du code de confirmation";
-        RuntimeException cause = new RuntimeException("SMTP connection failed");
-        ConfirmationEmailException exception = new ConfirmationEmailException(originalMessage, cause);
-
-        // When
-        ResponseEntity<ErrorResponse> response = emailExceptionHandler
-                .handleConfirmationEmailException(exception, httpServletRequest);
-
-        // Then
+    /**
+     * Méthode utilitaire pour valider la structure standard d'une réponse d'erreur email.
+     */
+    private void assertStandardEmailErrorResponse(ResponseEntity<ErrorResponse> response, 
+                                                String expectedMessagePrefix, 
+                                                String originalMessage, 
+                                                String expectedPath) {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(response.getBody()).isNotNull();
         
         ErrorResponse errorResponse = response.getBody();
-        assertThat(errorResponse.status()).isEqualTo(500);
-        assertThat(errorResponse.error()).isEqualTo("Internal Server Error");
-        assertThat(errorResponse.message()).isEqualTo("Erreur lors de l'envoi de l'email de confirmation. Détails: " + originalMessage);
-        assertThat(errorResponse.path()).isEqualTo("/ecclesiaflow/members");
+        assertThat(errorResponse.status()).isEqualTo(INTERNAL_SERVER_ERROR_CODE);
+        assertThat(errorResponse.error()).isEqualTo(INTERNAL_SERVER_ERROR_MESSAGE);
+        assertThat(errorResponse.message()).isEqualTo(expectedMessagePrefix + originalMessage);
+        assertThat(errorResponse.path()).isEqualTo(expectedPath);
         assertThat(errorResponse.timestamp()).isNotNull();
     }
 
-    @Test
-    @DisplayName("Devrait gérer ConfirmationEmailException avec message null")
-    void handleConfirmationEmailException_WithNullMessage_ShouldHandleGracefully() {
-        // Given
-        ConfirmationEmailException exception = new ConfirmationEmailException(null, new RuntimeException("Cause"));
-
-        // When
-        ResponseEntity<ErrorResponse> response = emailExceptionHandler
-                .handleConfirmationEmailException(exception, httpServletRequest);
-
-        // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).contains("Erreur lors de l'envoi de l'email de confirmation. Détails: null");
+    /**
+     * Fournit les données de test pour les exceptions d'email.
+     */
+    private static Stream<Arguments> emailExceptionProvider() {
+        return Stream.of(
+            Arguments.of(
+                new ConfirmationEmailException("Échec d'envoi du code de confirmation", new RuntimeException("SMTP failed")),
+                "Erreur lors de l'envoi de l'email de confirmation. Détails: ",
+                "ConfirmationEmailException"
+            ),
+            Arguments.of(
+                new WelcomeEmailException("Template de bienvenue introuvable", new RuntimeException("Template not found")),
+                "Erreur lors de l'envoi de l'email de bienvenue. Détails: ",
+                "WelcomeEmailException"
+            ),
+            Arguments.of(
+                new EmailSendingException("Serveur SMTP indisponible", new RuntimeException("SMTP server down")),
+                "Erreur lors de l'envoi de l'email. Détails: ",
+                "EmailSendingException"
+            )
+        );
     }
 
-    // === TESTS POUR LES EXCEPTIONS D'EMAIL DE BIENVENUE ===
+    // === TESTS PARAMÉTRÉS POUR TOUTES LES EXCEPTIONS EMAIL ===
 
-    @Test
-    @DisplayName("Devrait gérer WelcomeEmailException avec statut 500")
-    void handleWelcomeEmailException_ShouldReturnInternalServerError() {
-        // Given
-        String originalMessage = "Template de bienvenue introuvable";
-        RuntimeException cause = new RuntimeException("Template not found");
-        WelcomeEmailException exception = new WelcomeEmailException(originalMessage, cause);
-
+    @ParameterizedTest
+    @MethodSource("emailExceptionProvider")
+    @DisplayName("Devrait gérer toutes les exceptions email avec statut 500")
+    void handleEmailExceptions_ShouldReturnInternalServerError(Exception exception, String expectedMessagePrefix, String exceptionType) {
         // When
-        ResponseEntity<ErrorResponse> response = emailExceptionHandler
-                .handleWelcomeEmailException(exception, httpServletRequest);
+        ResponseEntity<ErrorResponse> response = callAppropriateHandler(exception);
 
         // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody()).isNotNull();
-        
-        ErrorResponse errorResponse = response.getBody();
-        assertThat(errorResponse.status()).isEqualTo(500);
-        assertThat(errorResponse.error()).isEqualTo("Internal Server Error");
-        assertThat(errorResponse.message()).isEqualTo("Erreur lors de l'envoi de l'email de bienvenue. Détails: " + originalMessage);
-        assertThat(errorResponse.path()).isEqualTo("/ecclesiaflow/members");
-        assertThat(errorResponse.timestamp()).isNotNull();
+        assertStandardEmailErrorResponse(response, expectedMessagePrefix, exception.getMessage(), DEFAULT_URI);
     }
 
-    @Test
-    @DisplayName("Devrait gérer WelcomeEmailException avec différents chemins de requête")
-    void handleWelcomeEmailException_WithDifferentRequestPath_ShouldIncludeCorrectPath() {
-        // Given
-        httpServletRequest.setRequestURI("/ecclesiaflow/members/123/confirmation");
-        WelcomeEmailException exception = new WelcomeEmailException("Test message", new RuntimeException());
-
-        // When
-        ResponseEntity<ErrorResponse> response = emailExceptionHandler
-                .handleWelcomeEmailException(exception, httpServletRequest);
-
-        // Then
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().path()).isEqualTo("/ecclesiaflow/members/123/confirmation");
+    /**
+     * Appelle le handler approprié selon le type d'exception.
+     */
+    private ResponseEntity<ErrorResponse> callAppropriateHandler(Exception exception) {
+        if (exception instanceof ConfirmationEmailException) {
+            return emailExceptionHandler.handleConfirmationEmailException((ConfirmationEmailException) exception, httpServletRequest);
+        } else if (exception instanceof WelcomeEmailException) {
+            return emailExceptionHandler.handleWelcomeEmailException((WelcomeEmailException) exception, httpServletRequest);
+        } else if (exception instanceof EmailSendingException) {
+            return emailExceptionHandler.handleEmailSendingException((EmailSendingException) exception, httpServletRequest);
+        }
+        throw new IllegalArgumentException("Type d'exception non supporté: " + exception.getClass());
     }
 
-    // === TESTS POUR LES EXCEPTIONS D'EMAIL DE RÉINITIALISATION ===
+    // === TESTS SPÉCIFIQUES PAR TYPE D'EXCEPTION ===
 
-    @Test
-    @DisplayName("Devrait gérer PasswordResetEmailException avec statut 500")
-    void handlePasswordResetEmailException_ShouldReturnInternalServerError() {
-        // Given
-        String originalMessage = "Token de réinitialisation expiré";
-        RuntimeException cause = new RuntimeException("Token expired");
-        PasswordResetEmailException exception = new PasswordResetEmailException(originalMessage, cause);
+    @Nested
+    @DisplayName("Tests pour ConfirmationEmailException")
+    class ConfirmationEmailExceptionTests {
 
-        // When
-        ResponseEntity<ErrorResponse> response = emailExceptionHandler
-                .handlePasswordResetEmailException(exception, httpServletRequest);
+        @Test
+        @DisplayName("Devrait gérer ConfirmationEmailException avec message null")
+        void handleConfirmationEmailException_WithNullMessage_ShouldHandleGracefully() {
+            // Given
+            ConfirmationEmailException exception = new ConfirmationEmailException(null, new RuntimeException("Cause"));
 
-        // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody()).isNotNull();
-        
-        ErrorResponse errorResponse = response.getBody();
-        assertThat(errorResponse.status()).isEqualTo(500);
-        assertThat(errorResponse.error()).isEqualTo("Internal Server Error");
-        assertThat(errorResponse.message()).isEqualTo("Erreur lors de l'envoi de l'email de réinitialisation de mot de passe. Détails: " + originalMessage);
-        assertThat(errorResponse.path()).isEqualTo("/ecclesiaflow/members");
-        assertThat(errorResponse.timestamp()).isNotNull();
+            // When
+            ResponseEntity<ErrorResponse> response = emailExceptionHandler
+                    .handleConfirmationEmailException(exception, httpServletRequest);
+
+            // Then
+            assertStandardEmailErrorResponse(response, 
+                "Erreur lors de l'envoi de l'email de confirmation. Détails: ", 
+                "null", 
+                DEFAULT_URI);
+        }
     }
 
-    // === TESTS POUR LES EXCEPTIONS GÉNÉRIQUES D'EMAIL ===
+    @Nested
+    @DisplayName("Tests pour WelcomeEmailException")
+    class WelcomeEmailExceptionTests {
 
-    @Test
-    @DisplayName("Devrait gérer EmailSendingException avec statut 500")
-    void handleEmailSendingException_ShouldReturnInternalServerError() {
-        // Given
-        String originalMessage = "Serveur SMTP indisponible";
-        RuntimeException cause = new RuntimeException("SMTP server down");
-        EmailSendingException exception = new EmailSendingException(originalMessage, cause);
+        @Test
+        @DisplayName("Devrait gérer WelcomeEmailException avec différents chemins de requête")
+        void handleWelcomeEmailException_WithDifferentRequestPath_ShouldIncludeCorrectPath() {
+            // Given
+            httpServletRequest.setRequestURI(ALTERNATIVE_URI);
+            WelcomeEmailException exception = new WelcomeEmailException("Test message", new RuntimeException());
 
-        // When
-        ResponseEntity<ErrorResponse> response = emailExceptionHandler
-                .handleEmailSendingException(exception, httpServletRequest);
+            // When
+            ResponseEntity<ErrorResponse> response = emailExceptionHandler
+                    .handleWelcomeEmailException(exception, httpServletRequest);
 
-        // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody()).isNotNull();
-        
-        ErrorResponse errorResponse = response.getBody();
-        assertThat(errorResponse.status()).isEqualTo(500);
-        assertThat(errorResponse.error()).isEqualTo("Internal Server Error");
-        assertThat(errorResponse.message()).isEqualTo("Erreur lors de l'envoi de l'email. Détails: " + originalMessage);
-        assertThat(errorResponse.path()).isEqualTo("/ecclesiaflow/members");
-        assertThat(errorResponse.timestamp()).isNotNull();
+            // Then
+            assertStandardEmailErrorResponse(response, 
+                "Erreur lors de l'envoi de l'email de bienvenue. Détails: ", 
+                "Test message", 
+                ALTERNATIVE_URI);
+        }
     }
 
-    @Test
-    @DisplayName("Devrait gérer EmailSendingException avec message simple")
-    void handleEmailSendingException_WithSimpleMessage_ShouldReturnCorrectResponse() {
-        // Given
-        String simpleMessage = "Configuration email invalide";
-        EmailSendingException exception = new EmailSendingException(simpleMessage);
 
-        // When
-        ResponseEntity<ErrorResponse> response = emailExceptionHandler
-                .handleEmailSendingException(exception, httpServletRequest);
+    @Nested
+    @DisplayName("Tests pour EmailSendingException")
+    class EmailSendingExceptionTests {
 
-        // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Erreur lors de l'envoi de l'email. Détails: " + simpleMessage);
+        @Test
+        @DisplayName("Devrait gérer EmailSendingException avec message simple")
+        void handleEmailSendingException_WithSimpleMessage_ShouldReturnCorrectResponse() {
+            // Given
+            String simpleMessage = "Configuration email invalide";
+            EmailSendingException exception = new EmailSendingException(simpleMessage);
+
+            // When
+            ResponseEntity<ErrorResponse> response = emailExceptionHandler
+                    .handleEmailSendingException(exception, httpServletRequest);
+
+            // Then
+            assertStandardEmailErrorResponse(response, 
+                "Erreur lors de l'envoi de l'email. Détails: ", 
+                simpleMessage, 
+                DEFAULT_URI);
+        }
     }
 
-    // === TESTS POUR LA STRUCTURE DES RÉPONSES ===
+    // === TESTS DE COHÉRENCE ET STRUCTURE ===
 
-    @Test
-    @DisplayName("Devrait inclure un timestamp dans toutes les réponses d'erreur email")
-    void allEmailErrorResponses_ShouldIncludeTimestamp() {
-        // Given
-        ConfirmationEmailException exception = new ConfirmationEmailException("Test", new RuntimeException());
+    @Nested
+    @DisplayName("Tests de cohérence des réponses")
+    class ResponseConsistencyTests {
 
-        // When
-        ResponseEntity<ErrorResponse> response = emailExceptionHandler
-                .handleConfirmationEmailException(exception, httpServletRequest);
+        @Test
+        @DisplayName("Toutes les exceptions email doivent retourner le même format de réponse")
+        void allEmailExceptions_ShouldReturnConsistentResponseFormat() {
+            // Given
+            var exceptions = Stream.of(
+                new ConfirmationEmailException("Confirmation failed", new RuntimeException()),
+                new WelcomeEmailException("Welcome failed", new RuntimeException()),
+                new EmailSendingException("Generic failed", new RuntimeException())
+            );
 
-        // Then
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().timestamp()).isNotNull();
+            // When & Then
+            exceptions.forEach(exception -> {
+                ResponseEntity<ErrorResponse> response = callAppropriateHandler(exception);
+                
+                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+                assertThat(response.getBody()).isNotNull();
+                assertThat(response.getBody().status()).isEqualTo(INTERNAL_SERVER_ERROR_CODE);
+                assertThat(response.getBody().error()).isEqualTo(INTERNAL_SERVER_ERROR_MESSAGE);
+                assertThat(response.getBody().timestamp()).isNotNull();
+                assertThat(response.getBody().path()).isEqualTo(DEFAULT_URI);
+            });
+        }
     }
 
-    @Test
-    @DisplayName("Devrait retourner le même format de réponse pour toutes les exceptions email")
-    void allEmailExceptions_ShouldReturnConsistentResponseFormat() {
-        // Given
-        ConfirmationEmailException confirmationException = new ConfirmationEmailException("Confirmation failed", new RuntimeException());
-        WelcomeEmailException welcomeException = new WelcomeEmailException("Welcome failed", new RuntimeException());
-        PasswordResetEmailException resetException = new PasswordResetEmailException("Reset failed", new RuntimeException());
-        EmailSendingException genericException = new EmailSendingException("Generic failed", new RuntimeException());
+    // === TESTS DES CAS LIMITES ===
 
-        // When
-        ResponseEntity<ErrorResponse> confirmationResponse = emailExceptionHandler.handleConfirmationEmailException(confirmationException, httpServletRequest);
-        ResponseEntity<ErrorResponse> welcomeResponse = emailExceptionHandler.handleWelcomeEmailException(welcomeException, httpServletRequest);
-        ResponseEntity<ErrorResponse> resetResponse = emailExceptionHandler.handlePasswordResetEmailException(resetException, httpServletRequest);
-        ResponseEntity<ErrorResponse> genericResponse = emailExceptionHandler.handleEmailSendingException(genericException, httpServletRequest);
+    @Nested
+    @DisplayName("Tests des cas limites")
+    class EdgeCaseTests {
 
-        // Then - Tous doivent avoir le même statut HTTP
-        assertThat(confirmationResponse.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(welcomeResponse.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(resetResponse.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(genericResponse.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        /**
+         * Fournit des données de test pour les cas limites.
+         */
+        private static Stream<Arguments> edgeCaseProvider() {
+            return Stream.of(
+                Arguments.of(
+                    "Message très long",
+                    "A".repeat(1000),
+                    "Devrait gérer les messages très longs"
+                ),
+                Arguments.of(
+                    "Caractères spéciaux",
+                    "Erreur avec caractères spéciaux: àéèùç@#$%^&*()[]{}|\\:;\"'<>,.?/~`",
+                    "Devrait gérer les caractères spéciaux"
+                ),
+                Arguments.of(
+                    "Message vide",
+                    "",
+                    "Devrait gérer les messages vides"
+                )
+            );
+        }
 
-        // Tous doivent avoir la même structure de réponse
-        assertThat(confirmationResponse.getBody()).isNotNull();
-        assertThat(welcomeResponse.getBody()).isNotNull();
-        assertThat(resetResponse.getBody()).isNotNull();
-        assertThat(genericResponse.getBody()).isNotNull();
+        @ParameterizedTest
+        @MethodSource("edgeCaseProvider")
+        @DisplayName("Devrait gérer gracieusement tous les cas limites de messages")
+        void handleEmailExceptions_WithEdgeCases_ShouldHandleGracefully(String testCase, String message, String description) {
+            // Given
+            ConfirmationEmailException exception = new ConfirmationEmailException(message, new RuntimeException());
 
-        // Tous doivent avoir les mêmes champs remplis
-        assertThat(confirmationResponse.getBody().status()).isEqualTo(500);
-        assertThat(welcomeResponse.getBody().status()).isEqualTo(500);
-        assertThat(resetResponse.getBody().status()).isEqualTo(500);
-        assertThat(genericResponse.getBody().status()).isEqualTo(500);
+            // When
+            ResponseEntity<ErrorResponse> response = emailExceptionHandler
+                    .handleConfirmationEmailException(exception, httpServletRequest);
 
-        assertThat(confirmationResponse.getBody().error()).isEqualTo("Internal Server Error");
-        assertThat(welcomeResponse.getBody().error()).isEqualTo("Internal Server Error");
-        assertThat(resetResponse.getBody().error()).isEqualTo("Internal Server Error");
-        assertThat(genericResponse.getBody().error()).isEqualTo("Internal Server Error");
-    }
+            // Then
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().message()).contains(message);
+        }
 
-    // === TESTS POUR LES CAS LIMITES ===
+        @Test
+        @DisplayName("Devrait gérer les requêtes avec URI null")
+        void handleEmailExceptions_WithNullRequestURI_ShouldHandleGracefully() {
+            // Given
+            httpServletRequest.setRequestURI(null);
+            EmailSendingException exception = new EmailSendingException("Test message");
 
-    @Test
-    @DisplayName("Devrait gérer les exceptions avec des messages très longs")
-    void handleEmailExceptions_WithLongMessages_ShouldHandleGracefully() {
-        // Given
-        String longMessage = "A".repeat(1000); // Message de 1000 caractères
-        ConfirmationEmailException exception = new ConfirmationEmailException(longMessage, new RuntimeException());
+            // When
+            ResponseEntity<ErrorResponse> response = emailExceptionHandler
+                    .handleEmailSendingException(exception, httpServletRequest);
 
-        // When
-        ResponseEntity<ErrorResponse> response = emailExceptionHandler
-                .handleConfirmationEmailException(exception, httpServletRequest);
-
-        // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).contains(longMessage);
-    }
-
-    @Test
-    @DisplayName("Devrait gérer les exceptions avec des caractères spéciaux")
-    void handleEmailExceptions_WithSpecialCharacters_ShouldHandleGracefully() {
-        // Given
-        String messageWithSpecialChars = "Erreur avec caractères spéciaux: àéèùç@#$%^&*()[]{}|\\:;\"'<>,.?/~`";
-        WelcomeEmailException exception = new WelcomeEmailException(messageWithSpecialChars, new RuntimeException());
-
-        // When
-        ResponseEntity<ErrorResponse> response = emailExceptionHandler
-                .handleWelcomeEmailException(exception, httpServletRequest);
-
-        // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).contains(messageWithSpecialChars);
-    }
-
-    @Test
-    @DisplayName("Devrait gérer les requêtes avec URI null")
-    void handleEmailExceptions_WithNullRequestURI_ShouldHandleGracefully() {
-        // Given
-        httpServletRequest.setRequestURI(null);
-        EmailSendingException exception = new EmailSendingException("Test message");
-
-        // When
-        ResponseEntity<ErrorResponse> response = emailExceptionHandler
-                .handleEmailSendingException(exception, httpServletRequest);
-
-        // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().path()).isNull();
+            // Then
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().path()).isNull();
+        }
     }
 }

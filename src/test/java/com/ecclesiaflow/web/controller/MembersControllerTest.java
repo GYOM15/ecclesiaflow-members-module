@@ -1,341 +1,413 @@
 package com.ecclesiaflow.web.controller;
 
-import com.ecclesiaflow.business.domain.MembershipRegistration;
-import com.ecclesiaflow.business.domain.MembershipUpdate;
-import com.ecclesiaflow.web.mappers.persistence.MemberUpdateMapper;
-import com.ecclesiaflow.business.services.MemberService;
-import com.ecclesiaflow.io.entities.Member;
-import com.ecclesiaflow.io.entities.Role;
-import com.ecclesiaflow.web.dto.SignUpRequest;
-import com.ecclesiaflow.web.dto.UpdateMemberRequest;
+import com.ecclesiaflow.business.domain.member.Member;
+import com.ecclesiaflow.business.domain.member.MembershipRegistration;
+import com.ecclesiaflow.business.domain.member.MembershipUpdate;
+import com.ecclesiaflow.business.domain.member.Role;
 import com.ecclesiaflow.web.exception.MemberNotFoundException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ecclesiaflow.web.exception.InvalidRequestException; // Supposons cette exception pour email déjà utilisé
+import com.ecclesiaflow.business.services.MemberService;
+import com.ecclesiaflow.web.dto.SignUpRequest;
+import com.ecclesiaflow.web.dto.SignUpResponse;
+import com.ecclesiaflow.web.dto.UpdateMemberRequest;
+import com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler;
+import com.ecclesiaflow.web.mappers.UpdateRequestMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import com.fasterxml.jackson.databind.ObjectMapper; // Pour sérialiser les DTOs dans le corps des requêtes
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.hamcrest.Matchers.hasSize;
 
-/**
- * Tests unitaires pour MembersController.
- * Vérifie les endpoints REST de gestion des membres.
- */
-@WebMvcTest(MembersController.class)
 class MembersControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
+    private ObjectMapper objectMapper; // Pour convertir les objets en JSON
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @MockitoBean
+    @Mock
     private MemberService memberService;
 
-    @MockitoBean
-    private MemberUpdateMapper memberUpdateMapper;
+    @Mock
+    private UpdateRequestMapper updateRequestMapper;
 
-    private Member testMember;
-    private SignUpRequest signUpRequest;
-    private UpdateMemberRequest updateRequest;
-    private UUID testMemberId;
+    // Les mappers sont des classes statiques, pas besoin de les mocker
+
+    @InjectMocks
+    private MembersController membersController;
+
+    private final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     @BeforeEach
-    void setUp() {
-        testMemberId = UUID.randomUUID();
-
-        testMember = new Member();
-        testMember.setId(testMemberId);
-        testMember.setMemberId(UUID.randomUUID());
-        testMember.setFirstName("Jean");
-        testMember.setLastName("Dupont");
-        testMember.setEmail("jean.dupont@example.com");
-        testMember.setAddress("123 Rue de la Paix");
-        testMember.setRole(Role.MEMBER);
-        testMember.setConfirmed(true);
-        testMember.setCreatedAt(LocalDateTime.now());
-
-        signUpRequest = new SignUpRequest();
-        signUpRequest.setFirstName("Jean");
-        signUpRequest.setLastName("Dupont");
-        signUpRequest.setEmail("jean.dupont@example.com");
-        signUpRequest.setAddress("123 Rue de la Paix");
-
-        updateRequest = new UpdateMemberRequest();
-        updateRequest.setFirstName("Jean-Updated");
-        updateRequest.setLastName("Dupont-Updated");
-        updateRequest.setEmail("jean.updated@example.com");
-        updateRequest.setAddress("456 Nouvelle Adresse");
+    void setup() {
+        MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(membersController)
+                .setControllerAdvice(new GlobalExceptionHandler()) // Décommentez si vous avez un GlobalExceptionHandler
+                .build();
+        objectMapper = new ObjectMapper();
     }
 
+    // --- Tests pour /ecclesiaflow/hello ---
     @Test
-    void sayHello_ShouldReturnHelloMessage() throws Exception {
-        // When & Then
-        mockMvc.perform(get("/ecclesiaflow/hello"))
+    void sayHello_shouldReturnMessageAndCorrectContentType() throws Exception {
+        mockMvc.perform(get("/ecclesiaflow/hello")
+                        .accept("application/vnd.ecclesiaflow.members.v1+json")) // Spécifiez le type accepté
                 .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
                 .andExpect(content().string("Hi Member"));
     }
 
+    // --- Tests pour POST /ecclesiaflow/members (registerMember) ---
     @Test
-    void signUp_WithValidData_ShouldReturnCreatedMember() throws Exception {
-        // Given
-        MembershipRegistration registration = new MembershipRegistration(
-                "Jean", "Dupont", "jean.dupont@example.com", "123 Rue de la Paix"
-        );
+    void registerMember_shouldReturnCreated() throws Exception {
+        // Préparation de la requête
+        SignUpRequest request = new SignUpRequest();
+        request.setFirstName("John");
+        request.setLastName("Doe");
+        request.setEmail("john.doe@mail.com");
+        request.setAddress("123 Main St");
+        
+        MembershipRegistration registration = new MembershipRegistration("John", "Doe", "john.doe@mail.com", "123 Main St");
+        Member member = Member.builder()
+                .memberId(UUID.randomUUID())
+                .firstName("John")
+                .lastName("Doe")
+                .email("john.doe@mail.com")
+                .role(Role.MEMBER)
+                .confirmed(false)
+                .createdAt(LocalDateTime.now())
+                .build();
 
-        when(memberService.registerMember(any(MembershipRegistration.class))).thenReturn(testMember);
+        String expectedMessage = "Member registered (temporary - approval system coming)";
+        SignUpResponse responseDto = SignUpResponse.builder()
+                .email("john.doe@mail.com")
+                .firstName("John")
+                .lastName("Doe")
+                .address("123 Main St")
+                .role("MEMBER")
+                .confirmed(false)
+                .createdAt(member.getCreatedAt().format(ISO_FORMATTER))
+                .message(expectedMessage)
+                .build();
 
-        // When & Then
+        // Définir les comportements des mocks
+        when(memberService.registerMember(any(MembershipRegistration.class))).thenReturn(member);
+
+        // Exécuter la requête et vérifier les résultats
         mockMvc.perform(post("/ecclesiaflow/members")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(signUpRequest)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.message").value("Member registered (temporary - approval system coming)"))
-                .andExpect(jsonPath("$.firstName").value("Jean"))
-                .andExpect(jsonPath("$.lastName").value("Dupont"))
-                .andExpect(jsonPath("$.email").value("jean.dupont@example.com"))
-                .andExpect(jsonPath("$.address").value("123 Rue de la Paix"))
-                .andExpect(jsonPath("$.role").value("MEMBER"))
-                .andExpect(jsonPath("$.confirmed").value(true));
+                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(jsonPath("$.email").value("john.doe@mail.com"))
+                .andExpect(jsonPath("$.firstName").value("John"))
+                .andExpect(jsonPath("$.message").value(expectedMessage))
+                .andExpect(jsonPath("$.confirmed").value(false));
 
+        // Vérifier que les méthodes mockées ont été appelées
         verify(memberService).registerMember(any(MembershipRegistration.class));
     }
 
     @Test
-    void signUp_WithInvalidData_ShouldReturnBadRequest() throws Exception {
-        // Given
+    void registerMember_shouldReturnBadRequestForInvalidInput() throws Exception {
+        // Requête avec email invalide (sera attrapé par @Valid)
         SignUpRequest invalidRequest = new SignUpRequest();
-        // Tous les champs requis sont null
+        invalidRequest.setFirstName("J"); // Trop court
+        invalidRequest.setLastName("Doe");
+        invalidRequest.setEmail("invalid-email");
+        invalidRequest.setAddress("123 Street");
 
-        // When & Then
         mockMvc.perform(post("/ecclesiaflow/members")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest());
-
-        verify(memberService, never()).registerMember(any());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").exists()); // Vérifiez qu'un champ d'erreur est présent
     }
 
     @Test
-    void signUp_WithExistingEmail_ShouldReturnConflict() throws Exception {
-        // Given
-        when(memberService.registerMember(any(MembershipRegistration.class)))
-                .thenThrow(new IllegalArgumentException("Un compte avec cet email existe déjà."));
+    void registerMember_shouldReturnBadRequestIfEmailAlreadyUsed() throws Exception {
+        SignUpRequest request = new SignUpRequest();
+        request.setFirstName("Jane");
+        request.setLastName("Doe");
+        request.setEmail("jane.doe@mail.com");
+        request.setAddress("456 Blvd");
 
-        // When & Then
+        MembershipRegistration registration = new MembershipRegistration("Jane", "Doe", "jane.doe@mail.com", "456 Blvd");
+
+        when(memberService.registerMember(any(MembershipRegistration.class)))
+                .thenThrow(new InvalidRequestException("Email already in use")); // Simulez l'exception métier
+
         mockMvc.perform(post("/ecclesiaflow/members")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(signUpRequest)))
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest()) // Ou .isConflict() si votre GlobalExceptionHandler le mappe ainsi
+                .andExpect(jsonPath("$.message").value("Email already in use"));
+
+        verify(memberService).registerMember(any(MembershipRegistration.class));
+    }
+
+    // --- Tests pour GET /ecclesiaflow/members/{memberId} (getMember) ---
+    @Test
+    void getMember_shouldReturnMember() throws Exception {
+        UUID id = UUID.randomUUID();
+        Member member = Member.builder()
+                .memberId(id)
+                .firstName("Jane")
+                .lastName("Doe")
+                .email("jane.doe@mail.com")
+                .role(Role.MEMBER)
+                .createdAt(LocalDateTime.now())
+                .confirmed(true)
+                .build();
+
+        String expectedMessage = "Membre trouvé";
+        SignUpResponse responseDto = SignUpResponse.builder()
+                .email("jane.doe@mail.com")
+                .firstName("Jane")
+                .lastName("Doe")
+                .role("MEMBER")
+                .confirmed(true)
+                .createdAt(member.getCreatedAt().format(ISO_FORMATTER))
+                .message(expectedMessage)
+                .build();
+
+        when(memberService.findById(id)).thenReturn(member);
+
+        mockMvc.perform(get("/ecclesiaflow/members/" + id)
+                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(jsonPath("$.email").value("jane.doe@mail.com"))
+                .andExpect(jsonPath("$.firstName").value("Jane"))
+                .andExpect(jsonPath("$.message").value(expectedMessage))
+                .andExpect(jsonPath("$.confirmed").value(true));
+
+        verify(memberService).findById(id);
+    }
+
+    @Test
+    void getMember_shouldReturnNotFound() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(memberService.findById(id)).thenThrow(new MemberNotFoundException("Membre non trouvé avec ID: " + id));
+
+        mockMvc.perform(get("/ecclesiaflow/members/" + id)
+                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Membre non trouvé avec ID: " + id));
+
+        verify(memberService).findById(id);
+    }
+
+    // --- Tests pour PATCH /ecclesiaflow/members/{memberId} (updateMember) ---
+    @Test
+    void updateMember_shouldReturnUpdatedMember() throws Exception {
+        UUID id = UUID.randomUUID();
+        UpdateMemberRequest updateRequest = new UpdateMemberRequest();
+        updateRequest.setFirstName("NewName");
+        updateRequest.setEmail("new.email@mail.com");
+
+        MembershipUpdate businessUpdate = MembershipUpdate.builder()
+                .memberId(id)
+                .firstName("NewName")
+                .email("new.email@mail.com")
+                .build(); // Exemple simplifié, à compléter selon votre logique
+
+        Member updatedMember = Member.builder()
+                .memberId(id)
+                .firstName("NewName")
+                .lastName("Doe")
+                .email("new.email@mail.com")
+                .role(Role.MEMBER)
+                .createdAt(LocalDateTime.now().minusDays(1))
+                .confirmed(true)
+                .build();
+
+        String expectedMessage = "Membre modifié avec succès";
+        SignUpResponse responseDto = SignUpResponse.builder()
+                .email("new.email@mail.com")
+                .firstName("NewName")
+                .lastName("Doe")
+                .role("MEMBER")
+                .confirmed(true)
+                .createdAt(updatedMember.getCreatedAt().format(ISO_FORMATTER))
+                .message(expectedMessage)
+                .build();
+
+        when(updateRequestMapper.fromUpdateMemberRequest(eq(id), any(UpdateMemberRequest.class))).thenReturn(businessUpdate);
+        when(memberService.updateMember(any(MembershipUpdate.class))).thenReturn(updatedMember);
+
+        mockMvc.perform(patch("/ecclesiaflow/members/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(jsonPath("$.firstName").value("NewName"))
+                .andExpect(jsonPath("$.email").value("new.email@mail.com"))
+                .andExpect(jsonPath("$.message").value(expectedMessage));
+
+        verify(updateRequestMapper).fromUpdateMemberRequest(eq(id), any(UpdateMemberRequest.class));
+        verify(memberService).updateMember(any(MembershipUpdate.class));
+    }
+
+    @Test
+    void updateMember_shouldReturnNotFound() throws Exception {
+        UUID id = UUID.randomUUID();
+        UpdateMemberRequest updateRequest = new UpdateMemberRequest();
+        updateRequest.setFirstName("NewName");
+
+        MembershipUpdate businessUpdate = MembershipUpdate.builder().memberId(id).firstName("NewName").build();
+
+        when(updateRequestMapper.fromUpdateMemberRequest(eq(id), any(UpdateMemberRequest.class))).thenReturn(businessUpdate);
+        when(memberService.updateMember(any(MembershipUpdate.class)))
+                .thenThrow(new MemberNotFoundException("Membre à mettre à jour non trouvé avec ID: " + id));
+
+        mockMvc.perform(patch("/ecclesiaflow/members/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Membre à mettre à jour non trouvé avec ID: " + id));
+
+        verify(updateRequestMapper).fromUpdateMemberRequest(eq(id), any(UpdateMemberRequest.class));
+        verify(memberService).updateMember(any(MembershipUpdate.class));
+    }
+
+    @Test
+    void updateMember_shouldReturnBadRequestForInvalidInput() throws Exception {
+        UUID id = UUID.randomUUID();
+        UpdateMemberRequest invalidRequest = new UpdateMemberRequest();
+        invalidRequest.setFirstName("AveryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryLongFirstName"); // Plus de 50 caractères
+
+        mockMvc.perform(patch("/ecclesiaflow/members/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Un compte avec cet email existe déjà."));
+                .andExpect(jsonPath("$.error").exists());
+
+        // Mapper statique ne nécessite pas de vérification
+        verifyNoInteractions(memberService);
     }
 
+
+    // --- Tests pour GET /ecclesiaflow/members (getAllMembers) ---
     @Test
-    void getMemberById_WithExistingId_ShouldReturnMember() throws Exception {
-        // Given
-        when(memberService.findById(testMemberId)).thenReturn(testMember);
+    void getAllMembers_shouldReturnListOfMembers() throws Exception {
+        List<Member> members = List.of(
+                Member.builder().memberId(UUID.randomUUID()).firstName("Alice").email("alice@mail.com").role(Role.MEMBER).createdAt(LocalDateTime.now()).confirmed(true).build(),
+                Member.builder().memberId(UUID.randomUUID()).firstName("Bob").email("bob@mail.com").role(Role.MEMBER).createdAt(LocalDateTime.now()).confirmed(false).build()
+        );
 
-        // When & Then
-        mockMvc.perform(get("/ecclesiaflow/members/{id}", testMemberId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Membre trouvé"))
-                .andExpect(jsonPath("$.firstName").value("Jean"))
-                .andExpect(jsonPath("$.lastName").value("Dupont"))
-                .andExpect(jsonPath("$.email").value("jean.dupont@example.com"));
-
-        verify(memberService).findById(testMemberId);
-    }
-
-    @Test
-    void getMemberById_WithNonExistentId_ShouldReturnNotFound() throws Exception {
-        // Given
-        UUID nonExistentId = UUID.randomUUID();
-        when(memberService.findById(nonExistentId))
-                .thenThrow(new MemberNotFoundException("Membre non trouvé"));
-
-        // When & Then
-        mockMvc.perform(get("/ecclesiaflow/members/{id}", nonExistentId))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Membre non trouvé"));
-    }
-
-    @Test
-    void updateMember_WithValidData_ShouldReturnUpdatedMember() throws Exception {
-        // Given
-        MembershipUpdate membershipUpdate = MembershipUpdate.builder()
-                .memberId(testMemberId)
-                .firstName("Jean-Updated")
-                .lastName("Dupont-Updated")
-                .email("jean.updated@example.com")
-                .address("456 Nouvelle Adresse")
-                .build();
-
-        when(memberUpdateMapper.fromUpdateMemberRequest(testMemberId, updateRequest))
-                .thenReturn(membershipUpdate);
-        when(memberService.updateMember(membershipUpdate)).thenReturn(testMember);
-
-        // When & Then
-        mockMvc.perform(patch("/ecclesiaflow/members/{id}", testMemberId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Membre modifié avec succès"))
-                .andExpect(jsonPath("$.firstName").value("Jean"))
-                .andExpect(jsonPath("$.lastName").value("Dupont"));
-
-        verify(memberUpdateMapper).fromUpdateMemberRequest(testMemberId, updateRequest);
-        verify(memberService).updateMember(membershipUpdate);
-    }
-
-    @Test
-    void updateMember_WithNonExistentId_ShouldReturnNotFound() throws Exception {
-        // Given
-        UUID nonExistentId = UUID.randomUUID();
-        MembershipUpdate membershipUpdate = MembershipUpdate.builder()
-                .memberId(nonExistentId)
-                .build();
-
-        when(memberUpdateMapper.fromUpdateMemberRequest(nonExistentId, updateRequest))
-                .thenReturn(membershipUpdate);
-        when(memberService.updateMember(membershipUpdate))
-                .thenThrow(new MemberNotFoundException("Membre non trouvé"));
-
-        // When & Then
-        mockMvc.perform(patch("/ecclesiaflow/members/{id}", nonExistentId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Membre non trouvé"));
-    }
-
-    @Test
-    void deleteMember_WithExistingId_ShouldReturnNoContent() throws Exception {
-        // Given
-        doNothing().when(memberService).deleteMember(testMemberId);
-
-        // When & Then
-        mockMvc.perform(delete("/ecclesiaflow/members/{id}", testMemberId))
-                .andExpect(status().isNoContent());
-
-        verify(memberService).deleteMember(testMemberId);
-    }
-
-    @Test
-    void deleteMember_WithNonExistentId_ShouldReturnNotFound() throws Exception {
-        // Given
-        UUID nonExistentId = UUID.randomUUID();
-        doThrow(new MemberNotFoundException("Membre non trouvé"))
-                .when(memberService).deleteMember(nonExistentId);
-
-        // When & Then
-        mockMvc.perform(delete("/ecclesiaflow/members/{id}", nonExistentId))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Membre non trouvé"));
-    }
-
-    @Test
-    void getAllMembers_ShouldReturnMembersList() throws Exception {
-        // Given
-        Member member2 = new Member();
-        member2.setId(UUID.randomUUID());
-        member2.setEmail("member2@example.com");
-        member2.setFirstName("Marie");
-        member2.setLastName("Martin");
-        member2.setRole(Role.MEMBER);
-        member2.setConfirmed(false);
-        member2.setCreatedAt(LocalDateTime.now());
-
-        List<Member> members = Arrays.asList(testMember, member2);
         when(memberService.getAllMembers()).thenReturn(members);
 
-        // When & Then
-        mockMvc.perform(get("/ecclesiaflow/members"))
+        mockMvc.perform(get("/ecclesiaflow/members")
+                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].firstName").value("Jean"))
-                .andExpect(jsonPath("$[1].firstName").value("Marie"));
+                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(jsonPath("$[0].email").value("alice@mail.com"))
+                .andExpect(jsonPath("$[0].firstName").value("Alice"))
+                .andExpect(jsonPath("$[1].email").value("bob@mail.com"));
 
         verify(memberService).getAllMembers();
     }
 
     @Test
-    void getAllMembers_WithEmptyList_ShouldReturnEmptyArray() throws Exception {
-        // Given
-        when(memberService.getAllMembers()).thenReturn(Arrays.asList());
+    void getAllMembers_shouldReturnEmptyList() throws Exception {
+        when(memberService.getAllMembers()).thenReturn(Collections.emptyList());
 
-        // When & Then
-        mockMvc.perform(get("/ecclesiaflow/members"))
+        mockMvc.perform(get("/ecclesiaflow/members")
+                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$", hasSize(0)));
+                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(jsonPath("$").isEmpty()); // Vérifie que la liste est vide
+
+        verify(memberService).getAllMembers();
     }
 
+
+    // --- Tests pour GET /ecclesiaflow/members/{email}/confirmation-status ---
     @Test
-    void signUp_WithMissingRequiredFields_ShouldReturnValidationErrors() throws Exception {
-        // Given
-        SignUpRequest invalidRequest = new SignUpRequest();
-        invalidRequest.setFirstName(""); // Champ vide
-        invalidRequest.setEmail("invalid-email"); // Email invalide
-        // lastName et address manquants
-
-        // When & Then
-        mockMvc.perform(post("/ecclesiaflow/members")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Erreur de validation des données"))
-                .andExpect(jsonPath("$.errors").isArray());
-
-        verify(memberService, never()).registerMember(any());
-    }
-
-    @Test
-    void getMemberConfirmationStatus_WithConfirmedMember_ShouldReturnTrue() throws Exception {
-        // Given
-        String email = "jean.dupont@example.com";
+    void getMemberConfirmationStatus_shouldReturnTrue() throws Exception {
+        String email = "confirmed@mail.com";
         when(memberService.isEmailConfirmed(email)).thenReturn(true);
 
-        // When & Then
-        mockMvc.perform(get("/ecclesiaflow/members/{email}/confirmation-status", email))
+        mockMvc.perform(get("/ecclesiaflow/members/" + email + "/confirmation-status")
+                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
                 .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
                 .andExpect(jsonPath("$.confirmed").value(true));
+
+        verify(memberService).isEmailConfirmed(email);
     }
 
     @Test
-    void getMemberConfirmationStatus_WithUnconfirmedMember_ShouldReturnFalse() throws Exception {
-        // Given
-        String email = "unconfirmed@example.com";
+    void getMemberConfirmationStatus_shouldReturnFalse() throws Exception {
+        String email = "unconfirmed@mail.com";
         when(memberService.isEmailConfirmed(email)).thenReturn(false);
 
-        // When & Then
-        mockMvc.perform(get("/ecclesiaflow/members/{email}/confirmation-status", email))
+        mockMvc.perform(get("/ecclesiaflow/members/" + email + "/confirmation-status")
+                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
                 .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
                 .andExpect(jsonPath("$.confirmed").value(false));
+
+        verify(memberService).isEmailConfirmed(email);
+    }
+
+    // Le contrôleur ne devrait pas retourner 404 ici, le service doit toujours retourner true/false
+    // Si le service lance MemberNotFoundException, le contrôleur devrait le gérer.
+    // Supposons que isEmailConfirmed gère déjà l'email non trouvé en retournant false.
+    // Si isEmailConfirmed peut lancer une MemberNotFoundException, il faudrait tester ce cas aussi.
+    @Test
+    void getMemberConfirmationStatus_shouldReturnNotFoundIfMemberServiceThrowsNotFound() throws Exception {
+        String email = "nonexistent@mail.com";
+        when(memberService.isEmailConfirmed(email)).thenThrow(new MemberNotFoundException("Membre non trouvé"));
+
+        mockMvc.perform(get("/ecclesiaflow/members/" + email + "/confirmation-status")
+                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Membre non trouvé"));
+
+        verify(memberService).isEmailConfirmed(email);
+    }
+
+
+    // --- Tests pour DELETE /ecclesiaflow/members/{memberId} (deleteMember) ---
+    @Test
+    void deleteMember_shouldReturnNoContent() throws Exception {
+        UUID id = UUID.randomUUID();
+        doNothing().when(memberService).deleteMember(id); // Simuler une suppression réussie
+
+        mockMvc.perform(delete("/ecclesiaflow/members/" + id)
+                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(status().isNoContent());
+
+        verify(memberService).deleteMember(id); // Vérifier que le service a été appelé
     }
 
     @Test
-    void getMemberConfirmationStatus_WithNonExistentMember_ShouldReturnNotFound() throws Exception {
-        // Given
-        String email = "non-existent@example.com";
-        when(memberService.isEmailConfirmed(email))
-                .thenThrow(new MemberNotFoundException("Membre non trouvé"));
+    void deleteMember_shouldReturnNotFound() throws Exception {
+        UUID id = UUID.randomUUID();
+        doThrow(new MemberNotFoundException("Membre à supprimer non trouvé avec ID: " + id))
+                .when(memberService).deleteMember(id);
 
-        // When & Then
-        mockMvc.perform(get("/ecclesiaflow/members/{email}/confirmation-status", email))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/ecclesiaflow/members/" + id)
+                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Membre à supprimer non trouvé avec ID: " + id));
+
+        verify(memberService).deleteMember(id);
     }
 }

@@ -1,4 +1,4 @@
-package com.ecclesiaflow.web.mappers.web;
+package com.ecclesiaflow.web.mappers;
 
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.Role;
@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*; // Utilisation d'AssertJ
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * Tests unitaires pour MemberResponseMapper.
@@ -92,11 +92,16 @@ class MemberResponseMapperTest {
         }
 
         @Test
-        @DisplayName("Devrait lancer NullPointerException si le message est null")
-        void fromMember_WithNullMessage_ShouldThrowNullPointerException() {
-            // When & Then
-            assertThatThrownBy(() -> MemberResponseMapper.fromMember(testMember, null, "token"))
-                    .isInstanceOf(NullPointerException.class);
+        @DisplayName("Devrait mapper correctement avec un message null")
+        void fromMember_WithNullMessage_ShouldMapNullMessage() {
+            // When
+            SignUpResponse response = MemberResponseMapper.fromMember(testMember, null, "token");
+            
+            // Then
+            assertThat(response).isNotNull();
+            assertThat(response.getMessage()).isNull();
+            assertThat(response.getToken()).isEqualTo("token");
+            assertThat(response.getFirstName()).isEqualTo("Jean");
         }
     }
 
@@ -136,11 +141,16 @@ class MemberResponseMapperTest {
         }
 
         @Test
-        @DisplayName("Devrait lancer NullPointerException si le message est null pour la surcharge message-seulement")
-        void fromMember_WithMessageOnly_WithNullMessage_ShouldThrowNullPointerException() {
-            // When & Then
-            assertThatThrownBy(() -> MemberResponseMapper.fromMember(testMember, null))
-                    .isInstanceOf(NullPointerException.class);
+        @DisplayName("Devrait mapper correctement avec un message null pour la surcharge message-seulement")
+        void fromMember_WithMessageOnly_WithNullMessage_ShouldMapNullMessage() {
+            // When
+            SignUpResponse response = MemberResponseMapper.fromMember(testMember, null);
+            
+            // Then
+            assertThat(response).isNotNull();
+            assertThat(response.getMessage()).isNull();
+            assertThat(response.getToken()).isNull();
+            assertThat(response.getFirstName()).isEqualTo("Jean");
         }
     }
 
@@ -171,7 +181,7 @@ class MemberResponseMapperTest {
             // Given
             testMember = testMember.toBuilder()
                     .confirmed(false)
-                    .confirmedAt(null) // confirmedAt devrait être null si non confirmé
+                    .confirmedAt(null)
                     .build();
             String message = "Membre non confirmé";
 

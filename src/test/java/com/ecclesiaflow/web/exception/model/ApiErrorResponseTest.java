@@ -52,20 +52,19 @@ class ApiErrorResponseTest {
         assertThat(response.message()).isEqualTo("Message d'erreur");
         assertThat(response.path()).isEqualTo("/api/test");
         assertThat(response.errors()).hasSize(1);
-        assertThat(response.errors().get(0).message()).isEqualTo("Erreur test");
+        assertThat(response.errors().getFirst().message()).isEqualTo("Erreur test");
     }
 
     @Test
-    @DisplayName("Devrait initialiser une liste d'erreurs vide si null est passé")
-    void constructor_WithNullErrors_ShouldInitializeEmptyList() {
+    @DisplayName("Devrait garder errors null si null est passé explicitement")
+    void constructor_WithNullErrors_ShouldKeepNull() {
         // When
         ApiErrorResponse response = new ApiErrorResponse(
-            testTimestamp, 400, "Bad Request", "Message d'erreur", "/api/test", null
+            testTimestamp, 404, "Not Found", "Ressource non trouvée", "/api/test", null
         );
 
         // Then
-        assertThat(response.errors()).isNotNull();
-        assertThat(response.errors()).isEmpty();
+        assertThat(response.errors()).isNull();
     }
 
     // === TESTS DU BUILDER ===

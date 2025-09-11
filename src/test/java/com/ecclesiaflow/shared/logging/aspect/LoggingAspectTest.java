@@ -1,11 +1,10 @@
-package com.ecclesiaflow.business.aspect;
+package com.ecclesiaflow.shared.logging.aspect;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import com.ecclesiaflow.common.logging.annotation.LogExecution;
-import com.ecclesiaflow.common.logging.aspect.LoggingAspect;
+import com.ecclesiaflow.shared.logging.annotation.LogExecution;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -20,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.test.context.TestPropertySource;
 
@@ -35,11 +35,12 @@ import static org.assertj.core.api.Assertions.*;
  */
 @SpringBootTest(classes = {LoggingAspectTest.TestConfig.class})
 @TestPropertySource(properties = {
-        "logging.level.com.ecclesiaflow.common.logging.aspect.LoggingAspect=DEBUG"
+        "logging.level.com.ecclesiaflow.shared.logging.aspect.LoggingAspect=DEBUG"
 })
 @DisplayName("LoggingAspect - Tests d'intégration AOP")
 class LoggingAspectTest {
 
+    // Les services sont maintenant des classes internes statiques
     @Autowired
     private TestService testService;
 
@@ -63,6 +64,7 @@ class LoggingAspectTest {
     void tearDown() {
         // Nettoyage après chaque test
         logger.detachAppender(listAppender);
+        listAppender.stop(); // Arrêter l'appender après utilisation
     }
 
     @Test
@@ -235,7 +237,7 @@ class LoggingAspectTest {
         }
     }
 
-    // Service de test pour déclencher les aspects AOP
+    // CHANGEMENT: La classe est rendue STATIQUE
     @Service
     static class TestService {
 
@@ -257,11 +259,11 @@ class LoggingAspectTest {
         }
     }
 
-    // Service de test avec annotations @LogExecution
+    // CHANGEMENT: La classe est rendue STATIQUE
     @Service
     static class TestAnnotatedService {
 
-        @LogExecution
+        @LogExecution // Assurez-vous que l'annotation est bien importée
         public String annotatedMethod() {
             return "annotated result";
         }
@@ -287,18 +289,19 @@ class LoggingAspectTest {
         }
     }
 
-    // Aspect de test qui étend LoggingAspect pour inclure les services de test
+    // CHANGEMENT: La classe est rendue STATIQUE
     @Aspect
+    @Component
     static class TestLoggingAspect extends LoggingAspect {
 
-        // Pointcut pour les services de test dans le package de test
-        @Pointcut("execution(* com.ecclesiaflow.business.aspect.LoggingAspectTest.TestService.*(..))")
+        // CHANGEMENT: Pointcut cible les noms de classes internes statiques avec la syntaxe AspectJ correcte
+        @Pointcut("execution(* com.ecclesiaflow.shared.logging.aspect.LoggingAspectTest.TestService.*(..))")
         public void testServiceMethods() {}
 
         // Advice pour les méthodes de service de test
         @Around("testServiceMethods()")
         public Object logTestServiceMethods(ProceedingJoinPoint joinPoint) throws Throwable {
-            return super.logServiceMethods(joinPoint);
+            return super.logServiceMethods(joinPoint); // Utilisation de la méthode publique
         }
     }
 }

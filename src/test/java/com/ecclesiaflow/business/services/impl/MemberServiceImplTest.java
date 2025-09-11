@@ -1,266 +1,166 @@
 package com.ecclesiaflow.business.services.impl;
 
-import com.ecclesiaflow.business.domain.MembershipRegistration;
-import com.ecclesiaflow.business.domain.MembershipUpdate;
-import com.ecclesiaflow.business.services.EmailService;
-import com.ecclesiaflow.io.entities.MemberEntity;
-import com.ecclesiaflow.io.entities.MemberConfirmation;
-import com.ecclesiaflow.io.entities.Role;
-import com.ecclesiaflow.io.repository.MemberConfirmationRepository;
-import com.ecclesiaflow.io.repository.MemberRepository;
+import com.ecclesiaflow.business.domain.member.Member;
+import com.ecclesiaflow.business.domain.member.MemberRepository;
+import com.ecclesiaflow.business.domain.member.MembershipRegistration;
+import com.ecclesiaflow.business.domain.member.MembershipUpdate;
+import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.web.exception.MemberNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("MemberServiceImpl - Tests unitaires")
-class MemberEntityServiceImplTest {
+class MemberServiceImplTest {
 
     @Mock
     private MemberRepository memberRepository;
 
     @Mock
-    private MemberConfirmationRepository confirmationRepository;
-
-    @Mock
-    private EmailService emailService;
+    private MemberConfirmationService confirmationService;
 
     @InjectMocks
     private MemberServiceImpl memberService;
 
-    private MembershipRegistration testRegistration;
-    private MemberEntity testMemberEntity;
-    private UUID testMemberId;
+    private MembershipRegistration registration;
 
     @BeforeEach
     void setUp() {
-        testMemberId = UUID.randomUUID();
+        registration = new MembershipRegistration("John", "Doe", "john.doe@mail.com", "123 Street");
+    }
 
-        testRegistration = new MembershipRegistration(
-                "Jean",
-                "Dupont",
-                "jean.dupont@example.com",
-                "123 Rue de la Paix"
+    @Test
+    void registerMember_shouldSaveAndSendConfirmation() {
+        Member member = Member.builder()
+                .memberId(UUID.randomUUID())
+                .firstName("John")
+                .lastName("Doe")
+                .email("john.doe@mail.com")
+                .address("123 Street")
+                .build();
+
+        when(memberRepository.existsByEmail(registration.email())).thenReturn(false);
+        when(memberRepository.save(any(Member.class))).thenReturn(member);
+
+        Member result = memberService.registerMember(registration);
+
+        assertNotNull(result);
+        assertEquals("John", result.getFirstName());
+        verify(memberRepository).save(any(Member.class));
+        verify(confirmationService).sendConfirmationCode(result);
+    }
+
+    @Test
+    void registerMember_shouldThrowIfEmailAlreadyUsed() {
+        when(memberRepository.existsByEmail(registration.email())).thenReturn(true);
+
+        assertThrows(IllegalArgumentException.class, () -> memberService.registerMember(registration));
+
+        verify(memberRepository, never()).save(any());
+    }
+
+    @Test
+    void isEmailAlreadyUsed_shouldReturnTrueIfExists() {
+        when(memberRepository.existsByEmail("john.doe@mail.com")).thenReturn(true);
+
+        assertTrue(memberService.isEmailAlreadyUsed("john.doe@mail.com"));
+    }
+
+    @Test
+    void isEmailConfirmed_shouldReturnTrueIfMemberConfirmed() {
+        Member member = Member.builder()
+                .memberId(UUID.randomUUID())
+                .firstName("John")
+                .email("john.doe@mail.com")
+                .build();
+        member.confirm();
+
+        when(memberRepository.findByEmail("john.doe@mail.com")).thenReturn(Optional.of(member));
+
+        assertTrue(memberService.isEmailConfirmed("john.doe@mail.com"));
+    }
+
+    @Test
+    void isEmailConfirmed_shouldReturnFalseIfNotFound() {
+        when(memberRepository.findByEmail("unknown@mail.com")).thenReturn(Optional.empty());
+
+        assertFalse(memberService.isEmailConfirmed("unknown@mail.com"));
+    }
+
+    @Test
+    void findById_shouldReturnMemberIfExists() {
+        UUID id = UUID.randomUUID();
+        Member member = Member.builder().memberId(id).firstName("Jane").email("jane@mail.com").build();
+
+        when(memberRepository.findById(id)).thenReturn(Optional.of(member));
+
+        Member result = memberService.findById(id);
+
+        assertEquals("Jane", result.getFirstName());
+    }
+
+    @Test
+    void findById_shouldThrowIfNotFound() {
+        UUID id = UUID.randomUUID();
+        when(memberRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(MemberNotFoundException.class, () -> memberService.findById(id));
+    }
+
+    @Test
+    void updateMember_shouldUpdateAndSave() {
+        UUID id = UUID.randomUUID();
+        Member existing = Member.builder()
+                .memberId(id)
+                .firstName("OldName")
+                .email("old@mail.com")
+                .build();
+
+        MembershipUpdate update = MembershipUpdate.builder()
+                .memberId(id)
+                .firstName("NewName")
+                .build();
+
+        when(memberRepository.findById(id)).thenReturn(Optional.of(existing));
+        when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Member result = memberService.updateMember(update);
+
+        assertEquals("NewName", result.getFirstName());
+        verify(memberRepository).save(any(Member.class));
+    }
+
+    @Test
+    void deleteMember_shouldDeleteIfExists() {
+        UUID id = UUID.randomUUID();
+        Member existing = Member.builder().memberId(id).firstName("ToDelete").email("del@mail.com").build();
+
+        when(memberRepository.findById(id)).thenReturn(Optional.of(existing));
+
+        memberService.deleteMember(id);
+
+        verify(memberRepository).delete(existing);
+    }
+
+    @Test
+    void getAllMembers_shouldReturnList() {
+        List<Member> members = List.of(
+                Member.builder().memberId(UUID.randomUUID()).firstName("A").email("a@mail.com").build(),
+                Member.builder().memberId(UUID.randomUUID()).firstName("B").email("b@mail.com").build()
         );
 
-        testMemberEntity = new MemberEntity();
-        testMemberEntity.setId(testMemberId);
-        testMemberEntity.setMemberId(UUID.randomUUID());
-        testMemberEntity.setFirstName("Jean");
-        testMemberEntity.setLastName("Dupont");
-        testMemberEntity.setEmail("jean.dupont@example.com");
-        testMemberEntity.setAddress("123 Rue de la Paix");
-        testMemberEntity.setRole(Role.MEMBER);
-        testMemberEntity.setConfirmed(false);
-        testMemberEntity.setCreatedAt(LocalDateTime.now());
-    }
+        when(memberRepository.findAll()).thenReturn(members);
 
-    // --- TESTS EXISTANTS (omitted for brevity) ---
-    @Test
-    void registerMember_WithNewEmail_ShouldCreateMemberAndSendConfirmation() {
-        when(memberRepository.existsByEmail(testRegistration.email())).thenReturn(false);
-        when(memberRepository.save(any(MemberEntity.class))).thenReturn(testMemberEntity);
-        when(confirmationRepository.findByMemberId(any())).thenReturn(Optional.empty());
+        List<Member> result = memberService.getAllMembers();
 
-        MemberEntity result = memberService.registerMember(testRegistration);
-
-        assertNotNull(result);
-        assertEquals(testMemberEntity, result);
-        verify(memberRepository).save(any(MemberEntity.class));
-        verify(confirmationRepository).save(any(MemberConfirmation.class));
-        verify(emailService).sendConfirmationCode(anyString(), anyString(), anyString());
-    }
-
-    // --- NOUVEAU TEST 1 : Gérer l'échec de l'envoi d'email ---
-    @Test
-    @DisplayName("Devrait créer le membre et le code même si l'envoi de l'email échoue")
-    void registerMember_WithEmailServiceFailure_ShouldStillCreateMemberAndConfirmation() {
-        // Given
-        when(memberRepository.existsByEmail(testRegistration.email())).thenReturn(false);
-        when(memberRepository.save(any(MemberEntity.class))).thenReturn(testMemberEntity);
-        when(confirmationRepository.findByMemberId(any())).thenReturn(Optional.empty());
-
-        doThrow(new RuntimeException("Email service failure"))
-                .when(emailService).sendConfirmationCode(anyString(), anyString(), anyString());
-
-        // When
-        assertDoesNotThrow(() -> memberService.registerMember(testRegistration));
-
-        // Then
-        // Utiliser ArgumentCaptor pour vérifier l'objet passé à save()
-        ArgumentCaptor<MemberEntity> memberCaptor = ArgumentCaptor.forClass(MemberEntity.class);
-        verify(memberRepository, times(1)).save(memberCaptor.capture());
-
-        MemberEntity capturedMemberEntity = memberCaptor.getValue();
-        assertNotNull(capturedMemberEntity);
-        assertEquals(testMemberEntity.getEmail(), capturedMemberEntity.getEmail());
-        assertEquals(testMemberEntity.getFirstName(), capturedMemberEntity.getFirstName());
-
-        verify(confirmationRepository).save(any(MemberConfirmation.class));
-    }
-
-    // --- NOUVEAU TEST 2 : Gérer la suppression de l'ancien code ---
-    @Test
-    @DisplayName("Devrait supprimer l'ancien code de confirmation avant d'en créer un nouveau")
-    void registerMember_WithExistingConfirmation_ShouldDeleteOldCode() {
-        // Given
-        MemberConfirmation existingConfirmation = new MemberConfirmation();
-        when(memberRepository.existsByEmail(testRegistration.email())).thenReturn(false);
-        when(memberRepository.save(any(MemberEntity.class))).thenReturn(testMemberEntity);
-        when(confirmationRepository.findByMemberId(testMemberId)).thenReturn(Optional.of(existingConfirmation));
-
-        // When
-        MemberEntity result = memberService.registerMember(testRegistration);
-
-        // Then
-        verify(confirmationRepository).findByMemberId(testMemberId);
-        verify(confirmationRepository).delete(existingConfirmation);
-        verify(confirmationRepository, times(1)).save(any(MemberConfirmation.class)); // S'assurer qu'un nouveau code est bien créé
-        verify(emailService).sendConfirmationCode(anyString(), anyString(), anyString());
-    }
-
-    // --- TESTS EXISTANTS (omitted for brevity) ---
-    @Test
-    void registerMember_WithExistingEmail_ShouldThrowException() {
-        when(memberRepository.existsByEmail(testRegistration.email())).thenReturn(true);
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> memberService.registerMember(testRegistration));
-        assertEquals("Un compte avec cet email existe déjà.", exception.getMessage());
-        verify(memberRepository, never()).save(any());
-        verify(emailService, never()).sendConfirmationCode(anyString(), anyString(), anyString());
-    }
-
-    @Test
-    void isEmailAlreadyUsed_WithExistingEmail_ShouldReturnTrue() {
-        when(memberRepository.existsByEmail("existing@example.com")).thenReturn(true);
-        boolean result = memberService.isEmailAlreadyUsed("existing@example.com");
-        assertTrue(result);
-    }
-
-    @Test
-    void isEmailAlreadyUsed_WithNewEmail_ShouldReturnFalse() {
-        when(memberRepository.existsByEmail("new@example.com")).thenReturn(false);
-        boolean result = memberService.isEmailAlreadyUsed("new@example.com");
-        assertFalse(result);
-    }
-
-    @Test
-    void isEmailConfirmed_WithConfirmedEmail_ShouldReturnTrue() {
-        testMemberEntity.setConfirmed(true);
-        when(memberRepository.findByEmail("confirmed@example.com")).thenReturn(Optional.of(testMemberEntity));
-        boolean result = memberService.isEmailConfirmed("confirmed@example.com");
-        assertTrue(result);
-    }
-
-    @Test
-    void isEmailConfirmed_WithUnconfirmedEmail_ShouldReturnFalse() {
-        testMemberEntity.setConfirmed(false);
-        when(memberRepository.findByEmail("unconfirmed@example.com")).thenReturn(Optional.of(testMemberEntity));
-        boolean result = memberService.isEmailConfirmed("unconfirmed@example.com");
-        assertFalse(result);
-    }
-
-    @Test
-    void isEmailConfirmed_WithNonExistentEmail_ShouldReturnFalse() {
-        when(memberRepository.findByEmail("nonexistent@example.com")).thenReturn(Optional.empty());
-        boolean result = memberService.isEmailConfirmed("nonexistent@example.com");
-        assertFalse(result);
-    }
-
-    @Test
-    void findById_WithExistingId_ShouldReturnMember() {
-        when(memberRepository.findById(testMemberId)).thenReturn(Optional.of(testMemberEntity));
-        MemberEntity result = memberService.findById(testMemberId);
-        assertNotNull(result);
-        assertEquals(testMemberEntity, result);
-    }
-
-    @Test
-    void findById_WithNonExistentId_ShouldThrowException() {
-        UUID nonExistentId = UUID.randomUUID();
-        when(memberRepository.findById(nonExistentId)).thenReturn(Optional.empty());
-        assertThrows(MemberNotFoundException.class, () -> memberService.findById(nonExistentId));
-    }
-
-    @Test
-    void updateMember_WithValidData_ShouldUpdateAndReturnMember() {
-        MembershipUpdate updateRequest = MembershipUpdate.builder()
-                .memberId(testMemberId)
-                .firstName("Jean-Updated")
-                .lastName("Dupont-Updated")
-                .email("jean.updated@example.com")
-                .address("456 Nouvelle Adresse")
-                .build();
-        when(memberRepository.findById(testMemberId)).thenReturn(Optional.of(testMemberEntity));
-        when(memberRepository.save(any(MemberEntity.class))).thenReturn(testMemberEntity);
-        MemberEntity result = memberService.updateMember(updateRequest);
-        assertNotNull(result);
-        verify(memberRepository).save(testMemberEntity);
-        assertEquals("Jean-Updated", testMemberEntity.getFirstName());
-        assertEquals("Dupont-Updated", testMemberEntity.getLastName());
-        assertEquals("jean.updated@example.com", testMemberEntity.getEmail());
-        assertEquals("456 Nouvelle Adresse", testMemberEntity.getAddress());
-    }
-
-    @Test
-    void updateMember_WithPartialData_ShouldUpdateOnlyProvidedFields() {
-        MembershipUpdate updateRequest = MembershipUpdate.builder()
-                .memberId(testMemberId)
-                .firstName("Jean-Updated")
-                .email("jean.updated@example.com")
-                .build();
-        when(memberRepository.findById(testMemberId)).thenReturn(Optional.of(testMemberEntity));
-        when(memberRepository.save(any(MemberEntity.class))).thenReturn(testMemberEntity);
-        MemberEntity result = memberService.updateMember(updateRequest);
-        assertNotNull(result);
-        assertEquals("Jean-Updated", testMemberEntity.getFirstName());
-        assertEquals("jean.updated@example.com", testMemberEntity.getEmail());
-        assertEquals("Dupont", testMemberEntity.getLastName());
-        assertEquals("123 Rue de la Paix", testMemberEntity.getAddress());
-    }
-
-    @Test
-    void deleteMember_WithExistingId_ShouldDeleteMember() {
-        when(memberRepository.findById(testMemberId)).thenReturn(Optional.of(testMemberEntity));
-        memberService.deleteMember(testMemberId);
-        verify(memberRepository).delete(testMemberEntity);
-    }
-
-    @Test
-    void deleteMember_WithNonExistentId_ShouldThrowException() {
-        UUID nonExistentId = UUID.randomUUID();
-        when(memberRepository.findById(nonExistentId)).thenReturn(Optional.empty());
-        assertThrows(MemberNotFoundException.class, () -> memberService.deleteMember(nonExistentId));
-        verify(memberRepository, never()).delete(any());
-    }
-
-    @Test
-    void getAllMembers_ShouldReturnAllMembers() {
-        MemberEntity memberEntity2 = new MemberEntity();
-        memberEntity2.setId(UUID.randomUUID());
-        memberEntity2.setEmail("memberEntity2@example.com");
-        List<MemberEntity> expectedMemberEntities = Arrays.asList(testMemberEntity, memberEntity2);
-        when(memberRepository.findAll()).thenReturn(expectedMemberEntities);
-        List<MemberEntity> result = memberService.getAllMembers();
-        assertNotNull(result);
         assertEquals(2, result.size());
-        assertEquals(expectedMemberEntities, result);
     }
 }

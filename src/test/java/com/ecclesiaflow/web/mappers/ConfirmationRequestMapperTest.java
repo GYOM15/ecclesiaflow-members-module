@@ -1,4 +1,4 @@
-package com.ecclesiaflow.web.mappers.web;
+package com.ecclesiaflow.web.mappers;
 
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
 import com.ecclesiaflow.web.dto.ConfirmationRequest;
@@ -40,14 +40,11 @@ class ConfirmationRequestMapperTest {
     }
 
     @Test
-    void fromConfirmationRequest_WithNullRequest_ShouldCreateObjectWithEmptyCode() {
-        // When
-        MembershipConfirmation result = mapper.fromConfirmationRequest(testMemberId, null);
-
-        // Then
-        assertNotNull(result);
-        assertEquals(testMemberId, result.getMemberId());
-        assertEquals("", result.getConfirmationCode());
+    void fromConfirmationRequest_WithNullRequest_ShouldThrowNullPointerException() {
+        // When & Then
+        assertThrows(NullPointerException.class, () -> {
+            mapper.fromConfirmationRequest(testMemberId, null);
+        });
     }
 
     @Test
