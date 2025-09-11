@@ -98,7 +98,7 @@ public class MembersController {
         summary = "Message de bienvenue pour les membres",
         description = "Endpoint de test pour les membres authentifiés"
     )
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "BearerAuth")
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200",
@@ -166,7 +166,7 @@ public class MembersController {
             summary = "Obtenir les informations d'un membre",
             description = "Récupérer les détails d'un membre par son ID"
     )
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "BearerAuth")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
@@ -196,7 +196,7 @@ public class MembersController {
             summary = "Modifier un membre",
             description = "Mettre à jour les informations d'un membre"
     )
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "BearerAuth")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
@@ -224,6 +224,7 @@ public class MembersController {
     }
 
     @GetMapping(value = "/members", produces = "application/vnd.ecclesiaflow.members.v1+json")
+    @SecurityRequirement(name = "BearerAuth")
     @Operation(
             summary = "[TEMPORAIRE] Lister tous les membres",
             description = "Endpoint temporaire pour les tests - récupérer tous les membres"
@@ -269,7 +270,7 @@ public class MembersController {
             summary = "Supprimer un membre",
             description = "Supprimer définitivement un membre"
     )
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "BearerAuth")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "204",
