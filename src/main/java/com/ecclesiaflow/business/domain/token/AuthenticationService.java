@@ -35,7 +35,7 @@ package com.ecclesiaflow.business.domain.token;
  * @author EcclesiaFlow Team
  * @since 1.0.0
  */
-public interface TokenGenerator {
+public interface AuthenticationService {
 
     /**
      * Génère un token temporaire pour permettre la définition du mot de passe.

@@ -1,6 +1,6 @@
 package com.ecclesiaflow.web.security;
 
-import com.ecclesiaflow.business.domain.token.TokenGenerator;
+import com.ecclesiaflow.business.domain.token.AuthenticationService;
 import com.ecclesiaflow.web.client.AuthClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 /**
  * Implémentation JWT du générateur de tokens temporaires EcclesiaFlow.
  * <p>
- * Cette classe implémente l'interface {@link TokenGenerator} définie dans la couche business,
+ * Cette classe implémente l'interface {@link AuthenticationService} définie dans la couche business,
  * respectant ainsi le principe d'inversion de dépendance (DIP). Elle se concentre uniquement sur
  * la génération de tokens JWT temporaires via le module d'authentification externe.
  * </p>
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
  * 
  * <p><strong>Responsabilité unique :</strong></p>
  * <ul>
- *   <li>Implémentation de {@link TokenGenerator} pour tokens JWT</li>
+ *   <li>Implémentation de {@link AuthenticationService} pour tokens JWT</li>
  *   <li>Délégation vers le module d'authentification externe</li>
  *   <li>Gestion de la sécurité des tokens temporaires</li>
  *   <li>Abstraction de la communication inter-modules</li>
@@ -33,7 +33,7 @@ import org.springframework.stereotype.Service;
  * 
  * <p><strong>Dépendances :</strong></p>
  * <ul>
- *   <li>{@link TokenGenerator} - Interface du domaine métier (implémentée)</li>
+ *   <li>{@link AuthenticationService} - Interface du domaine métier (implémentée)</li>
  *   <li>{@link AuthClient} - Communication avec le module d'authentification</li>
  * </ul>
  * 
@@ -42,12 +42,12 @@ import org.springframework.stereotype.Service;
  * 
  * @author EcclesiaFlow Team
  * @since 1.0.0
- * @see TokenGenerator
+ * @see AuthenticationService
  * @see AuthClient
  */
 @Service
 @RequiredArgsConstructor
-public class Jwt implements TokenGenerator {
+public class Jwt implements AuthenticationService {
 
     private final AuthClient authClient;
 

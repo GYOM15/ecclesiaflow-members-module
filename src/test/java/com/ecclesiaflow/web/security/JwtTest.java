@@ -12,12 +12,12 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Tests unitaires pour l'implémentation JWT de TokenGenerator.
+ * Tests unitaires pour l'implémentation JWT de AuthenticationService.
  * Vérifie que la délégation vers AuthClient est correcte et gère les cas limites.
  * Prend en compte le comportement de AuthClient qui encapsule les exceptions.
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("Jwt (TokenGenerator Impl) - Tests Unitaires")
+@DisplayName("Jwt (AuthenticationService Impl) - Tests Unitaires")
 class JwtTest {
 
     @Mock

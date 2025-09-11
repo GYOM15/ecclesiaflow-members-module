@@ -5,7 +5,7 @@ import com.ecclesiaflow.business.domain.communication.ConfirmationNotifier;
 import com.ecclesiaflow.business.domain.confirmation.*;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
-import com.ecclesiaflow.business.domain.token.TokenGenerator;
+import com.ecclesiaflow.business.domain.token.AuthenticationService;
 import com.ecclesiaflow.web.exception.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,7 @@ class MemberConfirmationServiceImplTest {
 
     private MemberRepository memberRepository;
     private MemberConfirmationRepository confirmationRepository;
-    private TokenGenerator tokenGenerator;
+    private AuthenticationService authenticationService;
     private ConfirmationNotifier confirmationNotifier;
     private CodeGenerator codeGenerator;
 
@@ -34,12 +34,12 @@ class MemberConfirmationServiceImplTest {
     void setUp() {
         memberRepository = mock(MemberRepository.class);
         confirmationRepository = mock(MemberConfirmationRepository.class);
-        tokenGenerator = mock(TokenGenerator.class);
+        authenticationService = mock(AuthenticationService.class);
         confirmationNotifier = mock(ConfirmationNotifier.class);
         codeGenerator = mock(CodeGenerator.class);
 
         service = new MemberConfirmationServiceImpl(
-                memberRepository, confirmationRepository, tokenGenerator, confirmationNotifier, codeGenerator);
+                memberRepository, confirmationRepository, authenticationService, confirmationNotifier, codeGenerator);
 
         memberId = UUID.randomUUID();
         member = Member.builder()
@@ -62,7 +62,7 @@ class MemberConfirmationServiceImplTest {
 
         when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
         when(confirmationRepository.findByMemberIdAndCode(memberId, code)).thenReturn(Optional.of(confirmation));
-        when(tokenGenerator.generateTemporaryToken(member.getEmail())).thenReturn("TEMP_TOKEN");
+        when(authenticationService.generateTemporaryToken(member.getEmail())).thenReturn("TEMP_TOKEN");
 
         // when
         MembershipConfirmation input = MembershipConfirmation.builder().
