@@ -3,11 +3,11 @@ package com.ecclesiaflow.web.controller;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.web.dto.SignUpResponse;
-import com.ecclesiaflow.web.dto.SignUpRequest;
+import com.ecclesiaflow.web.payloads.SignUpRequestPayload;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.web.mappers.SignUpRequestMapper;
 import com.ecclesiaflow.web.mappers.MemberResponseMapper;
-import com.ecclesiaflow.web.dto.UpdateMemberRequest;
+import com.ecclesiaflow.web.payloads.UpdateMemberRequestPayload;
 import com.ecclesiaflow.web.mappers.UpdateRequestMapper;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import io.swagger.v3.oas.annotations.Operation;
@@ -145,15 +145,15 @@ public class MembersController {
      * 
      * <p><strong>⚠️ TEMPORAIRE :</strong> Sera remplacé par un système d'approbation admin.</p>
      * 
-     * @param signUpRequest les données d'inscription du membre, validées automatiquement
+     * @param signUpRequestPayload les données d'inscription du membre, validées automatiquement
      * @return {@link ResponseEntity} avec {@link SignUpResponse} et statut HTTP 201
      * @throws org.springframework.web.bind.MethodArgumentNotValidException si les données sont invalides
      * @throws IllegalArgumentException si l'email existe déjà
      * 
      * @implNote Utilise le pattern Mapper pour la transformation DTO → Objet métier → DTO.
      */
-    public ResponseEntity<SignUpResponse> registerMember(@Valid @RequestBody SignUpRequest signUpRequest) {
-        MembershipRegistration registration = SignUpRequestMapper.fromSignUpRequest(signUpRequest);
+    public ResponseEntity<SignUpResponse> registerMember(@Valid @RequestBody SignUpRequestPayload signUpRequestPayload) {
+        MembershipRegistration registration = SignUpRequestMapper.fromSignUpRequest(signUpRequestPayload);
         Member member = memberService.registerMember(registration);
         SignUpResponse response = MemberResponseMapper.fromMember(member, "Member registered (temporary - approval system coming)");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -214,7 +214,7 @@ public class MembersController {
             )
     })
     public ResponseEntity<SignUpResponse> updateMember(@PathVariable UUID memberId,
-                                                       @Valid @RequestBody UpdateMemberRequest updateRequest) {
+                                                       @Valid @RequestBody UpdateMemberRequestPayload updateRequest) {
         MembershipUpdate businessRequest = updateRequestMapper.fromUpdateMemberRequest(memberId, updateRequest);
         Member updatedMember = memberService.updateMember(businessRequest);
         SignUpResponse response = MemberResponseMapper.fromMember(updatedMember, "Membre modifié avec succès");

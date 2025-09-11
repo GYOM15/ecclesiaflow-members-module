@@ -1,7 +1,7 @@
 package com.ecclesiaflow.web.mappers;
 
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
-import com.ecclesiaflow.web.dto.ConfirmationRequest;
+import com.ecclesiaflow.web.payloads.ConfirmationRequestPayload;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -54,7 +54,7 @@ public class ConfirmationRequestMapper {
      * 
      * @implNote Utilise le pattern Builder pour la construction de l'objet métier.
      */
-    public MembershipConfirmation fromConfirmationRequest(UUID memberId, ConfirmationRequest request) {
+    public MembershipConfirmation fromConfirmationRequest(UUID memberId, ConfirmationRequestPayload request) {
         return MembershipConfirmation.builder()
                 .memberId(memberId)
                 .confirmationCode(request.getCode())

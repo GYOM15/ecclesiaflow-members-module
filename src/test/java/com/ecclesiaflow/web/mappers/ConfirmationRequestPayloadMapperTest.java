@@ -1,7 +1,7 @@
 package com.ecclesiaflow.web.mappers;
 
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
-import com.ecclesiaflow.web.dto.ConfirmationRequest;
+import com.ecclesiaflow.web.payloads.ConfirmationRequestPayload;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests unitaires pour ConfirmationRequestMapper.
  * Vérifie la conversion des DTOs de confirmation vers les objets métier.
  */
-class ConfirmationRequestMapperTest {
+class ConfirmationRequestPayloadMapperTest {
 
     private ConfirmationRequestMapper mapper;
     private UUID testMemberId;
@@ -27,7 +27,7 @@ class ConfirmationRequestMapperTest {
     @Test
     void fromConfirmationRequest_WithValidData_ShouldMapCorrectly() {
         // Given
-        ConfirmationRequest request = new ConfirmationRequest();
+        ConfirmationRequestPayload request = new ConfirmationRequestPayload();
         request.setCode("123456");
 
         // When
@@ -50,7 +50,7 @@ class ConfirmationRequestMapperTest {
     @Test
     void fromConfirmationRequest_WithEmptyCode_ShouldMapEmptyCode() {
         // Given
-        ConfirmationRequest request = new ConfirmationRequest();
+        ConfirmationRequestPayload request = new ConfirmationRequestPayload();
         request.setCode("");
 
         // When
@@ -65,7 +65,7 @@ class ConfirmationRequestMapperTest {
     @Test
     void fromConfirmationRequest_WithNullCode_ShouldMapNullCode() {
         // Given
-        ConfirmationRequest request = new ConfirmationRequest();
+        ConfirmationRequestPayload request = new ConfirmationRequestPayload();
         request.setCode(null);
 
         // When
@@ -80,7 +80,7 @@ class ConfirmationRequestMapperTest {
     @Test
     void fromConfirmationRequest_WithSixDigitCode_ShouldMapCorrectly() {
         // Given
-        ConfirmationRequest request = new ConfirmationRequest();
+        ConfirmationRequestPayload request = new ConfirmationRequestPayload();
         request.setCode("940155");
 
         // When
@@ -95,7 +95,7 @@ class ConfirmationRequestMapperTest {
     @Test
     void fromConfirmationRequest_WithAlphaNumericCode_ShouldMapCorrectly() {
         // Given
-        ConfirmationRequest request = new ConfirmationRequest();
+        ConfirmationRequestPayload request = new ConfirmationRequestPayload();
         request.setCode("ABC123");
 
         // When

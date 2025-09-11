@@ -26,7 +26,7 @@ import java.util.UUID;
  * 
  * <p><strong>Flux architectural :</strong></p>
  * <ol>
- *   <li>DTO web (UpdateMemberRequest) → Mapper → MembershipUpdate</li>
+ *   <li>DTO web (UpdateMemberRequestPayload) → Mapper → MembershipUpdate</li>
  *   <li>MembershipUpdate → Service métier → Validation et persistance</li>
  *   <li>Pas de DTOs dans les services pour respecter la séparation des couches</li>
  * </ol>

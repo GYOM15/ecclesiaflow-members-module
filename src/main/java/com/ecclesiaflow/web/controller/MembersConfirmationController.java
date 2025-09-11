@@ -4,7 +4,7 @@ import com.ecclesiaflow.web.mappers.ConfirmationResponseMapper;
 import com.ecclesiaflow.web.mappers.ConfirmationRequestMapper;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
-import com.ecclesiaflow.web.dto.ConfirmationRequest;
+import com.ecclesiaflow.web.payloads.ConfirmationRequestPayload;
 import com.ecclesiaflow.web.dto.ConfirmationResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -116,8 +116,8 @@ public class MembersConfirmationController {
     })
     public ResponseEntity<ConfirmationResponse> confirmMember(
             @PathVariable UUID memberId,
-            @Valid @RequestBody ConfirmationRequest confirmationRequest) {
-        MembershipConfirmation membershipConfirmation = confirmationRequestMapper.fromConfirmationRequest(memberId, confirmationRequest);
+            @Valid @RequestBody ConfirmationRequestPayload confirmationRequestPayload) {
+        MembershipConfirmation membershipConfirmation = confirmationRequestMapper.fromConfirmationRequest(memberId, confirmationRequestPayload);
         MembershipConfirmationResult result = confirmationService.confirmMember(membershipConfirmation);
         ConfirmationResponse response = confirmationResponseMapper.fromMemberConfirmationResult(result);
         return ResponseEntity.ok(response);

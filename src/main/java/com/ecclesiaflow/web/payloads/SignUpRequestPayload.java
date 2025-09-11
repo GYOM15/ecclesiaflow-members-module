@@ -1,4 +1,4 @@
-package com.ecclesiaflow.web.dto;
+package com.ecclesiaflow.web.payloads;
 
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import jakarta.validation.constraints.Email;
@@ -34,7 +34,7 @@ import lombok.Data;
  * @since 1.0.0
  */
 @Data
-public class SignUpRequest {
+public class SignUpRequestPayload {
     /**
      * Prénom du membre.
      * <p>

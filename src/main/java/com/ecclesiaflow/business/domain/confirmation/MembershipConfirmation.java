@@ -26,7 +26,7 @@ import lombok.Getter;
  * 
  * <p><strong>Flux architectural :</strong></p>
  * <ol>
- *   <li>DTO web (ConfirmationRequest) → Mapper → MembershipConfirmation</li>
+ *   <li>DTO web (ConfirmationRequestPayload) → Mapper → MembershipConfirmation</li>
  *   <li>MembershipConfirmation → Service de confirmation → Validation et traitement</li>
  *   <li>Pas de DTOs dans les services pour respecter la séparation des couches</li>
  * </ol>

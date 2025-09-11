@@ -1,7 +1,7 @@
 package com.ecclesiaflow.web.mappers;
 
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
-import com.ecclesiaflow.web.dto.UpdateMemberRequest;
+import com.ecclesiaflow.web.payloads.UpdateMemberRequestPayload;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +27,7 @@ class UpdateRequestMapperTest {
     @Test
     void fromUpdateMemberRequest_WithValidData_ShouldMapCorrectly() {
         // Given
-        UpdateMemberRequest request = new UpdateMemberRequest();
+        UpdateMemberRequestPayload request = new UpdateMemberRequestPayload();
         request.setFirstName("Jean");
         request.setLastName("Dupont");
         request.setEmail("jean.dupont@example.com");
@@ -56,7 +56,7 @@ class UpdateRequestMapperTest {
     @Test
     void fromUpdateMemberRequest_WithPartialData_ShouldMapPartialData() {
         // Given
-        UpdateMemberRequest request = new UpdateMemberRequest();
+        UpdateMemberRequestPayload request = new UpdateMemberRequestPayload();
         request.setFirstName("Jean");
         request.setEmail("jean.nouveau@example.com");
         // lastName et address restent null
@@ -76,7 +76,7 @@ class UpdateRequestMapperTest {
     @Test
     void fromUpdateMemberRequest_WithEmptyFields_ShouldMapEmptyValues() {
         // Given
-        UpdateMemberRequest request = new UpdateMemberRequest();
+        UpdateMemberRequestPayload request = new UpdateMemberRequestPayload();
         request.setFirstName("");
         request.setLastName("");
         request.setEmail("");
@@ -97,7 +97,7 @@ class UpdateRequestMapperTest {
     @Test
     void fromUpdateMemberRequest_WithOnlyFirstName_ShouldMapOnlyFirstName() {
         // Given
-        UpdateMemberRequest request = new UpdateMemberRequest();
+        UpdateMemberRequestPayload request = new UpdateMemberRequestPayload();
         request.setFirstName("Marie");
 
         // When
@@ -115,7 +115,7 @@ class UpdateRequestMapperTest {
     @Test
     void fromUpdateMemberRequest_WithSpecialCharacters_ShouldMapCorrectly() {
         // Given
-        UpdateMemberRequest request = new UpdateMemberRequest();
+        UpdateMemberRequestPayload request = new UpdateMemberRequestPayload();
         request.setFirstName("Jean-François");
         request.setLastName("O'Connor");
         request.setEmail("jean.françois@église.com");

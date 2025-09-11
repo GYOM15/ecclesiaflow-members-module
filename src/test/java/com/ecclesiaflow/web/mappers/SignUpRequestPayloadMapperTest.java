@@ -1,7 +1,7 @@
 package com.ecclesiaflow.web.mappers;
 
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
-import com.ecclesiaflow.web.dto.SignUpRequest;
+import com.ecclesiaflow.web.payloads.SignUpRequestPayload;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -10,12 +10,12 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests unitaires pour SignUpRequestMapper.
  * Vérifie la conversion correcte des DTOs vers les objets métier.
  */
-class SignUpRequestMapperTest {
+class SignUpRequestPayloadMapperTest {
 
     @Test
     void fromSignUpRequest_WithValidData_ShouldMapCorrectly() {
         // Given
-        SignUpRequest request = new SignUpRequest();
+        SignUpRequestPayload request = new SignUpRequestPayload();
         request.setFirstName("Jean");
         request.setLastName("Dupont");
         request.setEmail("jean.dupont@example.com");
@@ -42,7 +42,7 @@ class SignUpRequestMapperTest {
     @Test
     void fromSignUpRequest_WithEmptyFields_ShouldMapEmptyValues() {
         // Given
-        SignUpRequest request = new SignUpRequest();
+        SignUpRequestPayload request = new SignUpRequestPayload();
         request.setFirstName("");
         request.setLastName("");
         request.setEmail("");
@@ -62,7 +62,7 @@ class SignUpRequestMapperTest {
     @Test
     void fromSignUpRequest_WithNullFields_ShouldMapNullValues() {
         // Given
-        SignUpRequest request = new SignUpRequest();
+        SignUpRequestPayload request = new SignUpRequestPayload();
         // Tous les champs restent null par défaut
 
         // When
@@ -79,7 +79,7 @@ class SignUpRequestMapperTest {
     @Test
     void fromSignUpRequest_WithSpecialCharacters_ShouldMapCorrectly() {
         // Given
-        SignUpRequest request = new SignUpRequest();
+        SignUpRequestPayload request = new SignUpRequestPayload();
         request.setFirstName("Jean-François");
         request.setLastName("O'Connor");
         request.setEmail("jean.françois@église.com");

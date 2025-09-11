@@ -1,4 +1,4 @@
-package com.ecclesiaflow.web.dto;
+package com.ecclesiaflow.web.payloads;
 
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import jakarta.validation.constraints.Size;
@@ -45,7 +45,7 @@ import lombok.Data;
  * @see com.ecclesiaflow.web.controller.MembersController
  */
 @Data
-public class UpdateMemberRequest {
+public class UpdateMemberRequestPayload {
     /**
      * Nouveau nom de famille du membre (optionnel).
      */

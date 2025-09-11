@@ -7,9 +7,9 @@ import com.ecclesiaflow.business.domain.member.Role;
 import com.ecclesiaflow.web.exception.MemberNotFoundException;
 import com.ecclesiaflow.web.exception.InvalidRequestException; // Supposons cette exception pour email déjà utilisé
 import com.ecclesiaflow.business.services.MemberService;
-import com.ecclesiaflow.web.dto.SignUpRequest;
+import com.ecclesiaflow.web.payloads.SignUpRequestPayload;
 import com.ecclesiaflow.web.dto.SignUpResponse;
-import com.ecclesiaflow.web.dto.UpdateMemberRequest;
+import com.ecclesiaflow.web.payloads.UpdateMemberRequestPayload;
 import com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler;
 import com.ecclesiaflow.web.mappers.UpdateRequestMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,7 +75,7 @@ class MembersControllerTest {
     @Test
     void registerMember_shouldReturnCreated() throws Exception {
         // Préparation de la requête
-        SignUpRequest request = new SignUpRequest();
+        SignUpRequestPayload request = new SignUpRequestPayload();
         request.setFirstName("John");
         request.setLastName("Doe");
         request.setEmail("john.doe@mail.com");
@@ -125,7 +125,7 @@ class MembersControllerTest {
     @Test
     void registerMember_shouldReturnBadRequestForInvalidInput() throws Exception {
         // Requête avec email invalide (sera attrapé par @Valid)
-        SignUpRequest invalidRequest = new SignUpRequest();
+        SignUpRequestPayload invalidRequest = new SignUpRequestPayload();
         invalidRequest.setFirstName("J"); // Trop court
         invalidRequest.setLastName("Doe");
         invalidRequest.setEmail("invalid-email");
@@ -140,7 +140,7 @@ class MembersControllerTest {
 
     @Test
     void registerMember_shouldReturnBadRequestIfEmailAlreadyUsed() throws Exception {
-        SignUpRequest request = new SignUpRequest();
+        SignUpRequestPayload request = new SignUpRequestPayload();
         request.setFirstName("Jane");
         request.setLastName("Doe");
         request.setEmail("jane.doe@mail.com");
@@ -216,7 +216,7 @@ class MembersControllerTest {
     @Test
     void updateMember_shouldReturnUpdatedMember() throws Exception {
         UUID id = UUID.randomUUID();
-        UpdateMemberRequest updateRequest = new UpdateMemberRequest();
+        UpdateMemberRequestPayload updateRequest = new UpdateMemberRequestPayload();
         updateRequest.setFirstName("NewName");
         updateRequest.setEmail("new.email@mail.com");
 
@@ -247,7 +247,7 @@ class MembersControllerTest {
                 .message(expectedMessage)
                 .build();
 
-        when(updateRequestMapper.fromUpdateMemberRequest(eq(id), any(UpdateMemberRequest.class))).thenReturn(businessUpdate);
+        when(updateRequestMapper.fromUpdateMemberRequest(eq(id), any(UpdateMemberRequestPayload.class))).thenReturn(businessUpdate);
         when(memberService.updateMember(any(MembershipUpdate.class))).thenReturn(updatedMember);
 
         mockMvc.perform(patch("/ecclesiaflow/members/" + id)
@@ -259,19 +259,19 @@ class MembersControllerTest {
                 .andExpect(jsonPath("$.email").value("new.email@mail.com"))
                 .andExpect(jsonPath("$.message").value(expectedMessage));
 
-        verify(updateRequestMapper).fromUpdateMemberRequest(eq(id), any(UpdateMemberRequest.class));
+        verify(updateRequestMapper).fromUpdateMemberRequest(eq(id), any(UpdateMemberRequestPayload.class));
         verify(memberService).updateMember(any(MembershipUpdate.class));
     }
 
     @Test
     void updateMember_shouldReturnNotFound() throws Exception {
         UUID id = UUID.randomUUID();
-        UpdateMemberRequest updateRequest = new UpdateMemberRequest();
+        UpdateMemberRequestPayload updateRequest = new UpdateMemberRequestPayload();
         updateRequest.setFirstName("NewName");
 
         MembershipUpdate businessUpdate = MembershipUpdate.builder().memberId(id).firstName("NewName").build();
 
-        when(updateRequestMapper.fromUpdateMemberRequest(eq(id), any(UpdateMemberRequest.class))).thenReturn(businessUpdate);
+        when(updateRequestMapper.fromUpdateMemberRequest(eq(id), any(UpdateMemberRequestPayload.class))).thenReturn(businessUpdate);
         when(memberService.updateMember(any(MembershipUpdate.class)))
                 .thenThrow(new MemberNotFoundException("Membre à mettre à jour non trouvé avec ID: " + id));
 
@@ -281,14 +281,14 @@ class MembersControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Membre à mettre à jour non trouvé avec ID: " + id));
 
-        verify(updateRequestMapper).fromUpdateMemberRequest(eq(id), any(UpdateMemberRequest.class));
+        verify(updateRequestMapper).fromUpdateMemberRequest(eq(id), any(UpdateMemberRequestPayload.class));
         verify(memberService).updateMember(any(MembershipUpdate.class));
     }
 
     @Test
     void updateMember_shouldReturnBadRequestForInvalidInput() throws Exception {
         UUID id = UUID.randomUUID();
-        UpdateMemberRequest invalidRequest = new UpdateMemberRequest();
+        UpdateMemberRequestPayload invalidRequest = new UpdateMemberRequestPayload();
         invalidRequest.setFirstName("AveryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryLongFirstName"); // Plus de 50 caractères
 
         mockMvc.perform(patch("/ecclesiaflow/members/" + id)

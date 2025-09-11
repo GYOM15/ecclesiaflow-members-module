@@ -1,7 +1,7 @@
 package com.ecclesiaflow.web.mappers;
 
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
-import com.ecclesiaflow.web.dto.UpdateMemberRequest;
+import com.ecclesiaflow.web.payloads.UpdateMemberRequestPayload;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -43,7 +43,7 @@ import java.util.UUID;
  * @author EcclesiaFlow Team
  * @since 1.0.0
  * @see MembershipUpdate
- * @see UpdateMemberRequest
+ * @see UpdateMemberRequestPayload
  */
 @Component
 public class UpdateRequestMapper {
@@ -64,7 +64,7 @@ public class UpdateRequestMapper {
      * @implNote Les champs null dans le DTO sont préservés pour permettre
      *           les mises à jour partielles au niveau du service métier.
      */
-    public MembershipUpdate fromUpdateMemberRequest(UUID memberId, UpdateMemberRequest updateRequest) {
+    public MembershipUpdate fromUpdateMemberRequest(UUID memberId, UpdateMemberRequestPayload updateRequest) {
         return MembershipUpdate.builder()
                 .memberId(memberId)
                 .firstName(updateRequest.getFirstName())

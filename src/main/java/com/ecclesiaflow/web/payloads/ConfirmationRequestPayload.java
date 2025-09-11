@@ -1,4 +1,4 @@
-package com.ecclesiaflow.web.dto;
+package com.ecclesiaflow.web.payloads;
 
 
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
@@ -42,7 +42,7 @@ import lombok.Data;
  * @see com.ecclesiaflow.web.controller.MembersConfirmationController
  */
 @Data
-public class ConfirmationRequest {
+public class ConfirmationRequestPayload {
     /**
      * Code de confirmation à 6 chiffres saisi par le membre.
      * <p>

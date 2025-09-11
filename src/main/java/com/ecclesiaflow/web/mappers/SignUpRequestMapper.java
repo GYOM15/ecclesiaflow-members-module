@@ -1,7 +1,7 @@
 package com.ecclesiaflow.web.mappers;
 
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
-import com.ecclesiaflow.web.dto.SignUpRequest;
+import com.ecclesiaflow.web.payloads.SignUpRequestPayload;
 
 /**
  * Mapper statique pour la conversion entre les DTOs web et les objets métier.
@@ -43,7 +43,7 @@ public class SignUpRequestMapper {
      * @return un objet MembershipRegistration contenant les données d'inscription
      * @throws NullPointerException si req est null
      */
-    public static MembershipRegistration fromSignUpRequest(SignUpRequest req) {
+    public static MembershipRegistration fromSignUpRequest(SignUpRequestPayload req) {
         return new MembershipRegistration(
             req.getFirstName(),
             req.getLastName(),
