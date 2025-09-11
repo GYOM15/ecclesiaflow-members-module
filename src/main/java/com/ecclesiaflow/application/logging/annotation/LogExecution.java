@@ -1,4 +1,4 @@
-package com.ecclesiaflow.shared.logging.annotation;
+package com.ecclesiaflow.application.logging.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

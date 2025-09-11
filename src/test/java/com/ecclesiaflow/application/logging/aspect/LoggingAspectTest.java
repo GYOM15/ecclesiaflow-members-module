@@ -1,10 +1,10 @@
-package com.ecclesiaflow.shared.logging.aspect;
+package com.ecclesiaflow.application.logging.aspect;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import com.ecclesiaflow.shared.logging.annotation.LogExecution;
+import com.ecclesiaflow.application.logging.annotation.LogExecution;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.*;
  */
 @SpringBootTest(classes = {LoggingAspectTest.TestConfig.class})
 @TestPropertySource(properties = {
-        "logging.level.com.ecclesiaflow.shared.logging.aspect.LoggingAspect=DEBUG"
+        "logging.level.com.ecclesiaflow.application.logging.aspect.LoggingAspect=DEBUG"
 })
 @DisplayName("LoggingAspect - Tests d'intégration AOP")
 class LoggingAspectTest {
@@ -295,7 +295,7 @@ class LoggingAspectTest {
     static class TestLoggingAspect extends LoggingAspect {
 
         // CHANGEMENT: Pointcut cible les noms de classes internes statiques avec la syntaxe AspectJ correcte
-        @Pointcut("execution(* com.ecclesiaflow.shared.logging.aspect.LoggingAspectTest.TestService.*(..))")
+        @Pointcut("execution(* com.ecclesiaflow.application.logging.aspect.LoggingAspectTest.TestService.*(..))")
         public void testServiceMethods() {}
 
         // Advice pour les méthodes de service de test

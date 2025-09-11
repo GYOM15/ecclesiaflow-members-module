@@ -1,19 +1,11 @@
-package com.ecclesiaflow.shared.logging.aspect;
+package com.ecclesiaflow.application.logging.aspect;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import com.ecclesiaflow.business.domain.member.Member;
-import com.ecclesiaflow.business.domain.member.MembershipRegistration;
-import com.ecclesiaflow.business.domain.member.MemberRepository;
-import com.ecclesiaflow.business.services.MemberConfirmationService;
-import com.ecclesiaflow.business.services.impl.MemberServiceImpl; // Le vrai service métier
-import com.ecclesiaflow.web.client.AuthClient; // Le vrai client d'authentification
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,7 +27,6 @@ import org.aspectj.lang.annotation.Pointcut;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /**
  * Tests unitaires pour BusinessOperationLoggingAspect.
@@ -213,10 +204,10 @@ class BusinessOperationLoggingAspectTest {
         private static final org.slf4j.Logger log = LoggerFactory.getLogger(BusinessOperationLoggingAspect.class);
 
         // Pointcuts pour les services de test
-        @Pointcut("execution(* com.ecclesiaflow.shared.logging.aspect.BusinessOperationLoggingAspectTest.TestMemberService.registerMember(..))")
+        @Pointcut("execution(* com.ecclesiaflow.application.logging.aspect.BusinessOperationLoggingAspectTest.TestMemberService.registerMember(..))")
         public void memberRegistration() {}
 
-        @Pointcut("execution(* com.ecclesiaflow.shared.logging.aspect.BusinessOperationLoggingAspectTest.TestAuthModuleService.*(..))")
+        @Pointcut("execution(* com.ecclesiaflow.application.logging.aspect.BusinessOperationLoggingAspectTest.TestAuthModuleService.*(..))")
         public void authModuleCalls() {}
 
         // Advices pour l'enregistrement de membres

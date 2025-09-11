@@ -172,7 +172,7 @@ The module follows **Clean Architecture** principles with clear separation of re
 - **Communication**: `EmailServiceImpl`, `AuthClient`
 - **Mappers**: Conversion between entities and domain objects
 
-### 🔧 **Shared Layer** (`com.ecclesiaflow.shared`)
+### 🔧 **Shared Layer** (`com.ecclesiaflow.application`)
 - **Logging**: AOP aspects for business and technical logging
 - **Utils**: `ConfirmationCodeGenerator`, common annotations
 

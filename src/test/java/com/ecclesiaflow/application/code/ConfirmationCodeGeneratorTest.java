@@ -1,4 +1,4 @@
-package com.ecclesiaflow.shared.code;
+package com.ecclesiaflow.application.code;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

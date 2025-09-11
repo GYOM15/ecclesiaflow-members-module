@@ -1,4 +1,4 @@
-package com.ecclesiaflow.shared.code;
+package com.ecclesiaflow.application.code;
 
 import com.ecclesiaflow.business.domain.communication.CodeGenerator;
 import org.springframework.stereotype.Service;
