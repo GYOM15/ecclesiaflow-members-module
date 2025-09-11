@@ -77,7 +77,7 @@ public class AuthClient {
      * @implNote En cas d'erreur de communication, retourne une valeur de test
      *           pour permettre le développement en mode dégradé.
      */
-    public String generateTemporaryToken(String email) {
+    public String retrievePostActivationToken(String email) {
         try {
             return post("/ecclesiaflow/auth/temporary-token", Map.of("email", email))
                     .map(response -> (String) response.get("temporaryToken"))

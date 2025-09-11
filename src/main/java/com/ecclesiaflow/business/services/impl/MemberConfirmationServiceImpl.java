@@ -45,7 +45,7 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
 
         confirmationRepository.delete(confirmation);
 
-        String temporaryToken = authenticationService.generateTemporaryToken(member.getEmail());
+        String temporaryToken = authenticationService.retrievePostActivationToken(member.getEmail());
 
         return MembershipConfirmationResult.builder()
                 .message("Compte confirmé avec succès")

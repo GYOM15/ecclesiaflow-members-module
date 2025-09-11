@@ -59,5 +59,5 @@ public interface AuthenticationService {
      *           <li>Gestion d'erreurs déléguée au service sous-jacent</li>
      *           </ul>
      */
-    String generateTemporaryToken(String email);
+    String retrievePostActivationToken(String email);
 }

@@ -30,70 +30,70 @@ class JwtTest {
 
     @Test
     @DisplayName("Devrait générer un token temporaire en déléguant à AuthClient")
-    void generateTemporaryToken_WithValidEmail_ShouldDelegateToAuthClient() {
+    void retrievePostActivationToken_WithValidEmail_ShouldDelegateToAuthClient() {
         // Given
         String email = "test@example.com";
         String expectedToken = "mocked_jwt_token_123";
 
-        when(authClient.generateTemporaryToken(email)).thenReturn(expectedToken);
+        when(authClient.retrievePostActivationToken(email)).thenReturn(expectedToken);
 
         // When
-        String actualToken = jwtService.generateTemporaryToken(email);
+        String actualToken = jwtService.retrievePostActivationToken(email);
 
         // Then
         assertThat(actualToken).isEqualTo(expectedToken);
 
-        verify(authClient, times(1)).generateTemporaryToken(email);
+        verify(authClient, times(1)).retrievePostActivationToken(email);
         verifyNoMoreInteractions(authClient);
     }
 
     @Test
     @DisplayName("Devrait gérer un email vide en le passant à AuthClient")
-    void generateTemporaryToken_WithEmptyEmail_ShouldPassToAuthClient() {
+    void retrievePostActivationToken_WithEmptyEmail_ShouldPassToAuthClient() {
         // Given
         String email = "";
         String expectedToken = "token_for_empty_email";
-        when(authClient.generateTemporaryToken(email)).thenReturn(expectedToken);
+        when(authClient.retrievePostActivationToken(email)).thenReturn(expectedToken);
 
         // When
-        String actualToken = jwtService.generateTemporaryToken(email);
+        String actualToken = jwtService.retrievePostActivationToken(email);
 
         // Then
         assertThat(actualToken).isEqualTo(expectedToken);
-        verify(authClient, times(1)).generateTemporaryToken(email);
+        verify(authClient, times(1)).retrievePostActivationToken(email);
         verifyNoMoreInteractions(authClient);
     }
 
     @Test
     @DisplayName("Devrait gérer un email null en le passant à AuthClient")
-    void generateTemporaryToken_WithNullEmail_ShouldPassToAuthClient() {
+    void retrievePostActivationToken_WithNullEmail_ShouldPassToAuthClient() {
         // Given
         String email = null;
         String expectedToken = "token_for_null_email";
-        when(authClient.generateTemporaryToken(email)).thenReturn(expectedToken);
+        when(authClient.retrievePostActivationToken(email)).thenReturn(expectedToken);
 
         // When
-        String actualToken = jwtService.generateTemporaryToken(email);
+        String actualToken = jwtService.retrievePostActivationToken(email);
 
         // Then
         assertThat(actualToken).isEqualTo(expectedToken);
-        verify(authClient, times(1)).generateTemporaryToken(email);
+        verify(authClient, times(1)).retrievePostActivationToken(email);
         verifyNoMoreInteractions(authClient);
     }
 
     @Test
     @DisplayName("Devrait retourner le token de fallback de AuthClient si AuthClient échoue")
-    void generateTemporaryToken_AuthClientFails_ShouldReturnAuthClientFallbackToken() {
+    void retrievePostActivationToken_AuthClientFails_ShouldReturnAuthClientFallbackToken() {
         // Given
         String email = "failure@example.com";
-        when(authClient.generateTemporaryToken(email)).thenReturn(AUTH_CLIENT_FALLBACK_TOKEN);
+        when(authClient.retrievePostActivationToken(email)).thenReturn(AUTH_CLIENT_FALLBACK_TOKEN);
 
         // When
-        String actualToken = jwtService.generateTemporaryToken(email);
+        String actualToken = jwtService.retrievePostActivationToken(email);
 
         // Then
         assertThat(actualToken).isEqualTo(AUTH_CLIENT_FALLBACK_TOKEN);
-        verify(authClient, times(1)).generateTemporaryToken(email);
+        verify(authClient, times(1)).retrievePostActivationToken(email);
         verifyNoMoreInteractions(authClient);
     }
 }

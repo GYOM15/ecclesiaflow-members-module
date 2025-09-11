@@ -52,7 +52,7 @@ public class Jwt implements AuthenticationService {
     private final AuthClient authClient;
 
     @Override
-    public String generateTemporaryToken(String email) {
-        return authClient.generateTemporaryToken(email);
+    public String retrievePostActivationToken(String email) {
+        return authClient.retrievePostActivationToken(email);
     }
 }

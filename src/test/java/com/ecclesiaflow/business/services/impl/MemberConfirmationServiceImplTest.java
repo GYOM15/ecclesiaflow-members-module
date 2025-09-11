@@ -62,7 +62,7 @@ class MemberConfirmationServiceImplTest {
 
         when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
         when(confirmationRepository.findByMemberIdAndCode(memberId, code)).thenReturn(Optional.of(confirmation));
-        when(authenticationService.generateTemporaryToken(member.getEmail())).thenReturn("TEMP_TOKEN");
+        when(authenticationService.retrievePostActivationToken(member.getEmail())).thenReturn("TEMP_TOKEN");
 
         // when
         MembershipConfirmation input = MembershipConfirmation.builder().

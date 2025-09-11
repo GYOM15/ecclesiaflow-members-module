@@ -56,13 +56,13 @@ class AuthClientTest {
 
     @Test
     @DisplayName("should return generated token on successful API call")
-    void generateTemporaryToken_success() {
+    void getTempToken_ForActivatedMember_success() {
         // Arrange: Mock the final bodyToMono to return a successful response map
         Map<String, String> successResponse = Map.of("temporaryToken", GENERATED_TOKEN);
         when(responseSpec.bodyToMono(any(Class.class))).thenReturn(Mono.just(successResponse));
 
         // Act
-        String result = authClient.generateTemporaryToken(EMAIL);
+        String result = authClient.retrievePostActivationToken(EMAIL);
 
         // Assert
         assertThat(result).isEqualTo(GENERATED_TOKEN);
@@ -70,7 +70,7 @@ class AuthClientTest {
 
     @Test
     @DisplayName("should return mock token on 4xx client error")
-    void generateTemporaryToken_clientError() {
+    void getTempToken_ForActivatedMember_clientError() {
         // Arrange: Mock bodyToMono to return an error when a 4xx status is encountered
         when(responseSpec.onStatus(any(java.util.function.Predicate.class), any(java.util.function.Function.class)))
                 .thenAnswer(invocation -> {
@@ -82,7 +82,7 @@ class AuthClientTest {
         when(responseSpec.bodyToMono(any(Class.class))).thenReturn(Mono.error(new RuntimeException("Simulated 400 error")));
 
         // Act
-        String result = authClient.generateTemporaryToken(EMAIL);
+        String result = authClient.retrievePostActivationToken(EMAIL);
 
         // Assert
         assertThat(result).isEqualTo(TEMPORARY_TOKEN_MOCK);
@@ -90,7 +90,7 @@ class AuthClientTest {
 
     @Test
     @DisplayName("should return mock token on 5xx server error")
-    void generateTemporaryToken_serverError() {
+    void getTempToken_ForActivatedMember_serverError() {
         // Arrange: Mock bodyToMono to return an error when a 5xx status is encountered
         when(responseSpec.onStatus(any(java.util.function.Predicate.class), any(java.util.function.Function.class)))
                 .thenAnswer(invocation -> {
@@ -102,7 +102,7 @@ class AuthClientTest {
         when(responseSpec.bodyToMono(any(Class.class))).thenReturn(Mono.error(new RuntimeException("Simulated 500 error")));
 
         // Act
-        String result = authClient.generateTemporaryToken(EMAIL);
+        String result = authClient.retrievePostActivationToken(EMAIL);
 
         // Assert
         assertThat(result).isEqualTo(TEMPORARY_TOKEN_MOCK);
@@ -110,7 +110,7 @@ class AuthClientTest {
 
     @Test
     @DisplayName("should return mock token on network connectivity error")
-    void generateTemporaryToken_networkError() {
+    void getTempToken_ForActivatedMember_networkError() {
         // Arrange: Simulate a network error during bodyToMono()
         when(responseSpec.bodyToMono(any(Class.class)))
                 .thenReturn(Mono.error(new WebClientRequestException(
@@ -121,7 +121,7 @@ class AuthClientTest {
                 )));
 
         // Act
-        String result = authClient.generateTemporaryToken(EMAIL);
+        String result = authClient.retrievePostActivationToken(EMAIL);
 
         // Assert
         assertThat(result).isEqualTo(TEMPORARY_TOKEN_MOCK);
@@ -129,13 +129,13 @@ class AuthClientTest {
 
     @Test
     @DisplayName("should return mock token if the response map does not contain 'temporaryToken'")
-    void generateTemporaryToken_missingTokenInResponse() {
+    void getTempToken_missingTokenForActivatedMemberInResponse() {
         // Arrange: Mock the final bodyToMono to return a response map without the expected key
         Map<String, String> malformedResponse = Map.of("someOtherKey", "someValue");
         when(responseSpec.bodyToMono(any(Class.class))).thenReturn(Mono.just(malformedResponse));
 
         // Act
-        String result = authClient.generateTemporaryToken(EMAIL);
+        String result = authClient.retrievePostActivationToken(EMAIL);
 
         // Assert
         assertThat(result).isEqualTo(TEMPORARY_TOKEN_MOCK);
