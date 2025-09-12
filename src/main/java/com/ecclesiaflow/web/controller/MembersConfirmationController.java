@@ -74,7 +74,7 @@ public class MembersConfirmationController {
     private final ConfirmationResponseMapper confirmationResponseMapper;
 
     @PostMapping(value = "/confirmation", produces = "application/vnd.ecclesiaflow.members.v1+json")
-    @RateLimiter(name = "confirmation-resend")
+    @RateLimiter(name = "confirmation-attempts")
     @Operation(
             summary = "Confirmer le compte d'un membre",
             description = "Confirmer l'inscription d'un membre avec le code reçu par email. " +
@@ -127,7 +127,7 @@ public class MembersConfirmationController {
     }
 
     @PostMapping(value = "/confirmation-code", produces = "application/vnd.ecclesiaflow.members.v1+json")
-    @RateLimiter(name = "confirmation-attempts")
+    @RateLimiter(name = "confirmation-resend")
     @Operation(
             summary = "Renvoyer le code de confirmation",
             description = "Renvoyer un nouveau code de confirmation par email"
