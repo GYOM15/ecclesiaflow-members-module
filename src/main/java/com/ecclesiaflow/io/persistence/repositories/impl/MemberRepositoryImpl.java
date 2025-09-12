@@ -6,6 +6,8 @@ import com.ecclesiaflow.io.persistence.jpa.MemberEntity;
 import com.ecclesiaflow.io.persistence.mappers.MemberPersistenceMapper;
 import com.ecclesiaflow.io.persistence.jpa.SpringDataMemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -78,13 +80,6 @@ public class MemberRepositoryImpl implements MemberRepository {
     }
 
     @Override
-    public List<Member> findByConfirmedStatus(boolean confirmed) {
-        return springDataRepo.findByConfirmed(confirmed).stream()
-                .map(mapper::toDomain)
-                .toList();
-    }
-
-    @Override
     public long countConfirmedMembers() {
         return springDataRepo.countByConfirmedTrue();
     }
@@ -111,5 +106,43 @@ public class MemberRepositoryImpl implements MemberRepository {
         return springDataRepo.findAll().stream()
                 .map(mapper::toDomain)
                 .toList();
+    }
+
+    @Override
+    public Page<Member> getAll(Pageable pageable) {
+        if (pageable == null) {
+            throw new IllegalArgumentException("Pageable cannot be null");
+        }
+        return springDataRepo.findAll(pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public Page<Member> getByConfirmedStatus(Boolean confirmed, Pageable pageable) {
+        if (pageable == null) {
+            throw new IllegalArgumentException("Pageable cannot be null");
+        }
+        return springDataRepo.findByConfirmed(confirmed, pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public Page<Member> getMembersBySearchTerm(String searchTerm, Pageable pageable) {
+        if (pageable == null) {
+            throw new IllegalArgumentException("Pageable cannot be null");
+        }
+        return springDataRepo.findMembersBySearchTerm(searchTerm, pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public Page<Member> getMembersBySearchTermAndConfirmationStatus(
+            String searchTerm, Boolean confirmed, Pageable pageable) {
+        if (pageable == null) {
+            throw new IllegalArgumentException("Pageable cannot be null");
+        }
+        return springDataRepo.findMembersBySearchTermAndConfirmationStatus(
+                searchTerm, confirmed, pageable)
+                .map(mapper::toDomain);
     }
 }

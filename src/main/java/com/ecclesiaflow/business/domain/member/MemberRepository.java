@@ -1,5 +1,8 @@
 package com.ecclesiaflow.business.domain.member;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -85,17 +88,6 @@ public interface MemberRepository {
     boolean existsByEmail(String email);
     
     /**
-     * Recherche tous les membres ayant un statut de confirmation spécifique.
-     * <p>
-     * Utilisé pour filtrer les membres confirmés ou en attente de confirmation.
-     * </p>
-     * 
-     * @param confirmed true pour les membres confirmés, false pour ceux en attente
-     * @return la liste des membres correspondant au critère (peut être vide)
-     */
-    List<Member> findByConfirmedStatus(boolean confirmed);
-    
-    /**
      * Récupère tous les membres du système.
      * <p>
      * À utiliser avec précaution sur de gros volumes de données.
@@ -145,4 +137,51 @@ public interface MemberRepository {
      * @throws IllegalStateException si le membre n'existe pas
      */
     void delete(Member member);
+    
+    /**
+     * Récupère une page de tous les membres du système.
+     * <p>
+     * Version paginée de findAll() pour optimiser les performances
+     * sur de gros volumes de données.
+     * </p>
+     * 
+     * @param pageable les paramètres de pagination, non null
+     * @return une page de membres
+     * @throws IllegalArgumentException si pageable est null
+     */
+    Page<Member> getAll(Pageable pageable);
+    
+    /**
+     * Recherche des membres par statut de confirmation avec pagination.
+     * 
+     * @param confirmed le statut de confirmation recherché
+     * @param pageable les paramètres de pagination, non null
+     * @return une page de membres correspondant au critère
+     * @throws IllegalArgumentException si pageable est null
+     */
+    Page<Member> getByConfirmedStatus(Boolean confirmed, Pageable pageable);
+    
+    /**
+     * Recherche des membres par prénom, nom ou email (insensible à la casse) avec pagination.
+     * Les termes de recherche sont appliqués avec un opérateur LIKE.
+     *
+     * @param searchTerm Terme de recherche appliqué au prénom, nom et email. Peut être null ou vide.
+     * @param pageable les paramètres de pagination et de tri, non null
+     * @return une page de membres correspondant aux critères
+     * @throws IllegalArgumentException si pageable est null
+     */
+    Page<Member> getMembersBySearchTerm(String searchTerm, Pageable pageable);
+    
+    /**
+     * Recherche des membres par prénom, nom ou email (insensible à la casse) et par statut de confirmation avec pagination.
+     * Les termes de recherche sont appliqués avec un opérateur LIKE.
+     *
+     * @param searchTerm Terme de recherche appliqué au prénom, nom et email. Peut être null ou vide.
+     * @param confirmed Le statut de confirmation recherché (true/false). Peut être null pour ignorer le filtre.
+     * @param pageable les paramètres de pagination et de tri, non null
+     * @return une page de membres correspondant aux critères
+     * @throws IllegalArgumentException si pageable est null
+     */
+    Page<Member> getMembersBySearchTermAndConfirmationStatus(
+        String searchTerm, Boolean confirmed, Pageable pageable);
 }
