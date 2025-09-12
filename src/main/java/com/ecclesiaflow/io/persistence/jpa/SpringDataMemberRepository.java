@@ -1,9 +1,12 @@
 package com.ecclesiaflow.io.persistence.jpa;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -78,9 +81,10 @@ public interface SpringDataMemberRepository extends JpaRepository<MemberEntity, 
      * </p>
      * 
      * @param confirmed true pour les membres confirmés, false pour ceux en attente
+     * @param pageable les paramètres de pagination et de tri, non null
      * @return la liste des entités correspondantes (peut être vide)
      */
-    List<MemberEntity> findByConfirmed(boolean confirmed);
+    Page<MemberEntity> findByConfirmed(Boolean confirmed, Pageable pageable);
 
     /**
      * Compte le nombre de membres confirmés.
@@ -103,4 +107,43 @@ public interface SpringDataMemberRepository extends JpaRepository<MemberEntity, 
      * @return le nombre de membres non confirmés (≥ 0)
      */
     long countByConfirmedFalse();
+
+    /**
+     * Recherche des membres par prénom, nom ou email (insensible à la casse) avec pagination.
+     * Les termes de recherche sont appliqués avec un opérateur LIKE.
+     *
+     * @param searchTerm Terme de recherche appliqué au prénom, nom et email. Peut être null ou vide.
+     * @param pageable les paramètres de pagination et de tri.
+     * @return une page d'entités membres correspondant aux critères.
+     */
+    @Query("SELECT m FROM MemberEntity m " +
+           "WHERE (:searchTerm IS NULL OR :searchTerm = '' OR " +
+           " LOWER(m.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           " LOWER(m.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           " LOWER(m.email) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
+    Page<MemberEntity> findMembersBySearchTerm(
+        @Param("searchTerm") String searchTerm,
+        Pageable pageable
+    );
+
+    /**
+     * Recherche des membres par prénom, nom ou email (insensible à la casse) et par statut de confirmation avec pagination.
+     * Les termes de recherche sont appliqués avec un opérateur LIKE.
+     *
+     * @param searchTerm Terme de recherche appliqué au prénom, nom et email. Peut être null ou vide.
+     * @param confirmed Le statut de confirmation recherché (true/false). Peut être null pour ignorer le filtre.
+     * @param pageable les paramètres de pagination et de tri.
+     * @return une page d'entités membres correspondant aux critères.
+     */
+    @Query("SELECT m FROM MemberEntity m " +
+           "WHERE (:searchTerm IS NULL OR :searchTerm = '' OR " +
+           " LOWER(m.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           " LOWER(m.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           " LOWER(m.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
+           "AND (:confirmed IS NULL OR m.confirmed = :confirmed)")
+    Page<MemberEntity> findMembersBySearchTermAndConfirmationStatus(
+        @Param("searchTerm") String searchTerm,
+        @Param("confirmed") Boolean confirmed,
+        Pageable pageable
+    );
 }

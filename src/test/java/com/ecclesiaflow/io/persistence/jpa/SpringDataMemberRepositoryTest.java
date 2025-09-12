@@ -8,9 +8,11 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -105,18 +107,76 @@ class SpringDataMemberRepositoryTest {
     }
 
     @Test
-    void findByConfirmed_shouldReturnOnlyConfirmedMembers() {
-        List<MemberEntity> confirmedMembers = memberRepository.findByConfirmed(true);
-        assertThat(confirmedMembers).hasSize(2);
-        assertThat(confirmedMembers).extracting(MemberEntity::getEmail)
+    void findByConfirmed_shouldReturnOnlyConfirmedMembersWithPagination() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<MemberEntity> confirmedMembers = memberRepository.findByConfirmed(true, pageable);
+        
+        assertThat(confirmedMembers.getContent()).hasSize(2);
+        assertThat(confirmedMembers.getTotalElements()).isEqualTo(2);
+        assertThat(confirmedMembers.getTotalPages()).isEqualTo(1);
+        assertThat(confirmedMembers.getContent()).extracting(MemberEntity::getEmail)
                 .containsExactlyInAnyOrder("alice.smith@example.com", "charlie.brown@example.com");
     }
 
     @Test
-    void findByConfirmed_shouldReturnOnlyUnconfirmedMembers() {
-        List<MemberEntity> unconfirmedMembers = memberRepository.findByConfirmed(false);
-        assertThat(unconfirmedMembers).hasSize(1);
-        assertThat(unconfirmedMembers.get(0).getEmail()).isEqualTo("bob.johnson@example.com");
+    void findByConfirmed_shouldReturnOnlyUnconfirmedMembersWithPagination() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<MemberEntity> unconfirmedMembers = memberRepository.findByConfirmed(false, pageable);
+        
+        assertThat(unconfirmedMembers.getContent()).hasSize(1);
+        assertThat(unconfirmedMembers.getTotalElements()).isEqualTo(1);
+        assertThat(unconfirmedMembers.getTotalPages()).isEqualTo(1);
+        assertThat(unconfirmedMembers.getContent().get(0).getEmail()).isEqualTo("bob.johnson@example.com");
+    }
+
+    @Test
+    void findMembersBySearchTerm_shouldReturnMatchingMembersWithPagination() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<MemberEntity> searchResults = memberRepository.findMembersBySearchTerm("alice", pageable);
+        
+        assertThat(searchResults.getContent()).hasSize(1);
+        assertThat(searchResults.getTotalElements()).isEqualTo(1);
+        assertThat(searchResults.getContent().get(0).getFirstName()).isEqualTo("Alice");
+    }
+
+    @Test
+    void findMembersBySearchTerm_shouldReturnEmptyPageWhenNoMatch() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<MemberEntity> searchResults = memberRepository.findMembersBySearchTerm("nonexistent", pageable);
+        
+        assertThat(searchResults.getContent()).isEmpty();
+        assertThat(searchResults.getTotalElements()).isEqualTo(0);
+    }
+
+    @Test
+    void findMembersBySearchTermAndConfirmationStatus_shouldReturnMatchingConfirmedMembers() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<MemberEntity> searchResults = memberRepository.findMembersBySearchTermAndConfirmationStatus("alice", true, pageable);
+        
+        assertThat(searchResults.getContent()).hasSize(1);
+        assertThat(searchResults.getTotalElements()).isEqualTo(1);
+        assertThat(searchResults.getContent().get(0).getFirstName()).isEqualTo("Alice");
+        assertThat(searchResults.getContent().get(0).isConfirmed()).isTrue();
+    }
+
+    @Test
+    void findMembersBySearchTermAndConfirmationStatus_shouldReturnMatchingUnconfirmedMembers() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<MemberEntity> searchResults = memberRepository.findMembersBySearchTermAndConfirmationStatus("bob", false, pageable);
+        
+        assertThat(searchResults.getContent()).hasSize(1);
+        assertThat(searchResults.getTotalElements()).isEqualTo(1);
+        assertThat(searchResults.getContent().get(0).getFirstName()).isEqualTo("Bob");
+        assertThat(searchResults.getContent().get(0).isConfirmed()).isFalse();
+    }
+
+    @Test
+    void findMembersBySearchTermAndConfirmationStatus_shouldReturnEmptyWhenNoMatch() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<MemberEntity> searchResults = memberRepository.findMembersBySearchTermAndConfirmationStatus("alice", false, pageable);
+        
+        assertThat(searchResults.getContent()).isEmpty();
+        assertThat(searchResults.getTotalElements()).isEqualTo(0);
     }
 
     @Test
