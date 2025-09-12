@@ -30,7 +30,6 @@ class MemberTest {
     void testDefaultValues_ShouldHaveRoleMemberAndNotConfirmed() {
         assertEquals(Role.MEMBER, member.getRole());
         assertFalse(member.isConfirmed());
-        assertFalse(member.isPasswordSet());
     }
 
     @Test
@@ -67,15 +66,18 @@ class MemberTest {
 
     @Test
     void testConfirm_ShouldSetConfirmedAndConfirmedAt() {
-        member.confirm();
+        Member confirmedMember = member.confirm();
 
-        assertTrue(member.isConfirmed());
-        assertNotNull(member.getConfirmedAt());
+        assertTrue(confirmedMember.isConfirmed());
+        assertNotNull(confirmedMember.getConfirmedAt());
+        // L'objet original ne doit pas être modifié (immutabilité)
+        assertFalse(member.isConfirmed());
+        assertNull(member.getConfirmedAt());
     }
 
     @Test
     void testConfirm_WhenAlreadyConfirmed_ShouldThrowException() {
-        member.confirm();
-        assertThrows(IllegalStateException.class, member::confirm);
+        Member confirmedMember = member.confirm();
+        assertThrows(IllegalStateException.class, confirmedMember::confirm);
     }
 }

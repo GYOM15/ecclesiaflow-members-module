@@ -66,25 +66,22 @@ import java.util.UUID;
 public class Member {
 
     private final UUID memberId;
-    private String firstName;
-    private String lastName;
-    private String email;
-    private String address;
-    private LocalDateTime confirmedAt;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private String phoneNumber;
+    private final String firstName;
+    private final String lastName;
+    private final String email;
+    private final String address;
+    private final LocalDateTime confirmedAt;
+    private final LocalDateTime createdAt;
+    private final LocalDateTime updatedAt;
+    private final String phoneNumber;
 
     @Builder.Default
     private final Role role = Role.MEMBER;
 
     @Builder.Default
-    private boolean confirmed = false;
+    private final boolean confirmed = false;
 
-    @Builder.Default
-    private boolean passwordSet = false;
-
-    @Getter
+    // Suppression du @Getter redondant - déjà présent au niveau classe
     private final UUID id;
 
     /**
@@ -132,14 +129,20 @@ public class Member {
      * Confirme le compte du membre après validation du code de confirmation.
      * <p>
      * Cette méthode effectue la transition d'état vers "confirmé" et
-     * enregistre l'horodatage de confirmation. Ne peut être appelée qu'une seule fois.
+     * enregistre l'horodatage de confirmation de manière immutable.
+     * Retourne une nouvelle instance avec le statut confirmé.
      * </p>
      * 
+     * @return une nouvelle instance de Member avec le statut confirmé
      * @throws IllegalStateException si le membre est déjà confirmé
      */
-    public void confirm() {
-        if (this.confirmed) throw new IllegalStateException("Le membre est déjà confirmé.");
-        this.confirmed = true;
-        this.confirmedAt = LocalDateTime.now();
+    public Member confirm() {
+        if (this.confirmed) {
+            throw new IllegalStateException("Le membre est déjà confirmé.");
+        }
+        return this.toBuilder()
+                .confirmed(true)
+                .confirmedAt(LocalDateTime.now())
+                .build();
     }
 }
