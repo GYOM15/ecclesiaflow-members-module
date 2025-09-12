@@ -85,9 +85,9 @@ class MemberServiceImplTest {
                 .firstName("John")
                 .email("john.doe@mail.com")
                 .build();
-        member.confirm();
+        Member confirmedMember = member.confirm();
 
-        when(memberRepository.findByEmail("john.doe@mail.com")).thenReturn(Optional.of(member));
+        when(memberRepository.findByEmail("john.doe@mail.com")).thenReturn(Optional.of(confirmedMember));
 
         assertTrue(memberService.isEmailConfirmed("john.doe@mail.com"));
     }

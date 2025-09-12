@@ -40,8 +40,8 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
         Member member = getMemberOrThrow(memberId);
         MemberConfirmation confirmation = validateConfirmationCode(memberId, code);
 
-        member.confirm();
-        memberRepository.save(member);
+        Member confirmedMember = member.confirm();
+        memberRepository.save(confirmedMember);
 
         confirmationRepository.delete(confirmation);
 

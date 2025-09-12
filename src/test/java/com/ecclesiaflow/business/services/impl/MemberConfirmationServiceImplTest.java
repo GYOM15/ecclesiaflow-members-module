@@ -75,7 +75,10 @@ class MemberConfirmationServiceImplTest {
 
         // then
         assertEquals("TEMP_TOKEN", result.getTemporaryToken());
-        verify(memberRepository).save(member);
+        verify(memberRepository).save(argThat(savedMember -> 
+            savedMember.isConfirmed() && 
+            savedMember.getMemberId().equals(member.getMemberId())
+        ));
         verify(confirmationRepository).delete(confirmation);
     }
 
@@ -123,8 +126,8 @@ class MemberConfirmationServiceImplTest {
 
     @Test
     void sendConfirmationCode_ShouldThrow_WhenAlreadyConfirmed() {
-        member.confirm();
-        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+        Member confirmedMember = member.confirm();
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(confirmedMember));
 
         assertThrows(MemberAlreadyConfirmedException.class, () -> service.sendConfirmationCode(memberId));
     }
