@@ -136,7 +136,7 @@ public class MemberServiceImpl implements MemberService {
         return findMembersWithCriteria(pageable, normalizeSearch(search), confirmed);
     }
 
-    // Utilities methods
+    // Methodes Utilitaies
     private Page<Member> findMembersWithCriteria(Pageable pageable, String normalizedSearch, Boolean confirmed) {
         if (normalizedSearch != null && confirmed != null) {
             return memberRepository.getMembersBySearchTermAndConfirmationStatus(normalizedSearch, confirmed, pageable);
