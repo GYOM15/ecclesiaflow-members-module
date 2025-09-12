@@ -65,7 +65,7 @@ import java.util.UUID;
  * @since 1.0.0
  */
 @RestController
-@RequestMapping("ecclesiaflow/members/{memberId}")
+@RequestMapping("/ecclesiaflow/members/{memberId}")
 @RequiredArgsConstructor
 @Tag(name = "Member Confirmation", description = "Confirmation des comptes membres")
 public class MembersConfirmationController {
