@@ -63,7 +63,7 @@ public class UpdateMemberRequestPayload {
     /**
      * Nouvelle adresse physique du membre (optionnelle).
      */
-    @Size(max = 200, message = "L'adresse ne peut pas dépasser 200 caractères")
+    @Size(min = 10, max = 200, message = "L'adresse doit contenir entre 10 et 200 caractères")
     private String address;
 
     /**
