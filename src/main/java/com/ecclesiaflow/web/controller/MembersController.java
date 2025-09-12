@@ -116,6 +116,22 @@ public class MembersController {
                 mediaType = "text/plain",
                 schema = @Schema(type = "string", example = "Hi Member")
             )
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Token d'authentification invalide ou manquant",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Erreur interne du serveur",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+            )
         )
     })
     public ResponseEntity<String> sayHello() {
@@ -126,14 +142,15 @@ public class MembersController {
     @RateLimiter(name = "member-registration")
     @Operation(
         summary = "[TEMPORAIRE] Auto-enregistrement d'un membre",
-        description = "SERA REMPLACÉ par un système d'approbation admin dans le module de gestion des membres"
+        description = "SERA REMPLACÉ par un système d'approbation admin dans le module de gestion des membres",
+        operationId = "createMember"
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "201",
             description = "Membre créé avec succès (temporaire - sera un système d'approbation)",
             content = @Content(
-                mediaType = "application/json",
+                mediaType = "application/vnd.ecclesiaflow.members.v1+json",
                 schema = @Schema(implementation = SignUpResponse.class)
             )
         ),
@@ -142,7 +159,31 @@ public class MembersController {
             description = "Données d'enregistrement invalides ou email déjà utilisé",
             content = @Content(
                 mediaType = "application/json",
-                schema = @Schema(ref = "#/components/schemas/BadRequestError")
+                schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "409",
+            description = "Email déjà utilisé par un autre membre",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "429",
+            description = "Trop de tentatives d'inscription - Rate limiting activé",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Erreur interne du serveur",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
             )
         )
     })
@@ -173,7 +214,8 @@ public class MembersController {
     @GetMapping(value = "/members/{memberId}", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @Operation(
             summary = "Obtenir les informations d'un membre",
-            description = "Récupérer les détails d'un membre par son ID"
+            description = "Récupérer les détails d'un membre par son ID",
+            operationId = "getMemberById"
     )
     @SecurityRequirement(name = "BearerAuth")
     @ApiResponses(value = {
@@ -181,7 +223,7 @@ public class MembersController {
                     responseCode = "200",
                     description = "Membre trouvé",
                     content = @Content(
-                            mediaType = "application/json",
+                            mediaType = "application/vnd.ecclesiaflow.members.v1+json",
                             schema = @Schema(implementation = SignUpResponse.class)
                     )
             ),
@@ -190,7 +232,15 @@ public class MembersController {
                     description = "Membre non trouvé",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(ref = "#/components/schemas/NotFoundError")
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Erreur interne du serveur",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
                     )
             )
     })
@@ -203,7 +253,8 @@ public class MembersController {
     @PatchMapping(value = "/members/{memberId}", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @Operation(
             summary = "Modifier un membre",
-            description = "Mettre à jour les informations d'un membre"
+            description = "Mettre à jour les informations d'un membre",
+            operationId = "updateMemberPartially"
     )
     @SecurityRequirement(name = "BearerAuth")
     @ApiResponses(value = {
@@ -211,8 +262,16 @@ public class MembersController {
                     responseCode = "200",
                     description = "Membre modifié avec succès",
                     content = @Content(
-                            mediaType = "application/json",
+                            mediaType = "application/vnd.ecclesiaflow.members.v1+json",
                             schema = @Schema(implementation = SignUpResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Données de mise à jour invalides",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
                     )
             ),
             @ApiResponse(
@@ -220,7 +279,15 @@ public class MembersController {
                     description = "Membre non trouvé",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(ref = "#/components/schemas/NotFoundError")
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Erreur interne du serveur",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
                     )
             )
     })
@@ -245,6 +312,38 @@ public class MembersController {
                     content = @Content(
                             mediaType = "application/vnd.ecclesiaflow.members.v1+json",
                             schema = @Schema(implementation = MemberPageResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Paramètres de pagination ou de recherche invalides",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Token d'authentification invalide ou manquant",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Accès refusé - permissions insuffisantes",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Erreur interne du serveur",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
                     )
             )
     })
@@ -274,12 +373,25 @@ public class MembersController {
                     responseCode = "200",
                     description = "Statut de confirmation récupéré",
                     content = @Content(
-                            mediaType = "application/json"
+                            mediaType = "application/vnd.ecclesiaflow.members.v1+json",
+                            schema = @Schema(type = "object", example = "{\"confirmed\": true}")
                     )
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "Membre non trouvé"
+                    description = "Membre non trouvé",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Erreur interne du serveur",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+                    )
             )
     })
     public ResponseEntity<Map<String, Boolean>> getMemberConfirmationStatus(@PathVariable String email) {
@@ -300,7 +412,19 @@ public class MembersController {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "Membre non trouvé"
+                    description = "Membre non trouvé",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Erreur interne du serveur",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+                    )
             )
     })
     public ResponseEntity<Void> deleteMember(@PathVariable UUID memberId) {

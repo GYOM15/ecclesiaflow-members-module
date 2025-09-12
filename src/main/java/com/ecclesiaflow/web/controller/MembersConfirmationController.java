@@ -112,6 +112,22 @@ public class MembersConfirmationController {
                             mediaType = "application/json",
                             schema = @Schema(ref = "#/components/schemas/ConflictError")
                     )
+            ),
+            @ApiResponse(
+                    responseCode = "429",
+                    description = "Trop de tentatives de confirmation - Rate limiting activé",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Erreur interne du serveur",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+                    )
             )
     })
     public ResponseEntity<ConfirmationResponse> confirmMember(
@@ -135,15 +151,42 @@ public class MembersConfirmationController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "Nouveau code envoyé"
+                    description = "Nouveau code envoyé",
+                    content = @Content(
+                            mediaType = "application/vnd.ecclesiaflow.members.v1+json"
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Données invalides",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+                    )
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "Membre non trouvé"
+                    description = "Membre non trouvé",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+                    )
             ),
             @ApiResponse(
                     responseCode = "409",
-                    description = "Compte déjà confirmé"
+                    description = "Compte déjà confirmé",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Erreur interne du serveur",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
+                    )
             )
     })
     public ResponseEntity<Void> resendConfirmationCode(@PathVariable UUID memberId) {
