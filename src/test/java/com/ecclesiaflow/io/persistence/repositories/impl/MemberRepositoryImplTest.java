@@ -175,10 +175,10 @@ class MemberRepositoryImplTest {
         MemberEntity entity2 = createTestEntity();
         entity2.setEmail("jane@test.com");
         entity2.setConfirmed(true);
-        
+
         List<MemberEntity> entities = List.of(entity1, entity2);
         Page<MemberEntity> entityPage = new PageImpl<>(entities, pageable, 5);
-        
+
         Member member1 = Member.builder()
                 .memberId(UUID.randomUUID())
                 .firstName("John")
@@ -201,7 +201,7 @@ class MemberRepositoryImplTest {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
-        
+
         when(springDataRepo.findByConfirmed(true, pageable)).thenReturn(entityPage);
         when(mapper.toDomain(entity1)).thenReturn(member1);
         when(mapper.toDomain(entity2)).thenReturn(member2);
@@ -216,7 +216,7 @@ class MemberRepositoryImplTest {
         assertThat(result.getTotalPages()).isEqualTo(3);
         assertThat(result.getNumber()).isEqualTo(0);
         assertThat(result.getSize()).isEqualTo(2);
-        
+
         verify(springDataRepo, times(1)).findByConfirmed(true, pageable);
         verify(mapper, times(1)).toDomain(entity1);
         verify(mapper, times(1)).toDomain(entity2);
@@ -227,12 +227,12 @@ class MemberRepositoryImplTest {
         // Given
         String searchTerm = "john";
         Pageable pageable = PageRequest.of(1, 3);
-        
+
         MemberEntity entity = createTestEntity();
         entity.setFirstName("John");
         List<MemberEntity> entities = List.of(entity);
         Page<MemberEntity> entityPage = new PageImpl<>(entities, pageable, 10);
-        
+
         Member member = Member.builder()
                 .memberId(UUID.randomUUID())
                 .firstName("John")
@@ -244,7 +244,7 @@ class MemberRepositoryImplTest {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
-        
+
         when(springDataRepo.findMembersBySearchTerm(searchTerm, pageable)).thenReturn(entityPage);
         when(mapper.toDomain(entity)).thenReturn(member);
 
@@ -257,7 +257,7 @@ class MemberRepositoryImplTest {
         assertThat(result.getTotalElements()).isEqualTo(10);
         assertThat(result.getNumber()).isEqualTo(1);
         assertThat(result.getSize()).isEqualTo(3);
-        
+
         verify(springDataRepo, times(1)).findMembersBySearchTerm(searchTerm, pageable);
         verify(mapper, times(1)).toDomain(entity);
     }
@@ -268,7 +268,7 @@ class MemberRepositoryImplTest {
         assertThatThrownBy(() -> memberRepository.getMembersBySearchTerm("test", null))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Pageable cannot be null");
-        
+
         verifyNoInteractions(springDataRepo, mapper);
     }
 
@@ -278,13 +278,13 @@ class MemberRepositoryImplTest {
         String searchTerm = "test";
         Boolean confirmed = false;
         Pageable pageable = PageRequest.of(0, 5);
-        
+
         MemberEntity entity = createTestEntity();
         entity.setEmail("test@test.com");
         entity.setConfirmed(false);
         List<MemberEntity> entities = List.of(entity);
         Page<MemberEntity> entityPage = new PageImpl<>(entities, pageable, 1);
-        
+
         Member member = Member.builder()
                 .memberId(UUID.randomUUID())
                 .firstName("Test")
@@ -296,7 +296,7 @@ class MemberRepositoryImplTest {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
-        
+
         when(springDataRepo.findMembersBySearchTermAndConfirmationStatus(searchTerm, confirmed, pageable))
             .thenReturn(entityPage);
         when(mapper.toDomain(entity)).thenReturn(member);
@@ -312,7 +312,7 @@ class MemberRepositoryImplTest {
         assertThat(result.getTotalPages()).isEqualTo(1);
         assertThat(result.isFirst()).isTrue();
         assertThat(result.isLast()).isTrue();
-        
+
         verify(springDataRepo, times(1))
             .findMembersBySearchTermAndConfirmationStatus(searchTerm, confirmed, pageable);
         verify(mapper, times(1)).toDomain(entity);
@@ -324,7 +324,7 @@ class MemberRepositoryImplTest {
         assertThatThrownBy(() -> memberRepository.getMembersBySearchTermAndConfirmationStatus("test", true, null))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Pageable cannot be null");
-        
+
         verifyNoInteractions(springDataRepo, mapper);
     }
 
@@ -355,7 +355,7 @@ class MemberRepositoryImplTest {
     @Test
     void save_shouldMapAndSaveAndReturnMappedDomainObject() {
         when(mapper.toEntity(testDomain)).thenReturn(testEntity);
-        when(springDataRepo.save(testEntity)).thenReturn(testEntity); // Simuler que le repository renvoie l'entité sauvegardée
+        when(springDataRepo.save(testEntity)).thenReturn(testEntity);
         when(mapper.toDomain(testEntity)).thenReturn(testDomain);
 
         Member result = memberRepository.save(testDomain);
@@ -431,5 +431,46 @@ class MemberRepositoryImplTest {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
+    }
+
+    @Test
+    void getAll_shouldReturnPagedResults() {
+        Pageable pageable = PageRequest.of(0, 5);
+        MemberEntity entity = createTestEntity();
+        Member member = createTestDomain();
+
+        Page<MemberEntity> entityPage = new PageImpl<>(List.of(entity), pageable, 1);
+
+        when(springDataRepo.findAll(pageable)).thenReturn(entityPage);
+        when(mapper.toDomain(entity)).thenReturn(member);
+
+        Page<Member> result = memberRepository.getAll(pageable);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0)).isEqualTo(member);
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getNumber()).isEqualTo(0);
+        assertThat(result.getSize()).isEqualTo(5);
+
+        verify(springDataRepo, times(1)).findAll(pageable);
+        verify(mapper, times(1)).toDomain(entity);
+    }
+
+    @Test
+    void getAll_shouldThrowExceptionWhenPageableIsNull() {
+        assertThatThrownBy(() -> memberRepository.getAll(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Pageable cannot be null");
+
+        verifyNoInteractions(springDataRepo, mapper);
+    }
+
+    @Test
+    void getByConfirmedStatus_shouldThrowExceptionWhenPageableIsNull() {
+        assertThatThrownBy(() -> memberRepository.getByConfirmedStatus(true, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Pageable cannot be null");
+
+        verifyNoInteractions(springDataRepo, mapper);
     }
 }
