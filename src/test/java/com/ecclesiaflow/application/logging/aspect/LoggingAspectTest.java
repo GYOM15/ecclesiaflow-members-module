@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.*;
 @DisplayName("LoggingAspect - Tests d'intégration AOP")
 class LoggingAspectTest {
 
-    // Les services sont maintenant des classes internes statiques
+    // Services are now static inner classes
     @Autowired
     private TestService testService;
 
@@ -52,7 +52,7 @@ class LoggingAspectTest {
 
     @BeforeEach
     void setUp() {
-        // Configuration du logger pour capturer les logs dans les tests
+        // Configure the logger to capture logs in tests
         logger = (Logger) LoggerFactory.getLogger(LoggingAspect.class);
         listAppender = new ListAppender<>();
         listAppender.start();
@@ -62,9 +62,9 @@ class LoggingAspectTest {
 
     @AfterEach
     void tearDown() {
-        // Nettoyage après chaque test
+        // Clean up after each test
         logger.detachAppender(listAppender);
-        listAppender.stop(); // Arrêter l'appender après utilisation
+        listAppender.stop(); // Stop the appender after use
     }
 
     @Test
@@ -180,22 +180,6 @@ class LoggingAspectTest {
     }
 
     @Test
-    @DisplayName("Devrait logger les exceptions dans les méthodes annotées")
-    void shouldLogAnnotatedMethodExceptions() {
-        // When & Then
-        assertThatThrownBy(() -> testAnnotatedService.exceptionAnnotatedMethod())
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Annotation test exception");
-
-        List<ILoggingEvent> logsList = listAppender.list;
-        assertThat(logsList).anySatisfy(event -> {
-            assertThat(event.getLevel()).isEqualTo(Level.ERROR);
-            assertThat(event.getFormattedMessage()).contains("Échec: TestAnnotatedService.exceptionAnnotatedMethod");
-            assertThat(event.getFormattedMessage()).contains("Annotation test exception");
-        });
-    }
-
-    @Test
     @DisplayName("Devrait inclure le temps d'exécution quand demandé")
     void shouldIncludeExecutionTime() {
         // When
@@ -216,7 +200,23 @@ class LoggingAspectTest {
         });
     }
 
-    // Configuration de test Spring pour activer AOP
+    @Test
+    @DisplayName("Devrait logger les exceptions dans les méthodes annotées")
+    void shouldLogAnnotatedMethodExceptions() {
+        // When & Then
+        assertThatThrownBy(() -> testAnnotatedService.exceptionAnnotatedMethod())
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Annotation test exception");
+
+        List<ILoggingEvent> logsList = listAppender.list;
+        assertThat(logsList).anySatisfy(event -> {
+            assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+            assertThat(event.getFormattedMessage()).contains("Échec: TestAnnotatedService.exceptionAnnotatedMethod");
+            assertThat(event.getFormattedMessage()).contains("Annotation test exception");
+        });
+    }
+
+    // Spring test configuration to enable AOP
     @Configuration
     @EnableAspectJAutoProxy
     static class TestConfig {
@@ -237,7 +237,7 @@ class LoggingAspectTest {
         }
     }
 
-    // CHANGEMENT: La classe est rendue STATIQUE
+    // CHANGE: Class is made STATIC
     @Service
     static class TestService {
 
@@ -247,7 +247,7 @@ class LoggingAspectTest {
 
         public String slowMethod() {
             try {
-                Thread.sleep(1100); // Simuler une exécution lente > 1 seconde
+                Thread.sleep(1100); // Simulate slow execution > 1 second
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -259,11 +259,11 @@ class LoggingAspectTest {
         }
     }
 
-    // CHANGEMENT: La classe est rendue STATIQUE
+    // CHANGE: Class is made STATIC
     @Service
     static class TestAnnotatedService {
 
-        @LogExecution // Assurez-vous que l'annotation est bien importée
+        @LogExecution // Ensure the annotation is correctly imported
         public String annotatedMethod() {
             return "annotated result";
         }
@@ -289,19 +289,19 @@ class LoggingAspectTest {
         }
     }
 
-    // CHANGEMENT: La classe est rendue STATIQUE
+    // CHANGE: Class is made STATIC
     @Aspect
     @Component
     static class TestLoggingAspect extends LoggingAspect {
 
-        // CHANGEMENT: Pointcut cible les noms de classes internes statiques avec la syntaxe AspectJ correcte
+        // CHANGE: Pointcut targets static inner class names with correct AspectJ syntax
         @Pointcut("execution(* com.ecclesiaflow.application.logging.aspect.LoggingAspectTest.TestService.*(..))")
         public void testServiceMethods() {}
 
-        // Advice pour les méthodes de service de test
+        // Advice for test service methods
         @Around("testServiceMethods()")
         public Object logTestServiceMethods(ProceedingJoinPoint joinPoint) throws Throwable {
-            return super.logServiceMethods(joinPoint); // Utilisation de la méthode publique
+            return super.logServiceMethods(joinPoint); // Using the public method
         }
     }
 }

@@ -5,7 +5,7 @@ import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import com.ecclesiaflow.business.domain.member.Role;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
-import com.ecclesiaflow.web.exception.InvalidRequestException; // Supposons cette exception pour email déjà utilisé
+import com.ecclesiaflow.web.exception.InvalidRequestException;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.web.payloads.SignUpRequestPayload;
 import com.ecclesiaflow.web.dto.SignUpResponse;
@@ -27,7 +27,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
-import com.fasterxml.jackson.databind.ObjectMapper; // Pour sérialiser les DTOs dans le corps des requêtes
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -44,7 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MembersControllerTest {
 
     private MockMvc mockMvc;
-    private ObjectMapper objectMapper; // Pour convertir les objets en JSON
+    private ObjectMapper objectMapper; // TO CONVERT OBJECT TO JSON
 
     @Mock
     private MemberService memberService;
@@ -54,8 +54,6 @@ class MembersControllerTest {
 
     @Mock
     private MemberPageMapper memberPageMapper;
-
-    // Les mappers sont des classes statiques, pas besoin de les mocker
 
     @InjectMocks
     private MembersController membersController;
@@ -73,7 +71,7 @@ class MembersControllerTest {
         objectMapper = new ObjectMapper();
     }
 
-    // --- Tests pour /ecclesiaflow/hello ---
+    // --- Tests for /ecclesiaflow/hello ---
     @Test
     void sayHello_shouldReturnMessageAndCorrectContentType() throws Exception {
         mockMvc.perform(get("/ecclesiaflow/hello")
@@ -83,7 +81,7 @@ class MembersControllerTest {
                 .andExpect(content().string("Hi Member"));
     }
 
-    // --- Tests pour POST /ecclesiaflow/members (registerMember) ---
+    // --- Tests for POST /ecclesiaflow/members (registerMember) ---
     @Test
     void registerMember_shouldReturnCreated() throws Exception {
         // Préparation de la requête
@@ -116,10 +114,10 @@ class MembersControllerTest {
                 .message(expectedMessage)
                 .build();
 
-        // Définir les comportements des mocks
+        // Define mocks behavior
         when(memberService.registerMember(any(MembershipRegistration.class))).thenReturn(member);
 
-        // Exécuter la requête et vérifier les résultats
+        // Execute the request and verify the results
         mockMvc.perform(post("/ecclesiaflow/members")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -136,9 +134,9 @@ class MembersControllerTest {
 
     @Test
     void registerMember_shouldReturnBadRequestForInvalidInput() throws Exception {
-        // Requête avec email invalide (sera attrapé par @Valid)
+        // Request with invalid email (will be caught by @Valid)
         SignUpRequestPayload invalidRequest = new SignUpRequestPayload();
-        invalidRequest.setFirstName("J"); // Trop court
+        invalidRequest.setFirstName("J"); // Too short
         invalidRequest.setLastName("Doe");
         invalidRequest.setEmail("invalid-email");
         invalidRequest.setAddress("123 Street");
@@ -173,7 +171,7 @@ class MembersControllerTest {
         verify(memberService).registerMember(any(MembershipRegistration.class));
     }
 
-    // --- Tests pour GET /ecclesiaflow/members/{memberId} (getMember) ---
+    // --- Tests for GET /ecclesiaflow/members/{memberId} (getMember) ---
     @Test
     void getMember_shouldReturnMember() throws Exception {
         UUID id = UUID.randomUUID();
@@ -225,7 +223,7 @@ class MembersControllerTest {
         verify(memberService).findById(id);
     }
 
-    // --- Tests pour PATCH /ecclesiaflow/members/{memberId} (updateMember) ---
+    // --- Tests for PATCH /ecclesiaflow/members/{memberId} (updateMember) ---
     @Test
     void updateMember_shouldReturnUpdatedMember() throws Exception {
         UUID id = UUID.randomUUID();
@@ -237,7 +235,7 @@ class MembersControllerTest {
                 .memberId(id)
                 .firstName("NewName")
                 .email("new.email@mail.com")
-                .build(); // Exemple simplifié, à compléter selon votre logique
+                .build();
 
         Member updatedMember = Member.builder()
                 .memberId(id)
@@ -310,12 +308,11 @@ class MembersControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").exists());
 
-        // Mapper statique ne nécessite pas de vérification
         verifyNoInteractions(memberService);
     }
 
 
-    // --- Tests pour GET /ecclesiaflow/members (getAllMembers) avec pagination ---
+    // --- Tests for GET /ecclesiaflow/members (getAllMembers) with pagination ---
     @Test
     void getAllMembers_shouldReturnPageOfMembers() throws Exception {
         // Given
@@ -338,7 +335,7 @@ class MembersControllerTest {
                 .totalPages(1)
                 .size(20)
                 .number(0)
-                .page(0) // Ajout explicite du champ page
+                .page(0)
                 .build();
 
         when(memberService.getAllMembers(any(Pageable.class), eq(null), eq(null))).thenReturn(memberPage);
@@ -474,7 +471,7 @@ class MembersControllerTest {
     }
 
 
-    // --- Tests pour GET /ecclesiaflow/members/{email}/confirmation-status ---
+    // --- Tests for GET /ecclesiaflow/members/{email}/confirmation-status ---
     @Test
     void getMemberConfirmationStatus_shouldReturnTrue() throws Exception {
         String email = "confirmed@mail.com";
@@ -503,10 +500,6 @@ class MembersControllerTest {
         verify(memberService).isEmailConfirmed(email);
     }
 
-    // Le contrôleur ne devrait pas retourner 404 ici, le service doit toujours retourner true/false
-    // Si le service lance MemberNotFoundException, le contrôleur devrait le gérer.
-    // Supposons que isEmailConfirmed gère déjà l'email non trouvé en retournant false.
-    // Si isEmailConfirmed peut lancer une MemberNotFoundException, il faudrait tester ce cas aussi.
     @Test
     void getMemberConfirmationStatus_shouldReturnNotFoundIfMemberServiceThrowsNotFound() throws Exception {
         String email = "nonexistent@mail.com";
@@ -521,17 +514,17 @@ class MembersControllerTest {
     }
 
 
-    // --- Tests pour DELETE /ecclesiaflow/members/{memberId} (deleteMember) ---
+    // --- Tests for DELETE /ecclesiaflow/members/{memberId} (deleteMember) ---
     @Test
     void deleteMember_shouldReturnNoContent() throws Exception {
         UUID id = UUID.randomUUID();
-        doNothing().when(memberService).deleteMember(id); // Simuler une suppression réussie
+        doNothing().when(memberService).deleteMember(id); // Simulate a succesful delete
 
         mockMvc.perform(delete("/ecclesiaflow/members/" + id)
                         .accept("application/vnd.ecclesiaflow.members.v1+json"))
                 .andExpect(status().isNoContent());
 
-        verify(memberService).deleteMember(id); // Vérifier que le service a été appelé
+        verify(memberService).deleteMember(id); // Verify that the service method was called
     }
 
     @Test

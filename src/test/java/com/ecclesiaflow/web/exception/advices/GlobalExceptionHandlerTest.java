@@ -65,7 +65,7 @@ class GlobalExceptionHandlerTest {
         webRequest = new ServletWebRequest(httpServletRequest);
     }
 
-    // === TESTS POUR LES ERREURS DE VALIDATION ===
+    // === VALIDATION ERRORS CASES ===
 
     @Test
     @DisplayName("Devrait gérer les erreurs de validation Bean Validation (FieldError)")
@@ -265,7 +265,7 @@ class GlobalExceptionHandlerTest {
 
     }
 
-    // === TESTS POUR LES EXCEPTIONS MÉTIER ===
+    // === BUSINESS EXCEPTIONS VALIDATION TESTS===
 
     @Test
     @DisplayName("Devrait gérer MemberNotFoundException avec statut 404")
@@ -383,7 +383,7 @@ class GlobalExceptionHandlerTest {
         assertThat(errorResponse.message()).isEqualTo("Argument invalide");
     }
 
-    // === TESTS POUR LES ERREURS GÉNÉRIQUES ===
+    // === GENERICS EXCEPTIONS TESTS ===
 
     @Test
     @DisplayName("Devrait gérer les exceptions génériques avec statut 500")
@@ -405,7 +405,7 @@ class GlobalExceptionHandlerTest {
         assertThat(errorResponse.message()).isEqualTo("Une erreur interne est survenue");
     }
 
-    // === TESTS POUR LA STRUCTURE DES RÉPONSES ===
+    // === RESPONSES STRUCTURE TESTS ===
 
     @Test
     @DisplayName("Devrait inclure un timestamp dans toutes les réponses d'erreur")
@@ -437,7 +437,6 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().errors()).isNull();
     }
 
-    // Exemple de test à ajouter
     @Test
     @DisplayName("Devrait gérer MissingRequestHeaderException avec statut 400")
     void handleMissingRequestHeader_ShouldReturnBadRequest() {
@@ -459,7 +458,7 @@ class GlobalExceptionHandlerTest {
         assertThat(errorResponse.errors().get(0).message()).contains("En-tête requis manquant: Authorization");
     }
 
-    // === TESTS POUR LE RATE LIMITING ===
+    // === RATELIMITING TESTS ===
 
     @Test
     @DisplayName("Devrait gérer RequestNotPermitted (Rate Limiting) avec statut 429")
@@ -487,7 +486,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("Devrait gérer RequestNotPermitted avec différents endpoints")
     void handleRateLimitExceeded_ShouldHandleDifferentEndpoints() {
-        // Given - Test avec un autre endpoint
+        // Given - TEST WITH ANOTHER ENDPOINT
         httpServletRequest.setRequestURI("/ecclesiaflow/members/123/confirmation");
         RequestNotPermitted exception = mock(RequestNotPermitted.class);
         when(exception.getMessage()).thenReturn("Rate limit exceeded for confirmation-attempts");

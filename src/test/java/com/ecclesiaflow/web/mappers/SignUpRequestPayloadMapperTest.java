@@ -63,7 +63,6 @@ class SignUpRequestPayloadMapperTest {
     void fromSignUpRequest_WithNullFields_ShouldMapNullValues() {
         // Given
         SignUpRequestPayload request = new SignUpRequestPayload();
-        // Tous les champs restent null par défaut
 
         // When
         MembershipRegistration result = SignUpRequestMapper.fromSignUpRequest(request);

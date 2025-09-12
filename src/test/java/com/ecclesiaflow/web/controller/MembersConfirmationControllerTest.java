@@ -53,7 +53,7 @@ class MembersConfirmationControllerTest {
         objectMapper = new ObjectMapper();
     }
 
-    // --- Tests pour POST /ecclesiaflow/members/{memberId}/confirmation ---
+    // --- Tests for POST /ecclesiaflow/members/{memberId}/confirmation ---
 
     @Test
     void confirmMember_shouldReturnOkWithConfirmationResponse() throws Exception {
@@ -61,18 +61,18 @@ class MembersConfirmationControllerTest {
         ConfirmationRequestPayload request = new ConfirmationRequestPayload();
         request.setCode("123456");
 
-        // Utilisation du builder pour MembershipConfirmationResult
+        // Using builder for MembershipConfirmationResult
         MembershipConfirmationResult serviceResult = MembershipConfirmationResult.builder()
                 .message("Confirmation successful!")
                 .temporaryToken("temp_token")
                 .expiresInSeconds(3600)
                 .build();
 
-        // Utilisation du builder pour ConfirmationResponse
+        // Using builder for ConfirmationResponse
         ConfirmationResponse responseDto = ConfirmationResponse.builder()
                 .message("Confirmation successful!")
                 .temporaryToken("temp_token")
-                .expiresIn(3600) // Assurez-vous que le champ est 'expiresIn' dans le DTO
+                .expiresIn(3600) // Ensure the field is 'expiresIn' in the DTO
                 .build();
 
         when(confirmationService.confirmMember(any(MembershipConfirmation.class))).thenReturn(serviceResult);
@@ -96,19 +96,19 @@ class MembersConfirmationControllerTest {
     void confirmMember_shouldReturnBadRequestForInvalidCodeFormat() throws Exception {
         UUID memberId = UUID.randomUUID();
         ConfirmationRequestPayload request = new ConfirmationRequestPayload();
-        request.setCode("ABC12"); // Code invalide (ex: ne respecte pas les contraintes @Pattern/@Size)
+        request.setCode("ABC12"); // Invalid code (e.g., does not meet @Pattern/@Size constraints)
 
         mockMvc.perform(post("/ecclesiaflow/members/{memberId}/confirmation", memberId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                // Vérifier la structure de ApiErrorResponse et ValidationError
+                // Verify ApiErrorResponse structure and ValidationError
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
-                .andExpect(jsonPath("$.message").value("Erreur de validation des données")) // Message général de MethodArgumentNotValidException
+                .andExpect(jsonPath("$.message").value("Erreur de validation des données")) // General message for MethodArgumentNotValidException
                 .andExpect(jsonPath("$.path").value("/ecclesiaflow/members/" + memberId + "/confirmation"))
                 .andExpect(jsonPath("$.errors").isArray())
-                .andExpect(jsonPath("$.errors[0].path").value("code")); // Le champ 'code' de ConfirmationRequestPayload est en erreur
+                .andExpect(jsonPath("$.errors[0].path").value("code")); // The 'code' field of ConfirmationRequestPayload is in error
         verifyNoInteractions(confirmationService);
         verifyNoInteractions(confirmationResponseMapper);
     }
@@ -119,7 +119,7 @@ class MembersConfirmationControllerTest {
         ConfirmationRequestPayload request = new ConfirmationRequestPayload();
         request.setCode("123456");
 
-        // Le service simule de lancer l'exception web.exception.*
+        // The service simulates throwing web.exception.*
         when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
                 .thenThrow(new InvalidConfirmationCodeException("Code de confirmation incorrect"));
 
@@ -127,7 +127,7 @@ class MembersConfirmationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                // Vérifier la structure de ApiErrorResponse pour une erreur simple 400
+                // Verify ApiErrorResponse structure for a simple 400 error
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value("Code de confirmation incorrect"))
@@ -147,7 +147,7 @@ class MembersConfirmationControllerTest {
         ConfirmationRequestPayload request = new ConfirmationRequestPayload();
         request.setCode("654321");
 
-        // Le service simule de lancer l'exception web.exception.*
+        // The service simulates throwing web.exception.*
         when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
                 .thenThrow(new ExpiredConfirmationCodeException("Le code de confirmation a expiré"));
 
@@ -155,7 +155,7 @@ class MembersConfirmationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                // Vérifier la structure de ApiErrorResponse pour une erreur simple 400
+                // Verify ApiErrorResponse structure for a simple 400 error
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value("Le code de confirmation a expiré"))
@@ -174,7 +174,7 @@ class MembersConfirmationControllerTest {
         ConfirmationRequestPayload request = new ConfirmationRequestPayload();
         request.setCode("112233");
 
-        // Le service simule de lancer l'exception web.exception.*
+        // The service simulates throwing web.exception.*
         when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
                 .thenThrow(new MemberNotFoundException("Membre non trouvé"));
 
@@ -182,12 +182,12 @@ class MembersConfirmationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
-                // Vérifier la structure de ApiErrorResponse pour une erreur simple 404
+                // Verify ApiErrorResponse structure for a simple 404 error
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value("Membre non trouvé"))
                 .andExpect(jsonPath("$.path").value("/ecclesiaflow/members/" + memberId + "/confirmation"))
-                .andExpect(jsonPath("$.errors").doesNotExist()); // errors doit être null pour 404
+                .andExpect(jsonPath("$.errors").doesNotExist()); // errors should be null for 404
 
         verify(confirmationService).confirmMember(any(MembershipConfirmation.class));
         verifyNoInteractions(confirmationResponseMapper);
@@ -199,7 +199,7 @@ class MembersConfirmationControllerTest {
         ConfirmationRequestPayload request = new ConfirmationRequestPayload();
         request.setCode("789012");
 
-        // Le service simule de lancer l'exception web.exception.*
+        // The service simulates throwing web.exception.*
         when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
                 .thenThrow(new MemberAlreadyConfirmedException("Le compte est déjà confirmé"));
 
@@ -207,18 +207,18 @@ class MembersConfirmationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
-                // Vérifier la structure de ApiErrorResponse pour une erreur simple 409
+                // Verify ApiErrorResponse structure for a simple 409 error
                 .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.CONFLICT.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value("Le compte est déjà confirmé"))
                 .andExpect(jsonPath("$.path").value("/ecclesiaflow/members/" + memberId + "/confirmation"))
-                .andExpect(jsonPath("$.errors").doesNotExist()); // errors doit être null pour 409
+                .andExpect(jsonPath("$.errors").doesNotExist()); // errors should be null for 409
 
         verify(confirmationService).confirmMember(any(MembershipConfirmation.class));
         verifyNoInteractions(confirmationResponseMapper);
     }
 
-    // --- Tests pour POST /ecclesiaflow/members/{memberId}/confirmation-code (resendConfirmationCode) ---
+    // --- Tests for POST /ecclesiaflow/members/{memberId}/confirmation-code (resendConfirmationCode) ---
 
     @Test
     void resendConfirmationCode_shouldReturnOk() throws Exception {
@@ -234,18 +234,18 @@ class MembersConfirmationControllerTest {
     @Test
     void resendConfirmationCode_shouldReturnNotFoundIfMemberDoesNotExist() throws Exception {
         UUID memberId = UUID.randomUUID();
-        // Le service simule de lancer l'exception web.exception.*
+        // The service simulates throwing web.exception.*
         doThrow(new MemberNotFoundException("Membre non trouvé pour le renvoi du code"))
                 .when(confirmationService).sendConfirmationCode(memberId);
 
         mockMvc.perform(post("/ecclesiaflow/members/{memberId}/confirmation-code", memberId))
                 .andExpect(status().isNotFound())
-                // Vérifier la structure de ApiErrorResponse pour une erreur simple 404
+                // Verify ApiErrorResponse structure for a simple 404 error
                 .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value("Membre non trouvé pour le renvoi du code"))
                 .andExpect(jsonPath("$.path").value("/ecclesiaflow/members/" + memberId + "/confirmation-code"))
-                .andExpect(jsonPath("$.errors").doesNotExist()); // errors doit être null pour 404
+                .andExpect(jsonPath("$.errors").doesNotExist()); // errors should be null for 404
 
         verify(confirmationService).sendConfirmationCode(memberId);
     }
@@ -253,18 +253,18 @@ class MembersConfirmationControllerTest {
     @Test
     void resendConfirmationCode_shouldReturnConflictIfAlreadyConfirmed() throws Exception {
         UUID memberId = UUID.randomUUID();
-        // Le service simule de lancer l'exception web.exception.*
+        // The service simulates throwing web.exception.*
         doThrow(new MemberAlreadyConfirmedException("Le compte est déjà confirmé, impossible de renvoyer le code"))
                 .when(confirmationService).sendConfirmationCode(memberId);
 
         mockMvc.perform(post("/ecclesiaflow/members/{memberId}/confirmation-code", memberId))
                 .andExpect(status().isConflict())
-                // Vérifier la structure de ApiErrorResponse pour une erreur simple 409
+                // Verify ApiErrorResponse structure for a simple 409 error
                 .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
                 .andExpect(jsonPath("$.error").value(HttpStatus.CONFLICT.getReasonPhrase()))
                 .andExpect(jsonPath("$.message").value("Le compte est déjà confirmé, impossible de renvoyer le code"))
                 .andExpect(jsonPath("$.path").value("/ecclesiaflow/members/" + memberId + "/confirmation-code"))
-                .andExpect(jsonPath("$.errors").doesNotExist()); // errors doit être null pour 409
+                .andExpect(jsonPath("$.errors").doesNotExist()); // errors should be null for 409
 
         verify(confirmationService).sendConfirmationCode(memberId);
     }

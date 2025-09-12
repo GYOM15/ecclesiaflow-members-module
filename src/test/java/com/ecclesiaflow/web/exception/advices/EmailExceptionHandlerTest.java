@@ -35,7 +35,6 @@ class EmailExceptionHandlerTest {
 
     private MockHttpServletRequest httpServletRequest;
 
-    // Constantes pour éviter la duplication
     private static final String DEFAULT_URI = "/ecclesiaflow/members";
     private static final String ALTERNATIVE_URI = "/ecclesiaflow/members/123/confirmation";
     private static final int INTERNAL_SERVER_ERROR_CODE = 500;
@@ -47,7 +46,7 @@ class EmailExceptionHandlerTest {
         httpServletRequest.setRequestURI(DEFAULT_URI);
     }
 
-    // === MÉTHODES UTILITAIRES POUR LES TESTS ===
+    // === Utilities Methods ===
 
     /**
      * Méthode utilitaire pour valider la structure standard d'une réponse d'erreur email.
@@ -90,7 +89,7 @@ class EmailExceptionHandlerTest {
         );
     }
 
-    // === TESTS PARAMÉTRÉS POUR TOUTES LES EXCEPTIONS EMAIL ===
+// === PARAMETERIZED TESTS FOR ALL EMAIL EXCEPTIONS ===
 
     @ParameterizedTest
     @MethodSource("emailExceptionProvider")
@@ -117,7 +116,7 @@ class EmailExceptionHandlerTest {
         throw new IllegalArgumentException("Type d'exception non supporté: " + exception.getClass());
     }
 
-    // === TESTS SPÉCIFIQUES PAR TYPE D'EXCEPTION ===
+    // === SPÉCIFICS TESTS BY EXCEPTION TYPE ===
 
     @Nested
     @DisplayName("Tests pour ConfirmationEmailException")
@@ -188,7 +187,7 @@ class EmailExceptionHandlerTest {
         }
     }
 
-    // === TESTS DE COHÉRENCE ET STRUCTURE ===
+    // === CONSISTENCY AND STRUCTURE TESTS ===
 
     @Nested
     @DisplayName("Tests de cohérence des réponses")
@@ -218,7 +217,7 @@ class EmailExceptionHandlerTest {
         }
     }
 
-    // === TESTS DES CAS LIMITES ===
+    // === LIMIT CASES ===
 
     @Nested
     @DisplayName("Tests des cas limites")

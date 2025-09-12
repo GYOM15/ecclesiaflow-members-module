@@ -28,12 +28,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
-    // Configuration rate limiting pour les tests (1 requête par période pour tester le rate limiting)
+    // Configuration rate limiting for tests (1 request per période to test rate limiting)
     "resilience4j.ratelimiter.instances.member-registration.limit-for-period=1",
     "resilience4j.ratelimiter.instances.member-registration.limit-refresh-period=PT2S",
     "resilience4j.ratelimiter.instances.member-registration.timeout-duration=PT0S",
     
-    // Configuration de base de données en mémoire pour les tests
+    // Database configuration for tests
     "spring.datasource.url=jdbc:h2:mem:testdb",
     "spring.datasource.driver-class-name=org.h2.Driver",
     "spring.jpa.hibernate.ddl-auto=create-drop"
@@ -59,7 +59,7 @@ class MembersControllerRateLimitingTest {
     @Autowired
     private MemberService memberService;
 
-    // --- Tests pour POST /ecclesiaflow/members ---
+    // --- Tests for POST /ecclesiaflow/members ---
     // @RateLimiter(name = "member-registration")
 
     @Test
@@ -84,7 +84,7 @@ class MembersControllerRateLimitingTest {
         when(memberService.registerMember(any(MembershipRegistration.class)))
                 .thenReturn(mockMember);
 
-        // When: Faire plusieurs appels rapides pour déclencher le rate limiting
+        // When: Make multiple requests to trigger rate limiting
         boolean rateLimitingTriggered = false;
         
         for (int i = 0; i < 3; i++) {
@@ -92,7 +92,7 @@ class MembersControllerRateLimitingTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)));
             
-            // Si on reçoit un 429, le rate limiting fonctionne
+            // When we get a 429, the rate limiting is triggered
             if (result.andReturn().getResponse().getStatus() == 429) {
                 rateLimitingTriggered = true;
                 result.andExpect(status().isTooManyRequests())
@@ -102,7 +102,7 @@ class MembersControllerRateLimitingTest {
             }
         }
 
-        // Then: Le rate limiting doit avoir été déclenché
+        // Then: The rate limiting should be triggered
         assertTrue(rateLimitingTriggered, "Le rate limiting devrait être déclenché après plusieurs requêtes rapides");
     }
 
@@ -128,7 +128,7 @@ class MembersControllerRateLimitingTest {
         when(memberService.registerMember(any(MembershipRegistration.class)))
                 .thenReturn(mockMember);
 
-        // When: Déclencher le rate limiting
+        // When: Trigger the rate limiting
         boolean rateLimitingTriggered = false;
         for (int i = 0; i < 3; i++) {
             var result = mockMvc.perform(post("/ecclesiaflow/members")
@@ -143,10 +143,10 @@ class MembersControllerRateLimitingTest {
 
         assertTrue(rateLimitingTriggered, "Le rate limiting devrait être déclenché");
 
-        // Attendre la période de refresh (2 secondes + marge)
+        // Wait for the refresh period to pass (2 seconds + margin)
         Thread.sleep(3000);
 
-        // Then: Après la période de refresh, la requête devrait à nouveau passer
+        // Then: After the refresh period, the request should pass again
         mockMvc.perform(post("/ecclesiaflow/members")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -158,7 +158,7 @@ class MembersControllerRateLimitingTest {
     @Test
     @DisplayName("Devrait appliquer le rate limiting indépendamment des données de la requête")
     void registerMember_shouldApplyRateLimitingRegardlessOfRequestData() throws Exception {
-        // Given - Deux requêtes différentes
+        // Given - Two different requests
         SignUpRequestPayload request1 = new SignUpRequestPayload();
         request1.setFirstName("Alice");
         request1.setLastName("Johnson");
@@ -184,20 +184,20 @@ class MembersControllerRateLimitingTest {
         when(memberService.registerMember(any(MembershipRegistration.class)))
                 .thenReturn(mockMember);
 
-        // When: Faire des appels avec des données différentes
+        // When: Make calls with different data
         boolean rateLimitingTriggered = false;
         
-        // Premier appel avec request1
+        // First call with request1
         var result1 = mockMvc.perform(post("/ecclesiaflow/members")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request1)));
         
-        // Deuxième appel avec request2 (données différentes)
+        // Second call with request2 (different data)
         var result2 = mockMvc.perform(post("/ecclesiaflow/members")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request2)));
         
-        // Le rate limiting devrait s'appliquer même avec des données différentes
+        // The rate limiting should be triggered even if the data is different
         if (result2.andReturn().getResponse().getStatus() == 429) {
             rateLimitingTriggered = true;
             result2.andExpect(status().isTooManyRequests())
@@ -205,7 +205,7 @@ class MembersControllerRateLimitingTest {
                    .andExpect(jsonPath("$.error").value("Too Many Requests"));
         }
 
-        // Then: Le rate limiting doit avoir été déclenché
+        // Then: The rate limiting should be triggered
         assertTrue(rateLimitingTriggered, "Le rate limiting devrait s'appliquer indépendamment des données de la requête");
     }
 }

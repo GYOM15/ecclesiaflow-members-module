@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.*;
  * Tests unitaires pour OpenApiConfig.
  * Vérifie la configuration OpenAPI et l'ajout automatique des réponses d'erreur.
  */
-@DisplayName("OpenApiConfig - Tests Unitaires")
+@DisplayName("OpenApiConfig - Unit Tests")
 class OpenApiConfigTest {
 
     private OpenApiConfig openApiConfig;
@@ -31,17 +31,17 @@ class OpenApiConfigTest {
         openApiConfig = new OpenApiConfig();
     }
 
-    // === TESTS DE CONFIGURATION OPENAPI ===
+    // === OPENAPI CONFIGURATION TESTS ===
 
     @Test
-    @DisplayName("Devrait créer une configuration OpenAPI avec les métadonnées correctes")
+    @DisplayName("Should create an OpenAPI configuration with correct metadata")
     void customOpenAPI_ShouldCreateConfigurationWithCorrectMetadata() {
         // When
         OpenAPI openAPI = openApiConfig.customOpenAPI();
 
         // Then
         assertThat(openAPI).isNotNull();
-        
+
         Info info = openAPI.getInfo();
         assertThat(info).isNotNull();
         assertThat(info.getTitle()).isEqualTo("EcclesiaFlow Members Module API");
@@ -49,10 +49,10 @@ class OpenApiConfigTest {
         assertThat(info.getDescription()).isEqualTo("API pour la gestion des membres d'EcclesiaFlow");
     }
 
-    // === TESTS DU CUSTOMIZER GLOBAL ===
+    // === GLOBAL CUSTOMIZER TESTS ===
 
     @Test
-    @DisplayName("Devrait créer un customizer qui ajoute les réponses d'erreur globales")
+    @DisplayName("Should create a customizer that adds global error responses")
     void customerGlobalHeaderOpenApiCustomizer_ShouldCreateCustomizer() {
         // When
         OpenApiCustomizer customizer = openApiConfig.customerGlobalHeaderOpenApiCustomizer();
@@ -62,7 +62,7 @@ class OpenApiConfigTest {
     }
 
     @Test
-    @DisplayName("Devrait ajouter toutes les réponses d'erreur standard à une opération")
+    @DisplayName("Should add all standard error responses to an operation")
     void customizer_ShouldAddAllStandardErrorResponses() {
         // Given
         OpenApiCustomizer customizer = openApiConfig.customerGlobalHeaderOpenApiCustomizer();
@@ -75,7 +75,7 @@ class OpenApiConfigTest {
         Operation operation = getFirstOperation(openAPI);
         ApiResponses responses = operation.getResponses();
 
-        // Vérifier que toutes les réponses d'erreur sont ajoutées
+        // Verify that all error responses are added
         assertThat(responses.get("400")).isNotNull();
         assertThat(responses.get("401")).isNotNull();
         assertThat(responses.get("403")).isNotNull();
@@ -84,7 +84,7 @@ class OpenApiConfigTest {
     }
 
     @Test
-    @DisplayName("Devrait configurer correctement la réponse 400 Bad Request")
+    @DisplayName("Should correctly configure the 400 Bad Request response")
     void customizer_ShouldConfigureBadRequestResponse() {
         // Given
         OpenApiCustomizer customizer = openApiConfig.customerGlobalHeaderOpenApiCustomizer();
@@ -99,10 +99,10 @@ class OpenApiConfigTest {
 
         assertThat(badRequestResponse).isNotNull();
         assertThat(badRequestResponse.getDescription()).isEqualTo("Requête invalide");
-        
+
         Content content = badRequestResponse.getContent();
         assertThat(content).isNotNull();
-        
+
         MediaType mediaType = content.get("application/json");
         assertThat(mediaType).isNotNull();
         assertThat(mediaType.getSchema()).isNotNull();
@@ -110,7 +110,7 @@ class OpenApiConfigTest {
     }
 
     @Test
-    @DisplayName("Devrait configurer correctement la réponse 401 Unauthorized")
+    @DisplayName("Should correctly configure the 401 Unauthorized response")
     void customizer_ShouldConfigureUnauthorizedResponse() {
         // Given
         OpenApiCustomizer customizer = openApiConfig.customerGlobalHeaderOpenApiCustomizer();
@@ -126,11 +126,11 @@ class OpenApiConfigTest {
         assertThat(unauthorizedResponse).isNotNull();
         assertThat(unauthorizedResponse.getDescription()).isEqualTo("Non autorisé");
         assertThat(unauthorizedResponse.getContent().get("application/json").getSchema().get$ref())
-            .isEqualTo("#/components/schemas/ApiErrorResponse");
+                .isEqualTo("#/components/schemas/ApiErrorResponse");
     }
 
     @Test
-    @DisplayName("Devrait configurer correctement la réponse 403 Forbidden")
+    @DisplayName("Should correctly configure the 403 Forbidden response")
     void customizer_ShouldConfigureForbiddenResponse() {
         // Given
         OpenApiCustomizer customizer = openApiConfig.customerGlobalHeaderOpenApiCustomizer();
@@ -146,11 +146,11 @@ class OpenApiConfigTest {
         assertThat(forbiddenResponse).isNotNull();
         assertThat(forbiddenResponse.getDescription()).isEqualTo("Accès refusé");
         assertThat(forbiddenResponse.getContent().get("application/json").getSchema().get$ref())
-            .isEqualTo("#/components/schemas/ApiErrorResponse");
+                .isEqualTo("#/components/schemas/ApiErrorResponse");
     }
 
     @Test
-    @DisplayName("Devrait configurer correctement la réponse 404 Not Found")
+    @DisplayName("Should correctly configure the 404 Not Found response")
     void customizer_ShouldConfigureNotFoundResponse() {
         // Given
         OpenApiCustomizer customizer = openApiConfig.customerGlobalHeaderOpenApiCustomizer();
@@ -166,11 +166,11 @@ class OpenApiConfigTest {
         assertThat(notFoundResponse).isNotNull();
         assertThat(notFoundResponse.getDescription()).isEqualTo("Ressource non trouvée");
         assertThat(notFoundResponse.getContent().get("application/json").getSchema().get$ref())
-            .isEqualTo("#/components/schemas/ApiErrorResponse");
+                .isEqualTo("#/components/schemas/ApiErrorResponse");
     }
 
     @Test
-    @DisplayName("Devrait configurer correctement la réponse 500 Internal Server Error")
+    @DisplayName("Should correctly configure the 500 Internal Server Error response")
     void customizer_ShouldConfigureInternalServerErrorResponse() {
         // Given
         OpenApiCustomizer customizer = openApiConfig.customerGlobalHeaderOpenApiCustomizer();
@@ -186,11 +186,11 @@ class OpenApiConfigTest {
         assertThat(serverErrorResponse).isNotNull();
         assertThat(serverErrorResponse.getDescription()).isEqualTo("Erreur interne du serveur");
         assertThat(serverErrorResponse.getContent().get("application/json").getSchema().get$ref())
-            .isEqualTo("#/components/schemas/ApiErrorResponse");
+                .isEqualTo("#/components/schemas/ApiErrorResponse");
     }
 
     @Test
-    @DisplayName("Devrait traiter plusieurs opérations dans plusieurs chemins")
+    @DisplayName("Should process multiple operations in multiple paths")
     void customizer_ShouldProcessMultipleOperationsInMultiplePaths() {
         // Given
         OpenApiCustomizer customizer = openApiConfig.customerGlobalHeaderOpenApiCustomizer();
@@ -201,33 +201,33 @@ class OpenApiConfigTest {
 
         // Then
         Paths paths = openAPI.getPaths();
-        
-        // Vérifier le premier chemin
+
+        // Verify the first path
         PathItem firstPath = paths.get("/api/members");
         Operation getOperation = firstPath.getGet();
         Operation postOperation = firstPath.getPost();
-        
+
         assertThat(getOperation.getResponses().get("400")).isNotNull();
         assertThat(getOperation.getResponses().get("404")).isNotNull();
         assertThat(postOperation.getResponses().get("400")).isNotNull();
         assertThat(postOperation.getResponses().get("500")).isNotNull();
-        
-        // Vérifier le deuxième chemin
+
+        // Verify the second path
         PathItem secondPath = paths.get("/api/members/{id}");
         Operation putOperation = secondPath.getPut();
-        
+
         assertThat(putOperation.getResponses().get("400")).isNotNull();
         assertThat(putOperation.getResponses().get("404")).isNotNull();
     }
 
     @Test
-    @DisplayName("Devrait préserver les réponses existantes lors de l'ajout des réponses d'erreur")
+    @DisplayName("Should preserve existing responses when adding error responses")
     void customizer_ShouldPreserveExistingResponses() {
         // Given
         OpenApiCustomizer customizer = openApiConfig.customerGlobalHeaderOpenApiCustomizer();
         OpenAPI openAPI = createTestOpenAPI();
-        
-        // Ajouter une réponse existante
+
+        // Add an existing response
         Operation operation = getFirstOperation(openAPI);
         operation.getResponses().addApiResponse("200", new ApiResponse().description("Success"));
 
@@ -236,19 +236,19 @@ class OpenApiConfigTest {
 
         // Then
         ApiResponses responses = operation.getResponses();
-        
-        // La réponse existante doit être préservée
+
+        // The existing response should be preserved
         assertThat(responses.get("200")).isNotNull();
         assertThat(responses.get("200").getDescription()).isEqualTo("Success");
-        
-        // Les nouvelles réponses d'erreur doivent être ajoutées
+
+        // New error responses should be added
         assertThat(responses.get("400")).isNotNull();
         assertThat(responses.get("404")).isNotNull();
         assertThat(responses.get("500")).isNotNull();
     }
 
     @Test
-    @DisplayName("Devrait gérer une OpenAPI sans chemins")
+    @DisplayName("Should handle an OpenAPI without paths")
     void customizer_ShouldHandleOpenAPIWithoutPaths() {
         // Given
         OpenApiCustomizer customizer = openApiConfig.customerGlobalHeaderOpenApiCustomizer();
@@ -257,52 +257,52 @@ class OpenApiConfigTest {
 
         // When & Then
         assertThatCode(() -> customizer.customise(openAPI))
-            .doesNotThrowAnyException();
+                .doesNotThrowAnyException();
     }
 
-    // === MÉTHODES UTILITAIRES POUR LES TESTS ===
+    // === UTILITY METHODS FOR TESTS ===
 
     private OpenAPI createTestOpenAPI() {
         OpenAPI openAPI = new OpenAPI();
         Paths paths = new Paths();
-        
+
         PathItem pathItem = new PathItem();
         Operation operation = new Operation();
         operation.setResponses(new ApiResponses());
         pathItem.setGet(operation);
-        
+
         paths.addPathItem("/api/members", pathItem);
         openAPI.setPaths(paths);
-        
+
         return openAPI;
     }
 
     private OpenAPI createTestOpenAPIWithMultipleOperations() {
         OpenAPI openAPI = new OpenAPI();
         Paths paths = new Paths();
-        
-        // Premier chemin avec GET et POST
+
+        // First path with GET and POST
         PathItem firstPath = new PathItem();
-        
+
         Operation getOperation = new Operation();
         getOperation.setResponses(new ApiResponses());
         firstPath.setGet(getOperation);
-        
+
         Operation postOperation = new Operation();
         postOperation.setResponses(new ApiResponses());
         firstPath.setPost(postOperation);
-        
+
         paths.addPathItem("/api/members", firstPath);
-        
-        // Deuxième chemin avec PUT
+
+        // Second path with PUT
         PathItem secondPath = new PathItem();
-        
+
         Operation putOperation = new Operation();
         putOperation.setResponses(new ApiResponses());
         secondPath.setPut(putOperation);
-        
+
         paths.addPathItem("/api/members/{id}", secondPath);
-        
+
         openAPI.setPaths(paths);
         return openAPI;
     }

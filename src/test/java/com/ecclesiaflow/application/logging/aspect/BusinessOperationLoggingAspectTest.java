@@ -48,15 +48,15 @@ class BusinessOperationLoggingAspectTest {
 
     @BeforeEach
     void setUp() {
-        // Ciblez le logger de l'aspect réel
+        // Target the actual aspect's logger
         logger = (Logger) LoggerFactory.getLogger(BusinessOperationLoggingAspect.class);
         listAppender = new ListAppender<>();
         listAppender.start();
         logger.addAppender(listAppender);
-        // Assurez-vous que le niveau du logger est suffisant pour capturer tous les logs (INFO et DEBUG)
+        // Ensure the logger level is sufficient to capture all logs (INFO and DEBUG)
         logger.setLevel(Level.DEBUG);
 
-        // Pas de mocks à réinitialiser avec cette approche
+        // No mocks to reset with this approach
     }
 
     @AfterEach
@@ -65,14 +65,14 @@ class BusinessOperationLoggingAspectTest {
         listAppender.stop();
     }
 
-    // === TESTS POUR L'ENREGISTREMENT DE MEMBRES ===
+    // === TESTS FOR MEMBER REGISTRATION ===
     @Test
     @DisplayName("Devrait logger le début et la réussite de l'enregistrement d'un membre")
     void shouldLogSuccessfulMemberRegistration() {
-        // When: Appel du service de test (l'aspect va s'exécuter)
+        // When: Call the test service (the aspect will execute)
         String result = memberService.registerMember("test@example.com");
 
-        // Then: Vérification du résultat et des logs de l'aspect
+        // Then: Verify the result and the aspect's logs
         assertThat(result).isEqualTo("Member registered: test@example.com");
 
         List<ILoggingEvent> logs = listAppender.list;
@@ -86,13 +86,13 @@ class BusinessOperationLoggingAspectTest {
     @Test
     @DisplayName("Devrait logger l'échec de l'enregistrement d'un membre")
     void shouldLogFailedMemberRegistration() {
-        // When & Then: Appel du service de test avec un email qui provoque une exception
+        // When & Then: Call the test service with an email that causes an exception
         assertThatThrownBy(() -> memberService.registerMember("throw_exception"))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Erreur d'enregistrement");
 
         List<ILoggingEvent> logs = listAppender.list;
-        assertThat(logs).hasSize(2); // Un log avant, un log d'erreur
+        assertThat(logs).hasSize(2); // One log before, one error log
         assertThat(logs.get(0).getFormattedMessage()).contains("BUSINESS: Tentative d'enregistrement d'un nouveau membre");
         assertThat(logs.get(0).getLevel()).isEqualTo(Level.INFO);
         assertThat(logs.get(1).getFormattedMessage()).contains("BUSINESS: Échec de l'enregistrement du membre - Erreur d'enregistrement");
@@ -100,7 +100,7 @@ class BusinessOperationLoggingAspectTest {
     }
 
 
-    // === TESTS POUR LES APPELS AU MODULE D'AUTHENTIFICATION ===
+    // === TESTS FOR AUTHENTICATION MODULE CALLS ===
     @Test
     @DisplayName("Devrait logger le début et la réussite d'un appel au module d'authentification")
     void shouldLogSuccessfulAuthModuleCall() {
@@ -118,7 +118,7 @@ class BusinessOperationLoggingAspectTest {
     }
 
     @Test
-    @DisplayName("Devrait logger un appel au module d'authentification sans résultat de retour")
+    @DisplayName("Should log an authentication module call with no return result (void)")
     void shouldLogAuthModuleCallWithVoidReturn() {
         // When
         authModuleService.logout();
@@ -133,7 +133,7 @@ class BusinessOperationLoggingAspectTest {
     }
 
     @Test
-    @DisplayName("Devrait logger l'échec d'un appel au module d'authentification")
+    @DisplayName("Should log the failure of an authentication module call")
     void shouldLogFailedAuthModuleCall() {
         // When & Then
         assertThatThrownBy(() -> authModuleService.refreshToken("invalid_token"))
@@ -148,7 +148,7 @@ class BusinessOperationLoggingAspectTest {
         assertThat(logs.get(1).getLevel()).isEqualTo(Level.WARN);
     }
 
-    // --- CONFIGURATION DE TEST AVEC ASPECT DÉDIÉ ---
+    // --- TEST CONFIGURATION WITH DEDICATED ASPECT ---
     @Configuration
     @EnableAspectJAutoProxy
     static class TestConfig {
@@ -168,7 +168,7 @@ class BusinessOperationLoggingAspectTest {
         }
     }
 
-    // === SERVICES DE TEST ===
+    // === TEST SERVICES ===
     @Service
     static class TestMemberService {
         public String registerMember(String email) {
@@ -186,7 +186,7 @@ class BusinessOperationLoggingAspectTest {
         }
 
         public void logout() {
-            // Méthode void
+            // Void method
         }
 
         public String refreshToken(String token) {
@@ -197,20 +197,20 @@ class BusinessOperationLoggingAspectTest {
         }
     }
 
-    // === ASPECT DE TEST DÉDIÉ ===
+    // === DEDICATED TEST ASPECT ===
     @Aspect
     @Component
     static class TestBusinessOperationAspect {
         private static final org.slf4j.Logger log = LoggerFactory.getLogger(BusinessOperationLoggingAspect.class);
 
-        // Pointcuts pour les services de test
+        // Pointcuts for test services
         @Pointcut("execution(* com.ecclesiaflow.application.logging.aspect.BusinessOperationLoggingAspectTest.TestMemberService.registerMember(..))")
         public void memberRegistration() {}
 
         @Pointcut("execution(* com.ecclesiaflow.application.logging.aspect.BusinessOperationLoggingAspectTest.TestAuthModuleService.*(..))")
         public void authModuleCalls() {}
 
-        // Advices pour l'enregistrement de membres
+        // Advices for member registration
         @Before("memberRegistration()")
         public void logBeforeMemberRegistration(JoinPoint joinPoint) {
             log.info("BUSINESS: Tentative d'enregistrement d'un nouveau membre");
@@ -226,7 +226,7 @@ class BusinessOperationLoggingAspectTest {
             log.warn("BUSINESS: Échec de l'enregistrement du membre - {}", ex.getMessage());
         }
 
-        // Advices pour les appels au module d'authentification
+        // Advices for authentication module calls
         @Before("authModuleCalls()")
         public void logBeforeAuthModuleCall(JoinPoint joinPoint) {
             String methodName = joinPoint.getSignature().getName();
