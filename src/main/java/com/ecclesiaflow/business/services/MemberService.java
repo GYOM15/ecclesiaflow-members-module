@@ -5,8 +5,9 @@ import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -146,16 +147,20 @@ public interface MemberService {
     void deleteMember(UUID id);
     
     /**
-     * Récupère la liste de tous les membres du système.
+     * Récupère une page de membres avec support de filtrage et recherche.
      * <p>
-     * Cette méthode retourne tous les membres enregistrés,
-     * confirmés ou non. Utilisée pour les interfaces d'administration
-     * et les rapports. Pour les gros volumes, préférer une approche paginée.
+     * Cette méthode permet de récupérer les membres de manière paginée
+     * avec des options de filtrage par statut de confirmation et de recherche
+     * par nom ou email. Optimisée pour les gros volumes de données.
      * </p>
      *
-     * @return la liste de tous les membres, peut être vide mais jamais null
-     * @implNote Opération de lecture potentiellement coûteuse sur gros volumes.
-     * @deprecated Utiliser une approche paginée pour les gros volumes
+     * @param pageable les paramètres de pagination (page, taille, tri), non null
+     * @param search terme de recherche optionnel pour filtrer par nom ou email
+     * @param confirmed filtre optionnel par statut de confirmation (null = tous)
+     * @return une page de membres correspondant aux critères
+     * @throws IllegalArgumentException si pageable est null
+     * @implNote Opération de lecture optimisée avec index sur email et nom
+     * @since 1.0.0
      */
-    List<Member> getAllMembers();
+    Page<Member> getAllMembers(Pageable pageable, String search, Boolean confirmed);
 }

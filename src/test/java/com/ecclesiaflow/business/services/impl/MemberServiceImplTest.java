@@ -14,6 +14,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -151,16 +155,99 @@ class MemberServiceImplTest {
     }
 
     @Test
-    void getAllMembers_shouldReturnList() {
+    void getAllMembers_shouldReturnAllMembersWithPagination() {
+        // Given
+        Pageable pageable = PageRequest.of(0, 20);
         List<Member> members = List.of(
                 Member.builder().memberId(UUID.randomUUID()).firstName("A").email("a@mail.com").build(),
                 Member.builder().memberId(UUID.randomUUID()).firstName("B").email("b@mail.com").build()
         );
+        Page<Member> memberPage = new PageImpl<>(members, pageable, 2);
 
-        when(memberRepository.findAll()).thenReturn(members);
+        when(memberRepository.getAll(pageable)).thenReturn(memberPage);
 
-        List<Member> result = memberService.getAllMembers();
+        // When
+        Page<Member> result = memberService.getAllMembers(pageable, null, null);
 
-        assertEquals(2, result.size());
+        // Then
+        assertEquals(2, result.getContent().size());
+        assertEquals(2, result.getTotalElements());
+        assertEquals(1, result.getTotalPages());
+        verify(memberRepository, times(1)).getAll(pageable);
+    }
+
+    @Test
+    void getAllMembers_shouldReturnMembersWithSearchTerm() {
+        // Given
+        Pageable pageable = PageRequest.of(0, 20);
+        String searchTerm = "john";
+        List<Member> members = List.of(
+                Member.builder().memberId(UUID.randomUUID()).firstName("John").email("john@mail.com").build()
+        );
+        Page<Member> memberPage = new PageImpl<>(members, pageable, 1);
+
+        when(memberRepository.getMembersBySearchTerm(searchTerm, pageable)).thenReturn(memberPage);
+
+        // When
+        Page<Member> result = memberService.getAllMembers(pageable, searchTerm, null);
+
+        // Then
+        assertEquals(1, result.getContent().size());
+        assertEquals("John", result.getContent().get(0).getFirstName());
+        verify(memberRepository, times(1)).getMembersBySearchTerm(searchTerm, pageable);
+    }
+
+    @Test
+    void getAllMembers_shouldReturnMembersWithConfirmationStatus() {
+        // Given
+        Pageable pageable = PageRequest.of(0, 20);
+        Boolean confirmed = true;
+        List<Member> members = List.of(
+                Member.builder().memberId(UUID.randomUUID()).firstName("A").email("a@mail.com").confirmed(true).build()
+        );
+        Page<Member> memberPage = new PageImpl<>(members, pageable, 1);
+
+        when(memberRepository.getByConfirmedStatus(confirmed, pageable)).thenReturn(memberPage);
+
+        // When
+        Page<Member> result = memberService.getAllMembers(pageable, null, confirmed);
+
+        // Then
+        assertEquals(1, result.getContent().size());
+        assertTrue(result.getContent().get(0).isConfirmed());
+        verify(memberRepository, times(1)).getByConfirmedStatus(confirmed, pageable);
+    }
+
+    @Test
+    void getAllMembers_shouldReturnMembersWithSearchTermAndConfirmationStatus() {
+        // Given
+        Pageable pageable = PageRequest.of(0, 20);
+        String searchTerm = "john";
+        Boolean confirmed = false;
+        List<Member> members = List.of(
+                Member.builder().memberId(UUID.randomUUID()).firstName("John").email("john@mail.com").confirmed(false).build()
+        );
+        Page<Member> memberPage = new PageImpl<>(members, pageable, 1);
+
+        when(memberRepository.getMembersBySearchTermAndConfirmationStatus(searchTerm, confirmed, pageable))
+                .thenReturn(memberPage);
+
+        // When
+        Page<Member> result = memberService.getAllMembers(pageable, searchTerm, confirmed);
+
+        // Then
+        assertEquals(1, result.getContent().size());
+        assertEquals("John", result.getContent().get(0).getFirstName());
+        assertFalse(result.getContent().get(0).isConfirmed());
+        verify(memberRepository, times(1)).getMembersBySearchTermAndConfirmationStatus(searchTerm, confirmed, pageable);
+    }
+
+    @Test
+    void getAllMembers_shouldThrowExceptionWhenPageableIsNull() {
+        // When & Then
+        assertThrows(IllegalArgumentException.class, 
+                () -> memberService.getAllMembers(null, null, null));
+        
+        verifyNoInteractions(memberRepository);
     }
 }

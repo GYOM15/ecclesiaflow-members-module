@@ -10,10 +10,11 @@ import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepositor
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -127,7 +128,29 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Member> getAllMembers() {
-        return memberRepository.findAll();
+    public Page<Member> getAllMembers(Pageable pageable, String search, Boolean confirmed) {
+        if (pageable == null) {
+            throw new IllegalArgumentException("Pageable cannot be null");
+        }
+
+        return findMembersWithCriteria(pageable, normalizeSearch(search), confirmed);
+    }
+
+    // Utilities methods
+    private Page<Member> findMembersWithCriteria(Pageable pageable, String normalizedSearch, Boolean confirmed) {
+        if (normalizedSearch != null && confirmed != null) {
+            return memberRepository.getMembersBySearchTermAndConfirmationStatus(normalizedSearch, confirmed, pageable);
+        }
+        if (normalizedSearch != null) {
+            return memberRepository.getMembersBySearchTerm(normalizedSearch, pageable);
+        }
+        if (confirmed != null) {
+            return memberRepository.getByConfirmedStatus(confirmed, pageable);
+        }
+        return memberRepository.getAll(pageable);
+    }
+
+    private String normalizeSearch(String search) {
+        return (search != null && !search.trim().isEmpty()) ? search.trim() : null;
     }
 }
