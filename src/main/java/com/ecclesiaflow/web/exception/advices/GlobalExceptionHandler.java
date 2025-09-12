@@ -4,7 +4,6 @@ import com.ecclesiaflow.business.exceptions.ExpiredConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
-import com.ecclesiaflow.web.dto.ErrorResponse;
 import com.ecclesiaflow.web.exception.*;
 import com.ecclesiaflow.web.exception.model.ApiErrorResponse;
 import com.ecclesiaflow.web.exception.model.ValidationError;
@@ -213,15 +212,15 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(RequestNotPermitted.class)
-    public ResponseEntity<ErrorResponse> handleRateLimitExceeded(RequestNotPermitted ex, HttpServletRequest request) {
-        ErrorResponse error = new ErrorResponse(
-                LocalDateTime.now(),
-                429,
-                "Too Many Requests",
-                "Trop de tentatives. Veuillez réessayer plus tard.",
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(429).body(error);
+    public ResponseEntity<ApiErrorResponse> handleRateLimitExceeded(RequestNotPermitted ex, HttpServletRequest request) {
+        ApiErrorResponse errorResponse = ApiErrorResponse.builder()
+            .status(429)
+            .error("Too Many Requests")
+            .message("Trop de tentatives. Veuillez réessayer plus tard.")
+            .path(request.getRequestURI())
+            .errors(null)  // Pas d'erreurs de validation pour le rate limiting
+            .build();
+        return ResponseEntity.status(429).body(errorResponse);
     }
     /**
      * Construit une réponse d'erreur 400 Bad Request avec des erreurs de validation.

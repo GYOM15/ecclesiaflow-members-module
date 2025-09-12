@@ -11,8 +11,7 @@ import java.util.List;
 /**
  * Record représentant une réponse d'erreur standardisée avec support des erreurs de validation.
  * <p>
- * Cette classe étend le concept de {@link com.ecclesiaflow.web.dto.ErrorResponse} en ajoutant
- * la capacité de gérer des erreurs de validation détaillées. Utilisée principalement par
+ * Capacité de gérer des erreurs de validation détaillées. Utilisée principalement par
  * {@link com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler} pour les erreurs
  * de validation Bean Validation et les erreurs métier complexes.
  * </p>
@@ -50,7 +49,6 @@ import java.util.List;
  * @since 1.0.0
  * @see ValidationError
  * @see com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler
- * @see com.ecclesiaflow.web.dto.ErrorResponse
  */
 @Schema(description = "Réponse d'erreur standard de l'API")
 @JsonInclude(JsonInclude.Include.NON_NULL)

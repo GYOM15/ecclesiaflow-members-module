@@ -4,7 +4,7 @@ import com.ecclesiaflow.io.communication.email.EmailServiceImpl;
 import com.ecclesiaflow.io.exception.ConfirmationEmailException;
 import com.ecclesiaflow.io.exception.EmailSendingException;
 import com.ecclesiaflow.io.exception.WelcomeEmailException;
-import com.ecclesiaflow.web.dto.ErrorResponse;
+import com.ecclesiaflow.web.exception.model.ApiErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -60,7 +60,7 @@ public class EmailExceptionHandler {
      * @return réponse d'erreur HTTP 500 avec détails spécifiques
      */
     @ExceptionHandler(ConfirmationEmailException.class)
-    public ResponseEntity<ErrorResponse> handleConfirmationEmailException(ConfirmationEmailException ex, HttpServletRequest request) {
+    public ResponseEntity<ApiErrorResponse> handleConfirmationEmailException(ConfirmationEmailException ex, HttpServletRequest request) {
         return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur lors de l'envoi de l'email de confirmation.", request.getRequestURI(), ex);
     }
 
@@ -72,7 +72,7 @@ public class EmailExceptionHandler {
      * @return réponse d'erreur HTTP 500 avec détails spécifiques
      */
     @ExceptionHandler(WelcomeEmailException.class)
-    public ResponseEntity<ErrorResponse> handleWelcomeEmailException(WelcomeEmailException ex, HttpServletRequest request) {
+    public ResponseEntity<ApiErrorResponse> handleWelcomeEmailException(WelcomeEmailException ex, HttpServletRequest request) {
         return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur lors de l'envoi de l'email de bienvenue.", request.getRequestURI(), ex);
     }
 
@@ -84,7 +84,7 @@ public class EmailExceptionHandler {
      * @return réponse d'erreur HTTP 500 avec message générique
      */
     @ExceptionHandler(EmailSendingException.class)
-    public ResponseEntity<ErrorResponse> handleEmailSendingException(EmailSendingException ex, HttpServletRequest request) {
+    public ResponseEntity<ApiErrorResponse> handleEmailSendingException(EmailSendingException ex, HttpServletRequest request) {
         // Catch-all pour toute autre exception d'email non spécifique
         return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur lors de l'envoi de l'email.", request.getRequestURI(), ex);
     }
@@ -98,14 +98,14 @@ public class EmailExceptionHandler {
      * @param ex l'exception source pour les détails techniques
      * @return réponse d'erreur formatée avec {@link ErrorResponse}
      */
-    private ResponseEntity<ErrorResponse> buildError(HttpStatus status, String message, String path, Exception ex) {
-        ErrorResponse error = new ErrorResponse(
-                LocalDateTime.now(),
-                status.value(),
-                status.getReasonPhrase(),
-                message + " Détails: " + ex.getMessage(),
-                path
-        );
-        return new ResponseEntity<>(error, status);
+    private ResponseEntity<ApiErrorResponse> buildError(HttpStatus status, String message, String path, Exception ex) {
+        ApiErrorResponse errorResponse = ApiErrorResponse.builder()
+            .status(status.value())
+            .error(status.getReasonPhrase())
+            .message(message + " Détails: " + ex.getMessage())
+            .path(path)
+            .errors(null)  // Pas d'erreurs de validation pour les erreurs d'email
+            .build();
+        return new ResponseEntity<>(errorResponse, status);
     }
 }

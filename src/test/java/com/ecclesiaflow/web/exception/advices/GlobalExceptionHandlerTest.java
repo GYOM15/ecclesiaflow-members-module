@@ -4,7 +4,6 @@ import com.ecclesiaflow.business.exceptions.ExpiredConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
-import com.ecclesiaflow.web.dto.ErrorResponse;
 import com.ecclesiaflow.web.exception.*;
 import com.ecclesiaflow.web.exception.model.ApiErrorResponse;
 import com.ecclesiaflow.web.exception.model.ValidationError;
@@ -468,14 +467,14 @@ class GlobalExceptionHandlerTest {
         when(exception.getMessage()).thenReturn("Rate limit exceeded for member-registration");
 
         // When
-        ResponseEntity<ErrorResponse> response = globalExceptionHandler
+        ResponseEntity<ApiErrorResponse> response = globalExceptionHandler
                 .handleRateLimitExceeded(exception, httpServletRequest);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
         assertThat(response.getBody()).isNotNull();
 
-        ErrorResponse errorResponse = response.getBody();
+        ApiErrorResponse errorResponse = response.getBody();
         assertThat(errorResponse.status()).isEqualTo(429);
         assertThat(errorResponse.error()).isEqualTo("Too Many Requests");
         assertThat(errorResponse.message()).isEqualTo("Trop de tentatives. Veuillez réessayer plus tard.");
@@ -492,14 +491,14 @@ class GlobalExceptionHandlerTest {
         when(exception.getMessage()).thenReturn("Rate limit exceeded for confirmation-attempts");
 
         // When
-        ResponseEntity<ErrorResponse> response = globalExceptionHandler
+        ResponseEntity<ApiErrorResponse> response = globalExceptionHandler
                 .handleRateLimitExceeded(exception, httpServletRequest);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
         assertThat(response.getBody()).isNotNull();
 
-        ErrorResponse errorResponse = response.getBody();
+        ApiErrorResponse errorResponse = response.getBody();
         assertThat(errorResponse.status()).isEqualTo(429);
         assertThat(errorResponse.error()).isEqualTo("Too Many Requests");
         assertThat(errorResponse.message()).isEqualTo("Trop de tentatives. Veuillez réessayer plus tard.");

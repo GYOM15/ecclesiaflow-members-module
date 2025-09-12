@@ -3,7 +3,7 @@ package com.ecclesiaflow.web.exception.advices;
 import com.ecclesiaflow.io.exception.ConfirmationEmailException;
 import com.ecclesiaflow.io.exception.EmailSendingException;
 import com.ecclesiaflow.io.exception.WelcomeEmailException;
-import com.ecclesiaflow.web.dto.ErrorResponse;
+import com.ecclesiaflow.web.exception.model.ApiErrorResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -51,19 +51,20 @@ class EmailExceptionHandlerTest {
     /**
      * Méthode utilitaire pour valider la structure standard d'une réponse d'erreur email.
      */
-    private void assertStandardEmailErrorResponse(ResponseEntity<ErrorResponse> response, 
+    private void assertStandardEmailErrorResponse(ResponseEntity<ApiErrorResponse> response, 
                                                 String expectedMessagePrefix, 
                                                 String originalMessage, 
                                                 String expectedPath) {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(response.getBody()).isNotNull();
         
-        ErrorResponse errorResponse = response.getBody();
+        ApiErrorResponse errorResponse = response.getBody();
         assertThat(errorResponse.status()).isEqualTo(INTERNAL_SERVER_ERROR_CODE);
         assertThat(errorResponse.error()).isEqualTo(INTERNAL_SERVER_ERROR_MESSAGE);
         assertThat(errorResponse.message()).isEqualTo(expectedMessagePrefix + originalMessage);
         assertThat(errorResponse.path()).isEqualTo(expectedPath);
         assertThat(errorResponse.timestamp()).isNotNull();
+        assertThat(errorResponse.errors()).isNull(); // Pas d'erreurs de validation pour les erreurs d'email
     }
 
     /**
@@ -96,7 +97,7 @@ class EmailExceptionHandlerTest {
     @DisplayName("Devrait gérer toutes les exceptions email avec statut 500")
     void handleEmailExceptions_ShouldReturnInternalServerError(Exception exception, String expectedMessagePrefix, String exceptionType) {
         // When
-        ResponseEntity<ErrorResponse> response = callAppropriateHandler(exception);
+        ResponseEntity<ApiErrorResponse> response = callAppropriateHandler(exception);
 
         // Then
         assertStandardEmailErrorResponse(response, expectedMessagePrefix, exception.getMessage(), DEFAULT_URI);
@@ -105,7 +106,7 @@ class EmailExceptionHandlerTest {
     /**
      * Appelle le handler approprié selon le type d'exception.
      */
-    private ResponseEntity<ErrorResponse> callAppropriateHandler(Exception exception) {
+    private ResponseEntity<ApiErrorResponse> callAppropriateHandler(Exception exception) {
         if (exception instanceof ConfirmationEmailException) {
             return emailExceptionHandler.handleConfirmationEmailException((ConfirmationEmailException) exception, httpServletRequest);
         } else if (exception instanceof WelcomeEmailException) {
@@ -129,7 +130,7 @@ class EmailExceptionHandlerTest {
             ConfirmationEmailException exception = new ConfirmationEmailException(null, new RuntimeException("Cause"));
 
             // When
-            ResponseEntity<ErrorResponse> response = emailExceptionHandler
+            ResponseEntity<ApiErrorResponse> response = emailExceptionHandler
                     .handleConfirmationEmailException(exception, httpServletRequest);
 
             // Then
@@ -152,7 +153,7 @@ class EmailExceptionHandlerTest {
             WelcomeEmailException exception = new WelcomeEmailException("Test message", new RuntimeException());
 
             // When
-            ResponseEntity<ErrorResponse> response = emailExceptionHandler
+            ResponseEntity<ApiErrorResponse> response = emailExceptionHandler
                     .handleWelcomeEmailException(exception, httpServletRequest);
 
             // Then
@@ -176,7 +177,7 @@ class EmailExceptionHandlerTest {
             EmailSendingException exception = new EmailSendingException(simpleMessage);
 
             // When
-            ResponseEntity<ErrorResponse> response = emailExceptionHandler
+            ResponseEntity<ApiErrorResponse> response = emailExceptionHandler
                     .handleEmailSendingException(exception, httpServletRequest);
 
             // Then
@@ -205,7 +206,7 @@ class EmailExceptionHandlerTest {
 
             // When & Then
             exceptions.forEach(exception -> {
-                ResponseEntity<ErrorResponse> response = callAppropriateHandler(exception);
+                ResponseEntity<ApiErrorResponse> response = callAppropriateHandler(exception);
                 
                 assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
                 assertThat(response.getBody()).isNotNull();
@@ -254,7 +255,7 @@ class EmailExceptionHandlerTest {
             ConfirmationEmailException exception = new ConfirmationEmailException(message, new RuntimeException());
 
             // When
-            ResponseEntity<ErrorResponse> response = emailExceptionHandler
+            ResponseEntity<ApiErrorResponse> response = emailExceptionHandler
                     .handleConfirmationEmailException(exception, httpServletRequest);
 
             // Then
@@ -271,7 +272,7 @@ class EmailExceptionHandlerTest {
             EmailSendingException exception = new EmailSendingException("Test message");
 
             // When
-            ResponseEntity<ErrorResponse> response = emailExceptionHandler
+            ResponseEntity<ApiErrorResponse> response = emailExceptionHandler
                     .handleEmailSendingException(exception, httpServletRequest);
 
             // Then
