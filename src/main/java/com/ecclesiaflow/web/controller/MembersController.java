@@ -2,16 +2,19 @@ package com.ecclesiaflow.web.controller;
 
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.services.MemberService;
+import com.ecclesiaflow.web.dto.MemberPageResponse;
 import com.ecclesiaflow.web.dto.SignUpResponse;
 import com.ecclesiaflow.web.payloads.SignUpRequestPayload;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.web.mappers.SignUpRequestMapper;
+import com.ecclesiaflow.web.mappers.MemberPageMapper;
 import com.ecclesiaflow.web.mappers.MemberResponseMapper;
 import com.ecclesiaflow.web.payloads.UpdateMemberRequestPayload;
 import com.ecclesiaflow.web.mappers.UpdateRequestMapper;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -20,6 +23,11 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.SortDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -80,6 +88,7 @@ import java.util.UUID;
 public class MembersController {
     private final MemberService memberService;
     private final UpdateRequestMapper updateRequestMapper;
+    private final MemberPageMapper memberPageMapper;
 
     /**
      * Endpoint de test d'authentification pour les membres.
@@ -226,20 +235,33 @@ public class MembersController {
     @GetMapping(value = "/members", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @SecurityRequirement(name = "BearerAuth")
     @Operation(
-            summary = "[TEMPORAIRE] Lister tous les membres",
-            description = "Endpoint temporaire pour les tests - récupérer tous les membres"
+            summary = "Lister tous les membres",
+            description = "Récupère la liste de tous les membres avec pagination et filtrage optionnel"
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "Liste des membres",
+                    description = "Page de membres récupérée avec succès",
                     content = @Content(
-                            mediaType = "application/json"
+                            mediaType = "application/vnd.ecclesiaflow.members.v1+json",
+                            schema = @Schema(implementation = MemberPageResponse.class)
                     )
             )
     })
-    public ResponseEntity<?> getAllMembers() {
-        return ResponseEntity.ok(memberService.getAllMembers());
+    public ResponseEntity<MemberPageResponse> getAllMembers(
+            @Parameter(description = "Recherche par nom ou email", example = "jean")
+            @RequestParam(required = false) String search,
+            
+            @Parameter(description = "Filtrer par statut de confirmation", example = "true")
+            @RequestParam(required = false) Boolean confirmed,
+            
+            @SortDefault(sort = "firstName", direction = Sort.Direction.ASC)
+            @PageableDefault(size = 20) Pageable pageable) {
+
+        Page<Member> memberPage = memberService.getAllMembers(pageable, search, confirmed);
+        MemberPageResponse response = memberPageMapper.toPageResponse(memberPage);
+        
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping(value = "/members/{email}/confirmation-status", produces = "application/vnd.ecclesiaflow.members.v1+json")
