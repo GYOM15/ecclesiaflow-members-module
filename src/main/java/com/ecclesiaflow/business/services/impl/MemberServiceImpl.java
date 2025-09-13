@@ -114,6 +114,9 @@ public class MemberServiceImpl implements MemberService {
     @Override
     @Transactional
     public Member updateMember(MembershipUpdate update) {
+        if (isEmailAlreadyUsed(update.getEmail())) {
+            throw new IllegalArgumentException("Un compte avec cet email existe déjà.");
+        }
         Member member = findById(update.getMemberId());
         Member updatedMember = member.withUpdatedFields(update);
         return memberRepository.save(updatedMember);

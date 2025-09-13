@@ -131,8 +131,10 @@ class MemberServiceImplTest {
         MembershipUpdate update = MembershipUpdate.builder()
                 .memberId(id)
                 .firstName("NewName")
+                .email("new@mail.com")
                 .build();
 
+        when(memberRepository.existsByEmail("new@mail.com")).thenReturn(false);
         when(memberRepository.findById(id)).thenReturn(Optional.of(existing));
         when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -140,6 +142,46 @@ class MemberServiceImplTest {
 
         assertEquals("NewName", result.getFirstName());
         verify(memberRepository).save(any(Member.class));
+    }
+
+    @Test
+    void updateMember_shouldThrowIfEmailAlreadyUsed() {
+        UUID id = UUID.randomUUID();
+        Member existing = Member.builder()
+                .memberId(id)
+                .firstName("OldName")
+                .email("old@mail.com")
+                .build();
+
+        MembershipUpdate update = MembershipUpdate.builder()
+                .memberId(id)
+                .firstName("NewName")
+                .email("existing@mail.com")
+                .build();
+
+        when(memberRepository.existsByEmail("existing@mail.com")).thenReturn(true);
+
+        assertThrows(IllegalArgumentException.class, () -> memberService.updateMember(update));
+
+        verify(memberRepository, never()).findById(any());
+        verify(memberRepository, never()).save(any());
+    }
+
+    @Test
+    void updateMember_shouldThrowIfMemberNotFound() {
+        UUID id = UUID.randomUUID();
+        MembershipUpdate update = MembershipUpdate.builder()
+                .memberId(id)
+                .firstName("NewName")
+                .email("new@mail.com")
+                .build();
+
+        when(memberRepository.existsByEmail("new@mail.com")).thenReturn(false);
+        when(memberRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(MemberNotFoundException.class, () -> memberService.updateMember(update));
+
+        verify(memberRepository, never()).save(any());
     }
 
     @Test
