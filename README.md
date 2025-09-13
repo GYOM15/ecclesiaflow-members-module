@@ -92,37 +92,46 @@ ecclesiaflow-members-module/
 │   ├── main/
 │   │   ├── java/com/ecclesiaflow/
 │   │   │   ├── MembersModuleApplication.java
+│   │   │   ├── application/                 # Application Layer
+│   │   │   │   ├── config/
+│   │   │   │   └── logging/
 │   │   │   ├── business/                    # Business Layer
 │   │   │   │   ├── domain/
+│   │   │   │   │   ├── communication/
+│   │   │   │   │   ├── confirmation/
+│   │   │   │   │   ├── member/
+│   │   │   │   │   └── token/
+│   │   │   │   ├── exceptions/
 │   │   │   │   └── services/
 │   │   │   ├── io/                          # IO Layer
-│   │   │   │   ├── persistence/
 │   │   │   │   ├── communication/
-│   │   │   │   └── notification/
-│   │   │   ├── shared/                      # Shared Layer
-│   │   │   │   ├── code/
-│   │   │   │   └── logging/
+│   │   │   │   ├── exception/
+│   │   │   │   ├── notification/
+│   │   │   │   └── persistence/
 │   │   │   └── web/                         # Web Layer
+│   │   │       ├── client/
 │   │   │       ├── controller/
 │   │   │       ├── dto/
+│   │   │       ├── exception/
 │   │   │       ├── mappers/
-│   │   │       ├── client/
-│   │   │       ├── config/
-│   │   │       ├── security/
-│   │   │       └── exception/
+│   │   │       ├── payloads/
+│   │   │       └── security/
 │   │   └── resources/
 │   │       ├── api/
 │   │       │   └── members.yaml             # API-First OpenAPI
 │   │       └── application.properties.example
 │   └── test/java/com/ecclesiaflow/          # Tests
+│       ├── application/
 │       ├── business/
-│       ├── web/
-│       └── io/
+│       ├── io/
+│       └── web/
 ├── target/
 ├── pom.xml
 ├── README.md
 ├── LICENSE
-└── .env.example
+├── .env.example
+├── .gitignore
+└── mvnw, mvnw.cmd                          # Maven Wrapper
 ```
 
 ---
@@ -159,30 +168,43 @@ The module follows **Clean Architecture** principles with clear separation of re
 
 ### 📱 **Web Layer** (`com.ecclesiaflow.web`)
 - **Controllers**: `MembersController`, `MembersConfirmationController`
-- **DTOs**: `SignUpRequest`, `SignUpResponse`, `ConfirmationRequest`, `ConfirmationResponse`
-- **Mappers**: Conversion between DTOs and domain objects
-- **Config**: `OpenApiConfig`, `WebClientConfig`
-- **Exceptions**: `GlobalExceptionHandler`, business exceptions
+- **DTOs**: `SignUpResponse`, `ConfirmationResponse`, `MemberResponse`
+- **Payloads**: `SignUpRequestPayload`, `ConfirmationRequestPayload`, `UpdateMemberRequestPayload`
+- **Mappers**: Conversion between DTOs/Payloads and domain objects
+- **Client**: `AuthClient` for inter-module communication
+- **Security**: Authentication and authorization components
+- **Exceptions**: `GlobalExceptionHandler`, custom web exceptions
 
 ### 🏢 **Business Layer** (`com.ecclesiaflow.business`)
-- **Services**: `MemberService`, `MemberConfirmationService`
-- **Domain**: `Member`, `MemberRepository`, `MemberConfirmation`
-- **Interfaces**: Contracts for external services
+- **Services**: `MemberService`, `MemberConfirmationService` and implementations
+- **Domain**: 
+  - **Member**: `Member`, `MemberRepository`, `MembershipRegistration`, `MembershipUpdate`
+  - **Confirmation**: `MemberConfirmation`, `MembershipConfirmationResult`
+  - **Communication**: Email and notification contracts
+  - **Token**: Temporary token management
+- **Exceptions**: `MemberNotFoundException`, `EmailSendingException`
 
 ### 💾 **IO Layer** (`com.ecclesiaflow.io`)
-- **Persistence**: JPA entities, Spring Data repositories
-- **Communication**: `EmailServiceImpl`, `AuthClient`
-- **Mappers**: Conversion between entities and domain objects
+- **Persistence**: JPA entities, Spring Data repositories, and entity mappers
+- **Communication**: 
+  - **Email**: `EmailServiceImpl` for SMTP communication
+  - **SMS**: SMS service implementation (future implementation)
+- **Notification**: 
+  - **Email**: `EmailConfirmationNotifier` for email notifications
+  - **SMS**: SMS notification infrastructure (future implementation)
+- **Exceptions**: IO-specific exceptions and error handling
 
-### 🔧 **Shared Layer** (`com.ecclesiaflow.application`)
+### 🔧 **Application Layer** (`com.ecclesiaflow.application`)
+- **Config**: Application-wide configuration classes
 - **Logging**: AOP aspects for business and technical logging
-- **Utils**: `ConfirmationCodeGenerator`, common annotations
+  - `LoggingAspect`: Technical logging (performance, exceptions)
+  - `BusinessOperationLoggingAspect`: Business operations logging
 
 ## 📦 EcclesiaFlow Ecosystem
 
 * **Members Module** (This module)
   **Port**: 8080
-  **Role**: Member management and email confirmation
+  **Role**: Member management
 
 * **Authentication Module**
   🔗 [GitHub Repo](https://github.com/GYOM15/ecclesiaflow-auth-module)
