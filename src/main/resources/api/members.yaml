@@ -140,7 +140,7 @@ paths:
           content:
             application/vnd.ecclesiaflow.members.v1+json:
               schema:
-                $ref: '#/components/schemas/MemberPageResponseV1'
+                $ref: '#/components/schemas/MemberPageResponse'
         '400':
           description: Paramètres de requête invalides
           content:
@@ -182,6 +182,7 @@ paths:
 
         **Note:** Le membre devra confirmer son compte via email avant de pouvoir se connecter.
       operationId: createMember
+      x-rate-limit-name: member-registration
       requestBody:
         required: true
         content:
@@ -207,11 +208,6 @@ paths:
       responses:
         '201':
           description: Membre créé avec succès
-          headers:
-            Location:
-              description: URL du nouveau membre créé
-              schema:
-                type: string
           content:
             application/vnd.ecclesiaflow.members.v1+json:
               schema:
@@ -338,19 +334,22 @@ paths:
 
 
   /ecclesiaflow/members/{memberId}/confirmation:
-    post:
+    patch:
       tags:
         - Member Confirmation
       summary: Confirmer le compte d'un membre
       description: |
-        Confirmer l'inscription d'un membre avec le code reçu par email.
-        Génère un token temporaire pour définir le mot de passe.
+        Met à jour l'état de confirmation d'un membre avec le code reçu par email.
+        Génère un token temporaire et l'URL de redirection sécurisée pour définir le mot de passe.
 
         **Processus de confirmation:**
         1. Validation du code de confirmation
-        2. Activation du compte membre
+        2. Mise à jour de l'état du compte (non confirmé → confirmé)
         3. Génération d'un token temporaire
-        4. Retour du token pour définir le mot de passe
+        4. Retour du token dans la réponse JSON et de l'URL de redirection sécurisée (sans token)
+        
+        **Sécurité:** Le token temporaire est fourni dans la réponse JSON, pas dans l'URL de redirection.
+        Le client doit stocker temporairement le token et l'utiliser dans le header Authorization.
       operationId: confirmMember
       parameters:
         - name: memberId
@@ -438,10 +437,6 @@ paths:
       responses:
         '200':
           description: Code de confirmation renvoyé avec succès
-          content:
-            application/vnd.ecclesiaflow.members.v1+json:
-              schema:
-                $ref: '#/components/schemas/ConfirmationResponse'
         '400':
           description: Code de confirmation invalide ou expiré
           content:
@@ -521,7 +516,7 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: |
-        Token JWT d'authentification obtenu via le module d'authentification.
+        Token JWT obtenu via le module d'authentification.
 
         **Format:** `Authorization: Bearer <token>`
 
@@ -590,6 +585,7 @@ components:
         address:
           type: string
           description: "Nouvelle adresse physique du membre"
+          minLength: 10
           maxLength: 200
           example: "456 Avenue des Champs, 75008 Paris"
         phoneNumber:
@@ -661,26 +657,79 @@ components:
           description: "Date de confirmation du compte (format ISO)"
           example: "2024-01-15T10:45:00Z"
 
-    MemberPageResponseV1:
+    MemberPageResponse:
       type: object
+      description: "Réponse paginée contenant une liste de membres avec métadonnées de pagination"
+      required:
+        - content
+        - page
+        - number
+        - size
+        - totalElements
+        - totalPages
+        - first
+        - last
+        - numberOfElements
+        - empty
       properties:
-        members:
+        content:
           type: array
+          description: "Liste des membres pour la page courante"
           items:
             $ref: '#/components/schemas/SignUpResponse'
-        totalCount:
-          type: integer
-          example: 157
         page:
           type: integer
+          description: "Numéro de la page courante (commence à 0)"
+          minimum: 0
+          example: 0
+        number:
+          type: integer
+          description: "Alias pour page (compatibilité Spring Data)"
+          minimum: 0
           example: 0
         size:
           type: integer
+          description: "Taille de la page (nombre d'éléments par page)"
+          minimum: 1
+          maximum: 100
           example: 20
+        totalElements:
+          type: integer
+          format: int64
+          description: "Nombre total d'éléments disponibles"
+          minimum: 0
+          example: 157
+        totalPages:
+          type: integer
+          description: "Nombre total de pages disponibles"
+          minimum: 0
+          example: 8
+        first:
+          type: boolean
+          description: "Indique s'il s'agit de la première page"
+          example: true
+        last:
+          type: boolean
+          description: "Indique s'il s'agit de la dernière page"
+          example: false
+        numberOfElements:
+          type: integer
+          description: "Nombre d'éléments dans la page courante"
+          minimum: 0
+          example: 20
+        empty:
+          type: boolean
+          description: "Indique si la page est vide"
+          example: false
 
     ConfirmationResponse:
       type: object
       description: "Réponse après confirmation réussie d'un compte membre"
+      required:
+        - message
+        - temporaryToken
+        - expiresIn
+        - passwordEndpoint
       properties:
         message:
           type: string
@@ -695,6 +744,11 @@ components:
           format: int64
           description: "Durée de validité du token temporaire en secondes"
           example: 3600
+        passwordEndpoint:
+          type: string
+          format: uri
+          description: "Endpoint pour définir le mot de passe via appel API direct avec token dans l'en-tête Authorization"
+          example: "http://localhost:8081/ecclesiaflow/auth/password"
 
     # Error Response Schemas
     ApiErrorResponse:
