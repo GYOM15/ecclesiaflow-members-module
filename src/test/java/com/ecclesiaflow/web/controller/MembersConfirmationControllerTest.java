@@ -27,6 +27,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class MembersConfirmationControllerTest {
@@ -53,7 +54,7 @@ class MembersConfirmationControllerTest {
         objectMapper = new ObjectMapper();
     }
 
-    // --- Tests for POST /ecclesiaflow/members/{memberId}/confirmation ---
+    // --- Tests for PATCH /ecclesiaflow/members/{memberId}/confirmation ---
 
     @Test
     void confirmMember_shouldReturnOkWithConfirmationResponse() throws Exception {
@@ -72,21 +73,23 @@ class MembersConfirmationControllerTest {
         ConfirmationResponse responseDto = ConfirmationResponse.builder()
                 .message("Confirmation successful!")
                 .temporaryToken("temp_token")
-                .expiresIn(3600) // Ensure the field is 'expiresIn' in the DTO
+                .expiresIn(3600)
+                .passwordEndpoint("http://localhost:8081/ecclesiaflow/auth/password")
                 .build();
 
         when(confirmationService.confirmMember(any(MembershipConfirmation.class))).thenReturn(serviceResult);
         when(confirmationResponseMapper.fromMemberConfirmationResult(any(MembershipConfirmationResult.class)))
                 .thenReturn(responseDto);
 
-        mockMvc.perform(post("/ecclesiaflow/members/{memberId}/confirmation", memberId)
+        mockMvc.perform(patch("/ecclesiaflow/members/{memberId}/confirmation", memberId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
                 .andExpect(jsonPath("$.message").value("Confirmation successful!"))
                 .andExpect(jsonPath("$.temporaryToken").value("temp_token"))
-                .andExpect(jsonPath("$.expiresIn").value(3600));
+                .andExpect(jsonPath("$.expiresIn").value(3600))
+                .andExpect(jsonPath("$.passwordEndpoint").value("http://localhost:8081/ecclesiaflow/auth/password"));
 
         verify(confirmationService).confirmMember(any(MembershipConfirmation.class));
         verify(confirmationResponseMapper).fromMemberConfirmationResult(any(MembershipConfirmationResult.class));
@@ -98,7 +101,7 @@ class MembersConfirmationControllerTest {
         ConfirmationRequestPayload request = new ConfirmationRequestPayload();
         request.setCode("ABC12"); // Invalid code (e.g., does not meet @Pattern/@Size constraints)
 
-        mockMvc.perform(post("/ecclesiaflow/members/{memberId}/confirmation", memberId)
+        mockMvc.perform(patch("/ecclesiaflow/members/{memberId}/confirmation", memberId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -123,7 +126,7 @@ class MembersConfirmationControllerTest {
         when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
                 .thenThrow(new InvalidConfirmationCodeException("Code de confirmation incorrect"));
 
-        mockMvc.perform(post("/ecclesiaflow/members/{memberId}/confirmation", memberId)
+        mockMvc.perform(patch("/ecclesiaflow/members/{memberId}/confirmation", memberId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -151,7 +154,7 @@ class MembersConfirmationControllerTest {
         when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
                 .thenThrow(new ExpiredConfirmationCodeException("Le code de confirmation a expiré"));
 
-        mockMvc.perform(post("/ecclesiaflow/members/{memberId}/confirmation", memberId)
+        mockMvc.perform(patch("/ecclesiaflow/members/{memberId}/confirmation", memberId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -178,7 +181,7 @@ class MembersConfirmationControllerTest {
         when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
                 .thenThrow(new MemberNotFoundException("Membre non trouvé"));
 
-        mockMvc.perform(post("/ecclesiaflow/members/{memberId}/confirmation", memberId)
+        mockMvc.perform(patch("/ecclesiaflow/members/{memberId}/confirmation", memberId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
@@ -203,7 +206,7 @@ class MembersConfirmationControllerTest {
         when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
                 .thenThrow(new MemberAlreadyConfirmedException("Le compte est déjà confirmé"));
 
-        mockMvc.perform(post("/ecclesiaflow/members/{memberId}/confirmation", memberId)
+        mockMvc.perform(patch("/ecclesiaflow/members/{memberId}/confirmation", memberId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())

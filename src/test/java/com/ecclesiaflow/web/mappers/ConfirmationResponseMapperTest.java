@@ -4,6 +4,7 @@ import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResul
 import com.ecclesiaflow.web.dto.ConfirmationResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -18,6 +19,8 @@ class ConfirmationResponseMapperTest {
     @BeforeEach
     void setUp() {
         mapper = new ConfirmationResponseMapper();
+        // Configure the auth module base URL using ReflectionTestUtils
+        ReflectionTestUtils.setField(mapper, "authModuleBaseUrl", "http://localhost:8081");
     }
 
     @Test
@@ -37,6 +40,7 @@ class ConfirmationResponseMapperTest {
         assertEquals("Confirmation réussie", response.getMessage());
         assertEquals("temp_token_123", response.getTemporaryToken());
         assertEquals(3600, response.getExpiresIn());
+        assertEquals("http://localhost:8081/ecclesiaflow/auth/password", response.getPasswordEndpoint());
     }
 
     @Test
@@ -64,6 +68,7 @@ class ConfirmationResponseMapperTest {
         assertEquals("Code invalide", response.getMessage());
         assertNull(response.getTemporaryToken());
         assertEquals(0, response.getExpiresIn());
+        assertEquals("http://localhost:8081/ecclesiaflow/auth/password", response.getPasswordEndpoint());
     }
 
     @Test
@@ -83,6 +88,7 @@ class ConfirmationResponseMapperTest {
         assertEquals("", response.getMessage());
         assertEquals("temp_token_456", response.getTemporaryToken());
         assertEquals(1800, response.getExpiresIn());
+        assertEquals("http://localhost:8081/ecclesiaflow/auth/password", response.getPasswordEndpoint());
     }
 
     @Test
@@ -102,5 +108,6 @@ class ConfirmationResponseMapperTest {
         assertEquals("Token expiré", response.getMessage());
         assertEquals("expired_token", response.getTemporaryToken());
         assertEquals(0, response.getExpiresIn());
+        assertEquals("http://localhost:8081/ecclesiaflow/auth/password", response.getPasswordEndpoint());
     }
 }

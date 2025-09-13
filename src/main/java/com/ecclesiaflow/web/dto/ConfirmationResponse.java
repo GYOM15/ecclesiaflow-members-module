@@ -19,6 +19,7 @@ import lombok.Getter;
  *   <li>Message de confirmation pour l'utilisateur</li>
  *   <li>Token temporaire pour accéder à la définition du mot de passe</li>
  *   <li>Durée de validité du token en secondes</li>
+ *   <li>URL de redirection vers le module d'authentification</li>
  * </ul>
  * 
  * <p><strong>Flux de génération :</strong></p>
@@ -73,4 +74,14 @@ public class ConfirmationResponse {
      * </p>
      */
     private long expiresIn;
+    
+    /**
+     * Endpoint pour définir le mot de passe.
+     * <p>
+     * URL complète vers l'endpoint du module d'authentification permettant
+     * de définir le mot de passe. Utilisé pour les appels API directs
+     * avec le token temporaire dans l'en-tête Authorization.
+     * </p>
+     */
+    private String passwordEndpoint;
 }

@@ -56,10 +56,12 @@ sequenceDiagram
     Members->>Email: Send confirmation code
     Members-->>Client: 201 Created
 
-    Client->>Members: POST /ecclesiaflow/members/:memberId/confirmation { code }
+    Client->>Members: PATCH /ecclesiaflow/members/:memberId/confirmation { code }
     Members->>Auth: Request temporary token
     Auth-->>Members: Temporary token
-    Members-->>Client: 200 OK + temporary token
+    Members-->>Client: 200 OK + temporaryToken + passWordEnpoint
+    
+    Note over Client: Store token securely (sessionStorage)<br/>Redirect to clean URL (no token)
 
     Client->>Auth: POST /password
     Note right of Client: Authorization: Bearer temporaryToken<br/>Body: { newPassword }
@@ -71,8 +73,8 @@ sequenceDiagram
 ## ✨ Module Features
 
 * 👥 **Member Management** – Complete member profile CRUD with business validation
-* ✉️ **Email Confirmation** – Secure process with temporary codes (6 digits)
-* 🔗 **Auth Module Integration** – WebClient communication for temporary tokens
+* ✉️ **Email Confirmation** – Secure process with temporary codes (6 digits) and safe token handling
+* 🔗 **Auth Module Integration** – WebClient communication for temporary tokens with secure URL generation
 * 📧 **Email Notifications** – Integrated SMTP service with customizable templates
 * 🏗️ **Clean Architecture** – 4 layers: Web, Business, IO, Shared
 * 📚 **API-First Design** – Complete OpenAPI documentation with detailed schemas
@@ -303,18 +305,72 @@ curl -X POST "http://localhost:8080/ecclesiaflow/members" \
 
 ```bash
 # 2. Confirmation with code received by email
-curl -X POST "http://localhost:8080/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation" \
-  -H "Content-Type: application/vnd.ecclesiaflow.members.v1+json" \
+curl -X PATCH "http://localhost:8080/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation" \
+  -H "Content-Type: application/json" \
   -d '{
     "code": "123456"
   }' | jq .
 
-# Response: 200 OK
-# {
-#   "message": "Account confirmed successfully",
-#   "temporaryToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-#   "memberId": "550e8400-e29b-41d4-a716-446655440000"
-# }
+ Response: 200 OK
+{
+  "message": "Compte confirmé avec succès.",
+  "temporaryToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "expiresIn": 3600,
+  "passwordEndpoint": "http://localhost:8081/ecclesiaflow/auth/password"
+}
+```
+
+### 🔐 **Exemple of Password Setup (Direct API Flow)**
+
+```bash
+# 3. Set password using temporary token (secure flow)
+curl -X POST "http://localhost:8081/ecclesiaflow/auth/password" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "password": "MonMotDePasse123!"
+  }' | jq .
+
+ Response: 200 OK
+{
+  "message": "Mot de passe défini avec succès",
+  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiJ9..."
+}
+```
+
+### 🔒 **Secure Token Handling Example - JavaScript (Direct Flow)**
+
+1. **Token in JSON Response**: The temporary token is returned in the response body, not in the URL
+2. **Direct API Call**: No client-side storage needed - token used immediately
+3. **Immediate Usage**: Token exists only for the duration of the password setup request
+
+**Client-side implementation (Direct Flow):**
+```javascript
+// Direct flow without client-side storage
+const confirmationResponse = await fetch('/ecclesiaflow/members/123/confirmation', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: '123456' })
+});
+
+const { temporaryToken, redirectUrl } = await confirmationResponse.json();
+
+// Use token immediately for password setup
+const passwordResponse = await fetch(redirectUrl, {
+    method: 'POST',
+    headers: {
+        'Authorization': `Bearer ${temporaryToken}`,
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ 
+        email: 'user@example.com',
+        password: 'nouveauMotDePasse123' 
+    })
+});
+
+const result = await passwordResponse.json();
+console.log('Password set successfully:', result);
 ```
 
 ### 🔄 **Resend Confirmation Code**
@@ -561,6 +617,8 @@ Message body (≤ 72 characters per line)
 
 Types: Feat, Fix, Docs, Style, Refactor, Test, Chore
 Scopes: members, confirmation, email, persistence, web
+
+NB: scope is optionnal
 ```
 
 **Format without type:**
@@ -573,7 +631,8 @@ Detailed message body if necessary
 
 **Examples:**
 - `Feat(members): add email validation service`
-- `Fix(confirmation): resolve code expiration issue`  
+- `Fix(confirmation): resolve code expiration issue`
+- `Feat: resolve code expiration issue`
 - `Add comprehensive member profile validation`
 - `Update OpenAPI documentation for new endpoints`
 

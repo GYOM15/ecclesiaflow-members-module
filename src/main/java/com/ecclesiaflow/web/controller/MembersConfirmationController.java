@@ -47,8 +47,8 @@ import java.util.UUID;
  * 
  * <p><strong>Endpoints exposés :</strong></p>
  * <ul>
- *   <li>POST /ecclesiaflow/members/{memberId}/confirmation - Confirmer un compte</li>
- *   <li>GET /ecclesiaflow/members/{memberId}/confirmation/debug/code - Debug (temporaire)</li>
+ *   <li>PATCH /ecclesiaflow/members/{memberId}/confirmation - Confirmer un compte (mise à jour d'état)</li>
+ *   <li>POST /ecclesiaflow/members/{memberId}/confirmation-code - Renvoyer le code de confirmation</li>
  * </ul>
  * 
  * <p><strong>Flux typique :</strong></p>
@@ -73,12 +73,12 @@ public class MembersConfirmationController {
     private final MemberConfirmationService confirmationService;
     private final ConfirmationResponseMapper confirmationResponseMapper;
 
-    @PostMapping(value = "/confirmation", produces = "application/vnd.ecclesiaflow.members.v1+json")
+    @PatchMapping(value = "/confirmation", produces = "application/vnd.ecclesiaflow.members.v1+json")
     @RateLimiter(name = "confirmation-attempts")
     @Operation(
-            summary = "Confirmer le compte d'un membre",
-            description = "Confirmer l'inscription d'un membre avec le code reçu par email. " +
-                    "Génère un token temporaire pour définir le mot de passe."
+            summary = "Confirmer le compte d'un membre (mise à jour d'état)",
+            description = "Met à jour l'état de confirmation d'un membre avec le code reçu par email. " +
+                    "Génère un token temporaire et l'URL de redirection pour définir le mot de passe."
     )
     @ApiResponses(value = {
             @ApiResponse(

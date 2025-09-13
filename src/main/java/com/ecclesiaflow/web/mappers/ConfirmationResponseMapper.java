@@ -2,6 +2,7 @@ package com.ecclesiaflow.web.mappers;
 
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import com.ecclesiaflow.web.dto.ConfirmationResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -38,12 +39,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class ConfirmationResponseMapper {
 
+    @Value("${ecclesiaflow.auth-module.base-url:http://localhost:8081}")
+    private String authModuleBaseUrl;
+
     /**
      * Transforme un résultat de confirmation métier en DTO de réponse web.
      * <p>
      * Cette méthode effectue une conversion directe des champs du résultat métier
      * vers le DTO de réponse, préservant toutes les informations nécessaires
-     * pour la réponse API (message, token temporaire, durée d'expiration).
+     * pour la réponse API (message, token temporaire, durée d'expiration, endpoint de mot de passe).
      * </p>
      * 
      * @param result le résultat de confirmation métier à convertir, non null
@@ -51,12 +55,30 @@ public class ConfirmationResponseMapper {
      * @throws NullPointerException si result est null
      * 
      * @implNote Utilise le pattern Builder du DTO pour une construction claire.
+     *           Génère automatiquement l'endpoint vers le module d'authentification.
      */
     public ConfirmationResponse fromMemberConfirmationResult(MembershipConfirmationResult result) {
+        String passwordEndpoint = buildPasswordEndpoint();
+        
         return ConfirmationResponse.builder()
                 .message(result.getMessage())
                 .temporaryToken(result.getTemporaryToken())
                 .expiresIn(result.getExpiresInSeconds())
+                .passwordEndpoint(passwordEndpoint)
                 .build();
+    }
+    
+    /**
+     * Construit l'endpoint de définition de mot de passe du module d'authentification.
+     * <p>
+     * Génère une URL complète pointant vers l'endpoint de définition de mot de passe
+     * du module d'authentification. Utilisé pour les appels API directs avec
+     * le token temporaire dans l'en-tête Authorization.
+     * </p>
+     * 
+     * @return l'URL de l'endpoint de définition de mot de passe
+     */
+    private String buildPasswordEndpoint() {
+        return String.format("%s/ecclesiaflow/auth/password", authModuleBaseUrl);
     }
 }

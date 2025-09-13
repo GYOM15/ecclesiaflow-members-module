@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -89,7 +90,7 @@ class MembersConfirmationRateLimitingTest {
         boolean rateLimitingTriggered = false;
 
         for (int i = 0; i < 3; i++) {
-            var result = mockMvc.perform(post("/ecclesiaflow/members/{memberId}/confirmation", testMemberId)
+            var result = mockMvc.perform(patch("/ecclesiaflow/members/{memberId}/confirmation", testMemberId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)));
 
@@ -157,7 +158,7 @@ class MembersConfirmationRateLimitingTest {
         // When: Trigger rate limiting
         boolean rateLimitingTriggered = false;
         for (int i = 0; i < 3; i++) {
-            var result = mockMvc.perform(post("/ecclesiaflow/members/{memberId}/confirmation", testMemberId)
+            var result = mockMvc.perform(patch("/ecclesiaflow/members/{memberId}/confirmation", testMemberId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)));
 
@@ -173,7 +174,7 @@ class MembersConfirmationRateLimitingTest {
         Thread.sleep(3000);
 
         // Then: After the refresh period, the request should pass again
-        mockMvc.perform(post("/ecclesiaflow/members/{memberId}/confirmation", testMemberId)
+        mockMvc.perform(patch("/ecclesiaflow/members/{memberId}/confirmation", testMemberId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
