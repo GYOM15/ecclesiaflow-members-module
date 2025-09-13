@@ -467,7 +467,52 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalServerError'
 
-
+  /ecclesiaflow/members/{email}/confirmation-status:
+    get:
+      tags:
+        - Members (Temporary)
+      summary: Vérifier le statut de confirmation d'un membre
+      description: |
+        Endpoint interne pour que le module d'auth vérifie si un membre est confirmé.
+        
+        **Usage interne :** Utilisé par le module d'authentification pour valider
+        qu'un membre peut setter son mot de passe (compte confirmé).
+      operationId: getMemberConfirmationStatus
+      parameters:
+        - name: email
+          in: path
+          description: Adresse email du membre
+          required: true
+          schema:
+            type: string
+            format: email
+            example: "jean.dupont@example.com"
+      responses:
+        '200':
+          description: Statut de confirmation récupéré
+          content:
+            application/vnd.ecclesiaflow.members.v1+json:
+              schema:
+                type: object
+                properties:
+                  confirmed:
+                    type: boolean
+                    description: Indique si le membre est confirmé
+                    example: true
+                required:
+                  - confirmed
+        '404':
+          description: Membre non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
 
 components:
   securitySchemes:
