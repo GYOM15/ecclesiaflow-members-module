@@ -582,6 +582,10 @@ mvn verify -P integration-tests
 
 ```
 src/test/java/com/ecclesiaflow/
+├── application/
+│   ├── config/                 # Application config tests
+│   └── logging/
+│       └── aspect/             # AOP aspect tests (application logging)
 ├── business/
 │   ├── services/impl/          # Business service tests
 │   └── aspect/                 # AOP aspect tests
