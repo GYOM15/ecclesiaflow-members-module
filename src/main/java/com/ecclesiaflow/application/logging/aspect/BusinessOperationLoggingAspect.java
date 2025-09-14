@@ -6,36 +6,37 @@ import org.aspectj.lang.annotation.*;
 import org.springframework.stereotype.Component;
 
 /**
- * Aspect AOP spécialisé dans le logging des opérations métier critiques EcclesiaFlow.
+ * Aspect AOP spécialisé dans le logging des opérations métier critiques du module Members.
  * <p>
  * Cette classe implémente un aspect dédié au logging des opérations métier sensibles
- * comme l'inscription, l'authentification et le rafraîchissement de tokens.
+ * comme l'inscription de membres et les communications avec le module d'authentification.
  * Séparé du logging technique général pour respecter le principe de responsabilité unique.
  * </p>
  * 
- * <p><strong>Rôle architectural :</strong> Aspect métier - Audit des opérations critiques</p>
+ * <p><strong>Rôle architectural :</strong> Aspect métier - Audit des opérations critiques du module Members</p>
  * 
  * <p><strong>Dépendances critiques :</strong></p>
  * <ul>
  *   <li>Spring AOP - Framework de programmation orientée aspect</li>
  *   <li>SLF4J/Logback - Framework de logging métier</li>
- *   <li>Services d'authentification - Cibles des pointcuts</li>
+ *   <li>MemberServiceImpl - Service d'inscription des membres</li>
+ *   <li>AuthClient - Client de communication avec le module d'authentification</li>
  * </ul>
  * 
  * <p><strong>Responsabilités principales :</strong></p>
  * <ul>
- *   <li>Audit des inscriptions de nouveaux membres</li>
- *   <li>Traçabilité des tentatives d'authentification</li>
- *   <li>Logging des opérations de rafraîchissement de tokens</li>
- *   <li>Capture des échecs d'opérations métier</li>
+ *   <li>Audit des inscriptions de nouveaux membres dans l'église</li>
+ *   <li>Traçabilité des communications avec le module d'authentification</li>
+ *   <li>Logging des demandes de tokens temporaires</li>
+ *   <li>Capture des échecs d'opérations métier critiques</li>
  * </ul>
  * 
  * <p><strong>Cas d'utilisation typiques :</strong></p>
  * <ul>
- *   <li>Audit de sécurité des comptes utilisateurs</li>
- *   <li>Traçabilité des connexions pour conformité</li>
- *   <li>Détection des tentatives d'intrusion</li>
- *   <li>Analyse des patterns d'utilisation</li>
+ *   <li>Audit de sécurité des comptes membres d'église</li>
+ *   <li>Traçabilité des processus de confirmation par email</li>
+ *   <li>Monitoring des intégrations inter-modules</li>
+ *   <li>Analyse des patterns d'inscription des membres</li>
  * </ul>
  * 
  * <p><strong>Garanties :</strong> Thread-safe, logging asynchrone, séparation métier/technique.</p>
