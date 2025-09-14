@@ -6,8 +6,11 @@ import com.ecclesiaflow.io.exception.WelcomeEmailException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Implémentation complète du service d'envoi d'emails pour EcclesiaFlow.
@@ -64,8 +67,9 @@ public class EmailServiceImpl implements EmailService {
     @Value("${ecclesiaflow.app.name:EcclesiaFlow}")
     private String appName;
 
+    @Async("taskExecutor")
     @Override
-    public void sendConfirmationCode(String email, String code, String firstName) throws ConfirmationEmailException {
+    public CompletableFuture<Void> sendConfirmationCode(String email, String code, String firstName) throws ConfirmationEmailException {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
@@ -73,14 +77,16 @@ public class EmailServiceImpl implements EmailService {
             message.setSubject("Code de confirmation - " + appName);
             message.setText(buildConfirmationEmailText(code, firstName));
             mailSender.send(message);
+            return CompletableFuture.completedFuture(null);
 
         } catch (Exception e) {
             throw new ConfirmationEmailException("Impossible d'envoyer l'email de confirmation",e);
         }
     }
 
+    @Async("taskExecutor")
     @Override
-    public void sendWelcomeEmail(String email, String firstName) throws WelcomeEmailException {
+    public CompletableFuture<Void> sendWelcomeEmail(String email, String firstName) throws WelcomeEmailException {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
@@ -89,6 +95,7 @@ public class EmailServiceImpl implements EmailService {
             message.setText(buildWelcomeEmailText(firstName));
 
             mailSender.send(message);
+            return CompletableFuture.completedFuture(null);
         } catch (Exception e) {
             throw new WelcomeEmailException("Impossible d'envoyer l'email de bienvenue", e);
         }

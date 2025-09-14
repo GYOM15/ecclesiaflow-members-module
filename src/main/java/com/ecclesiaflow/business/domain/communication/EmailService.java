@@ -3,6 +3,8 @@ package com.ecclesiaflow.business.domain.communication;
 import com.ecclesiaflow.io.exception.ConfirmationEmailException;
 import com.ecclesiaflow.io.exception.WelcomeEmailException;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Service de domaine pour la gestion des communications email dans EcclesiaFlow.
  * <p>
@@ -45,38 +47,46 @@ import com.ecclesiaflow.io.exception.WelcomeEmailException;
 public interface EmailService {
     
     /**
-     * Envoie un email contenant le code de confirmation d'inscription.
+     * Envoie un email contenant le code de confirmation d'inscription de manière asynchrone.
      * <p>
      * Cette méthode génère et envoie un email personnalisé contenant
      * le code de confirmation nécessaire pour activer le compte membre.
      * L'email utilise un template HTML avec le nom du membre et le code.
+     * <strong>Exécution asynchrone :</strong> L'envoi se fait en arrière-plan pour
+     * améliorer les performances et l'expérience utilisateur.
      * </p>
      * 
      * @param email l'adresse email du destinataire, non null et valide
      * @param code le code de confirmation à 6 chiffres, non null
      * @param firstName le prénom du membre pour personnalisation, non null
+     * @return CompletableFuture<Void> pour permettre le suivi asynchrone de l'envoi
      * @throws ConfirmationEmailException si l'envoi échoue (SMTP, réseau, etc.)
      * @throws IllegalArgumentException si un paramètre est null ou invalide
      * 
      * @implNote Utilise le template 'confirmation-email.html' avec retry automatique.
+     *           Exécution asynchrone via @Async avec pool de threads dédié.
      */
-    void sendConfirmationCode(String email, String code, String firstName) throws ConfirmationEmailException;
+    CompletableFuture<Void> sendConfirmationCode(String email, String code, String firstName) throws ConfirmationEmailException;
     
     /**
-     * Envoie un email de bienvenue après confirmation réussie du compte.
+     * Envoie un email de bienvenue après confirmation réussie du compte de manière asynchrone.
      * <p>
      * Cette méthode envoie un email de bienvenue personnalisé pour féliciter
      * le nouveau membre et lui fournir les informations de première connexion.
      * Marque la fin du processus d'inscription.
+     * <strong>Exécution asynchrone :</strong> L'envoi se fait en arrière-plan pour
+     * améliorer les performances et l'expérience utilisateur.
      * </p>
      * 
      * @param email l'adresse email du nouveau membre confirmé, non null et valide
      * @param firstName le prénom du membre pour personnalisation, non null
+     * @return CompletableFuture<Void> pour permettre le suivi asynchrone de l'envoi
      * @throws WelcomeEmailException si l'envoi échoue (SMTP, réseau, etc.)
      * @throws IllegalArgumentException si un paramètre est null ou invalide
      * 
      * @implNote Utilise le template 'welcome-email.html' avec informations de connexion.
+     *           Exécution asynchrone via @Async avec pool de threads dédié.
      */
-    void sendWelcomeEmail(String email, String firstName) throws WelcomeEmailException;
+    CompletableFuture<Void> sendWelcomeEmail(String email, String firstName) throws WelcomeEmailException;
     
 }

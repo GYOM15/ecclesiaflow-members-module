@@ -8,6 +8,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.concurrent.CompletableFuture;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
@@ -32,8 +34,9 @@ class EmailConfirmationNotifierTest {
         String code = "123456";
         String firstName = "John";
 
-        // Configure the mock EmailService to do nothing when sendConfirmationCode is called
-        doNothing().when(emailService).sendConfirmationCode(email, code, firstName);
+        // Configure the mock EmailService to return a completed CompletableFuture when sendConfirmationCode is called
+        when(emailService.sendConfirmationCode(email, code, firstName))
+                .thenReturn(CompletableFuture.completedFuture(null));
 
         // Act
         emailConfirmationNotifier.sendCode(email, code, firstName);
@@ -53,7 +56,8 @@ class EmailConfirmationNotifierTest {
         ConfirmationEmailException expectedException = new ConfirmationEmailException("Email sending failed", new RuntimeException("Mock Mail Error"));
 
         // Configure the mock EmailService to throw this specific exception
-        doThrow(expectedException).when(emailService).sendConfirmationCode(email, code, firstName);
+        when(emailService.sendConfirmationCode(email, code, firstName))
+                .thenThrow(expectedException);
 
         // Act & Assert
         // Verify that the exception thrown by EmailService is propagated by EmailConfirmationNotifier
@@ -63,7 +67,6 @@ class EmailConfirmationNotifierTest {
 
         // Assert that the propagated exception is the same instance or has the same message and cause
         assertThat(actualException).isSameAs(expectedException); // Use isSameAs for instance equality
-
 
         // Verify that emailService.sendConfirmationCode was called exactly once
         verify(emailService, times(1)).sendConfirmationCode(email, code, firstName);

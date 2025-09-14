@@ -56,9 +56,11 @@ public class EmailConfirmationNotifier implements ConfirmationNotifier {
     /**
      * {@inheritDoc}
      * <p>
-     * Implémentation spécifique pour l'envoi via email. Délègue l'envoi
+     * Implémentation spécifique pour l'envoi via email asynchrone. Délègue l'envoi
      * effectif au service {@link EmailService} qui gère tous les détails
      * techniques de l'envoi d'email (SMTP, templates, etc.).
+     * <strong>Exécution asynchrone :</strong> L'envoi se fait en arrière-plan,
+     * permettant une réponse immédiate à l'utilisateur.
      * </p>
      * 
      * @param email l'adresse email du destinataire, non null
@@ -67,6 +69,7 @@ public class EmailConfirmationNotifier implements ConfirmationNotifier {
      * 
      * @implNote Toute la logique d'envoi d'email (formatage, templates, SMTP)
      *           est déléguée au {@link EmailService} pour respecter SRP.
+     *           L'exécution asynchrone améliore l'expérience utilisateur.
      */
     @Override
     public void sendCode(String email, String confirmationCode, String firstName) {
