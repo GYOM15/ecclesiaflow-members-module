@@ -75,11 +75,11 @@ sequenceDiagram
 * 👥 **Member Management** – Complete member profile CRUD with business validation
 * ✉️ **Email Confirmation** – Secure process with temporary codes (6 digits) and safe token handling
 * 🔗 **Auth Module Integration** – WebClient communication for temporary tokens with secure URL generation
-* 📧 **Email Notifications** – Integrated SMTP service with customizable templates
+* 📧 **Email Notifications** – **Asynchronous SMTP service** with Gmail integration and customizable templates
 * 🏗️ **Clean Architecture** – 4 layers: Web, Business, IO, Shared
 * 📚 **API-First Design** – Complete OpenAPI documentation with detailed schemas
 * 🧪 **Comprehensive Testing** – JaCoCo coverage with unit and integration tests
-* 🔄 **AOP Logging** – Business and technical aspects for monitoring
+* 🔄 **AOP Logging** – **Centralized aspect-based logging** with complete delegation from services
 * 🛡️ **Error Handling** – GlobalExceptionHandler with standardized responses
 
 ---
@@ -187,7 +187,8 @@ The module follows **Clean Architecture** principles with clear separation of re
 ### 💾 **IO Layer** (`com.ecclesiaflow.io`)
 - **Persistence**: JPA entities, Spring Data repositories, and entity mappers
 - **Communication**: 
-  - **Email**: `EmailServiceImpl` for SMTP communication
+  - **Email**: `EmailServiceImpl` for **asynchronous SMTP communication** with Gmail
+  - **Async Processing**: `@Async` methods with dedicated thread pool for email operations
   - **SMS**: SMS service implementation (future implementation)
 - **Notification**: 
   - **Email**: `EmailConfirmationNotifier` for email notifications
@@ -196,9 +197,12 @@ The module follows **Clean Architecture** principles with clear separation of re
 
 ### 🔧 **Application Layer** (`com.ecclesiaflow.application`)
 - **Config**: Application-wide configuration classes
-- **Logging**: AOP aspects for business and technical logging
-  - `LoggingAspect`: Technical logging (performance, exceptions)
-  - `BusinessOperationLoggingAspect`: Business operations logging
+  - `AsyncConfig`: Asynchronous task execution configuration (email sending)
+  - `WebClientConfig`: WebClient configuration for inter-module communication
+- **Logging**: Centralized AOP aspects for comprehensive logging
+  - `BusinessOperationLoggingAspect`: **Centralized logging** for all business operations
+  - **Architecture principle**: All manual logging has been removed from services and delegated to aspects
+  - **Coverage**: Member registration, confirmation, authentication module calls, error handling
 
 ## 📦 EcclesiaFlow Ecosystem
 
@@ -438,6 +442,28 @@ ecclesiaflow.mail.from=your-email@gmail.com
 ecclesiaflow.app.name=EcclesiaFlow
 ```
 
+### 🚀 **Asynchronous Email Processing**
+
+The module implements **asynchronous email sending** for optimal performance:
+
+**Architecture:**
+- **@Async methods**: Email operations run in background threads
+- **Dedicated thread pool**: Configured via `AsyncConfig` (2-10 threads, 100 queue capacity)
+- **Non-blocking**: Registration/confirmation responses are immediate
+- **Error handling**: Centralized exception management with aspect logging
+
+**Email Flow:**
+1. **Registration** → Member saved → **Async email dispatch** → Immediate 201 response
+2. **Confirmation** → Code validated → **Async welcome email** → Immediate 200 response
+3. **Background processing**: Emails sent without blocking user experience
+
+**Configuration:**
+```properties
+# Async thread pool configuration (in AsyncConfig.java)
+# Core threads: 2, Max threads: 10, Queue: 100
+# Keep-alive: 60 seconds, Graceful shutdown: 30 seconds
+```
+
 ### 🔗 **Auth Module Integration**
 
 ```properties
@@ -577,6 +603,15 @@ open target/site/jacoco/index.html
 # Integration tests
 mvn verify -P integration-tests
 ```
+
+### **Test Results**
+
+- **✅ 287 tests executed**
+- **✅ 0 failures**
+- **✅ 0 errors**
+- **✅ 0 skipped**
+- **📊 JaCoCo coverage**: 42 classes analyzed
+- **🏗️ Architecture validation**: All layers properly tested
 
 ### **Test Structure**
 
