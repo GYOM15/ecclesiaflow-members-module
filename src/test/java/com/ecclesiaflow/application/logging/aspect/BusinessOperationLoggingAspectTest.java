@@ -4,13 +4,12 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,8 +29,7 @@ import static org.assertj.core.api.Assertions.*;
 
 /**
  * Tests unitaires pour BusinessOperationLoggingAspect.
- * Valide le comportement de l'aspect pour l'audit des opérations métier critiques.
- * Utilise un aspect de test dédié avec des services de test simples.
+ * Tests la logique de logging des opérations métier critiques avec un aspect dédié aux tests.
  */
 @SpringBootTest(classes = BusinessOperationLoggingAspectTest.TestConfig.class)
 @DisplayName("BusinessOperationLoggingAspect - Tests unitaires")
@@ -48,113 +46,195 @@ class BusinessOperationLoggingAspectTest {
 
     @BeforeEach
     void setUp() {
-        // Target the actual aspect's logger
+        // Configuration du logger pour capturer les logs de l'aspect
         logger = (Logger) LoggerFactory.getLogger(BusinessOperationLoggingAspect.class);
         listAppender = new ListAppender<>();
         listAppender.start();
         logger.addAppender(listAppender);
-        // Ensure the logger level is sufficient to capture all logs (INFO and DEBUG)
         logger.setLevel(Level.DEBUG);
-
-        // No mocks to reset with this approach
     }
 
     @AfterEach
     void tearDown() {
-        logger.detachAppender(listAppender);
-        listAppender.stop();
+        if (logger != null) {
+            logger.detachAppender(listAppender);
+        }
+        if (listAppender != null) {
+            listAppender.stop();
+        }
     }
 
-    // === TESTS FOR MEMBER REGISTRATION ===
+    // === TESTS MEMBRE ===
     @Test
-    @DisplayName("Devrait logger le début et la réussite de l'enregistrement d'un membre")
+    @DisplayName("Devrait logger l'enregistrement réussi d'un membre")
     void shouldLogSuccessfulMemberRegistration() {
-        // When: Call the test service (the aspect will execute)
-        String result = memberService.registerMember("test@example.com");
+        // Given
+        String email = "test@example.com";
 
-        // Then: Verify the result and the aspect's logs
-        assertThat(result).isEqualTo("Member registered: test@example.com");
+        // When
+        String result = memberService.registerMember(email);
+
+        // Then
+        assertThat(result).isEqualTo("Member registered: " + email);
 
         List<ILoggingEvent> logs = listAppender.list;
-        assertThat(logs).hasSize(2);
-        assertThat(logs.get(0).getFormattedMessage()).contains("BUSINESS: Tentative d'enregistrement d'un nouveau membre");
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.INFO);
-        assertThat(logs.get(1).getFormattedMessage()).contains("BUSINESS: Nouveau membre enregistré avec succès");
-        assertThat(logs.get(1).getLevel()).isEqualTo(Level.INFO);
+        assertThat(logs)
+                .hasSize(2)
+                .satisfies(logList -> {
+                    // Log de début
+                    ILoggingEvent startLog = logList.getFirst();
+                    assertThat(startLog.getLevel()).isEqualTo(Level.INFO);
+                    assertThat(startLog.getFormattedMessage())
+                            .contains("BUSINESS: Tentative d'enregistrement d'un nouveau membre");
+
+                    // Log de succès
+                    ILoggingEvent successLog = logList.get(1);
+                    assertThat(successLog.getLevel()).isEqualTo(Level.INFO);
+                    assertThat(successLog.getFormattedMessage())
+                            .contains("BUSINESS: Nouveau membre enregistré avec succès");
+                });
     }
 
     @Test
-    @DisplayName("Devrait logger l'échec de l'enregistrement d'un membre")
+    @DisplayName("Devrait logger l'échec d'enregistrement d'un membre")
     void shouldLogFailedMemberRegistration() {
-        // When & Then: Call the test service with an email that causes an exception
-        assertThatThrownBy(() -> memberService.registerMember("throw_exception"))
+        // Given
+        String errorEmail = "throw_exception";
+
+        // When & Then
+        assertThatThrownBy(() -> memberService.registerMember(errorEmail))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Erreur d'enregistrement");
 
         List<ILoggingEvent> logs = listAppender.list;
-        assertThat(logs).hasSize(2); // One log before, one error log
-        assertThat(logs.get(0).getFormattedMessage()).contains("BUSINESS: Tentative d'enregistrement d'un nouveau membre");
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.INFO);
-        assertThat(logs.get(1).getFormattedMessage()).contains("BUSINESS: Échec de l'enregistrement du membre - Erreur d'enregistrement");
-        assertThat(logs.get(1).getLevel()).isEqualTo(Level.WARN);
+        assertThat(logs)
+                .hasSize(2)
+                .satisfies(logList -> {
+                    // Log de début
+                    ILoggingEvent startLog = logList.getFirst();
+                    assertThat(startLog.getLevel()).isEqualTo(Level.INFO);
+                    assertThat(startLog.getFormattedMessage())
+                            .contains("BUSINESS: Tentative d'enregistrement d'un nouveau membre");
+
+                    // Log d'erreur
+                    ILoggingEvent errorLog = logList.get(1);
+                    assertThat(errorLog.getLevel()).isEqualTo(Level.WARN);
+                    assertThat(errorLog.getFormattedMessage())
+                            .contains("BUSINESS: Échec de l'enregistrement du membre")
+                            .contains("Erreur d'enregistrement");
+                });
     }
 
-
-    // === TESTS FOR AUTHENTICATION MODULE CALLS ===
+    // === TESTS AUTHENTIFICATION ===
     @Test
-    @DisplayName("Devrait logger le début et la réussite d'un appel au module d'authentification")
-    void shouldLogSuccessfulAuthModuleCall() {
+    @DisplayName("Devrait logger un appel d'authentification réussi avec retour")
+    void shouldLogSuccessfulAuthCallWithReturn() {
+        // Given
+        String username = "user";
+        String password = "pass";
+
         // When
-        String result = authModuleService.login("user", "pass");
+        String result = authModuleService.login(username, password);
 
         // Then
         assertThat(result).isEqualTo("token_123");
+
         List<ILoggingEvent> logs = listAppender.list;
-        assertThat(logs).hasSize(2);
-        assertThat(logs.get(0).getFormattedMessage()).contains("AUTH MODULE: Appel à login avec arguments: [user, pass]");
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
-        assertThat(logs.get(1).getFormattedMessage()).contains("AUTH MODULE: login a réussi avec résultat: token_123");
-        assertThat(logs.get(1).getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(logs)
+                .hasSize(2)
+                .satisfies(logList -> {
+                    // Log de début
+                    ILoggingEvent startLog = logList.getFirst();
+                    assertThat(startLog.getLevel()).isEqualTo(Level.DEBUG);
+                    assertThat(startLog.getFormattedMessage())
+                            .contains("AUTH MODULE: Appel à login avec arguments: [user, pass]");
+
+                    // Log de succès
+                    ILoggingEvent successLog = logList.get(1);
+                    assertThat(successLog.getLevel()).isEqualTo(Level.DEBUG);
+                    assertThat(successLog.getFormattedMessage())
+                            .contains("AUTH MODULE: login a réussi avec résultat: token_123");
+                });
     }
 
     @Test
-    @DisplayName("Should log an authentication module call with no return result (void)")
-    void shouldLogAuthModuleCallWithVoidReturn() {
+    @DisplayName("Devrait logger un appel d'authentification réussi sans retour (void)")
+    void shouldLogSuccessfulAuthCallVoid() {
         // When
         authModuleService.logout();
 
         // Then
         List<ILoggingEvent> logs = listAppender.list;
-        assertThat(logs).hasSize(2);
-        assertThat(logs.get(0).getFormattedMessage()).contains("AUTH MODULE: Appel à logout avec arguments: []");
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
-        assertThat(logs.get(1).getFormattedMessage()).contains("AUTH MODULE: logout exécuté avec succès");
-        assertThat(logs.get(1).getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(logs)
+                .hasSize(2)
+                .satisfies(logList -> {
+                    // Log de début
+                    ILoggingEvent startLog = logList.getFirst();
+                    assertThat(startLog.getLevel()).isEqualTo(Level.DEBUG);
+                    assertThat(startLog.getFormattedMessage())
+                            .contains("AUTH MODULE: Appel à logout avec arguments: []");
+
+                    // Log de succès
+                    ILoggingEvent successLog = logList.get(1);
+                    assertThat(successLog.getLevel()).isEqualTo(Level.DEBUG);
+                    assertThat(successLog.getFormattedMessage())
+                            .contains("AUTH MODULE: logout exécuté avec succès");
+                });
     }
 
     @Test
-    @DisplayName("Should log the failure of an authentication module call")
-    void shouldLogFailedAuthModuleCall() {
+    @DisplayName("Devrait logger un échec d'appel d'authentification")
+    void shouldLogFailedAuthCall() {
+        // Given
+        String invalidToken = "invalid_token";
+
         // When & Then
-        assertThatThrownBy(() -> authModuleService.refreshToken("invalid_token"))
+        assertThatThrownBy(() -> authModuleService.refreshToken(invalidToken))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Jeton invalide");
 
         List<ILoggingEvent> logs = listAppender.list;
-        assertThat(logs).hasSize(2);
-        assertThat(logs.get(0).getFormattedMessage()).contains("AUTH MODULE: Appel à refreshToken avec arguments: [invalid_token]");
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
-        assertThat(logs.get(1).getFormattedMessage()).contains("AUTH MODULE: Échec de l'appel à refreshToken - Jeton invalide");
-        assertThat(logs.get(1).getLevel()).isEqualTo(Level.WARN);
+        assertThat(logs)
+                .hasSize(2)
+                .satisfies(logList -> {
+                    // Log de début
+                    ILoggingEvent startLog = logList.getFirst();
+                    assertThat(startLog.getLevel()).isEqualTo(Level.DEBUG);
+                    assertThat(startLog.getFormattedMessage())
+                            .contains("AUTH MODULE: Appel à refreshToken avec arguments: [invalid_token]");
+
+                    // Log d'erreur
+                    ILoggingEvent errorLog = logList.get(1);
+                    assertThat(errorLog.getLevel()).isEqualTo(Level.WARN);
+                    assertThat(errorLog.getFormattedMessage())
+                            .contains("AUTH MODULE: Échec de l'appel à refreshToken")
+                            .contains("Jeton invalide");
+                });
     }
 
-    // --- TEST CONFIGURATION WITH DEDICATED ASPECT ---
+    @Test
+    @DisplayName("Devrait gérer les arguments null sans erreur")
+    void shouldHandleNullArgumentsGracefully() {
+        // When
+        String result = authModuleService.login(null, null);
+
+        // Then
+        assertThat(result).isEqualTo("token_123");
+
+        List<ILoggingEvent> logs = listAppender.list;
+        ILoggingEvent startLog = logs.getFirst();
+        assertThat(startLog.getFormattedMessage())
+                .contains("AUTH MODULE: Appel à login avec arguments: [null, null]");
+    }
+
+    // === CONFIGURATION DE TEST ===
     @Configuration
     @EnableAspectJAutoProxy
     static class TestConfig {
+
         @Bean
-        public TestBusinessOperationAspect businessOperationLoggingAspect() {
-            return new TestBusinessOperationAspect();
+        public BusinessOperationLoggingAspect businessOperationLoggingAspect() {
+            return new BusinessOperationLoggingAspect();
         }
 
         @Bean
@@ -168,9 +248,10 @@ class BusinessOperationLoggingAspectTest {
         }
     }
 
-    // === TEST SERVICES ===
+    // === SERVICES DE TEST ===
     @Service
     static class TestMemberService {
+
         public String registerMember(String email) {
             if ("throw_exception".equals(email)) {
                 throw new RuntimeException("Erreur d'enregistrement");
@@ -181,36 +262,38 @@ class BusinessOperationLoggingAspectTest {
 
     @Component
     static class TestAuthModuleService {
+
         public String login(String username, String password) {
             return "token_123";
         }
 
         public void logout() {
-            // Void method
+            // Méthode void pour tester le cas sans retour
         }
 
-        public String refreshToken(String token) {
+        public void refreshToken(String token) {
             if ("invalid_token".equals(token)) {
                 throw new RuntimeException("Jeton invalide");
             }
-            return "new_token_456";
         }
     }
 
-    // === DEDICATED TEST ASPECT ===
+    // === ASPECT DE TEST (RÉPLIQUE EXACTE DE L'ASPECT RÉEL) ===
     @Aspect
     @Component
-    static class TestBusinessOperationAspect {
-        private static final org.slf4j.Logger log = LoggerFactory.getLogger(BusinessOperationLoggingAspect.class);
+    static class BusinessOperationLoggingAspect {
 
-        // Pointcuts for test services
+        private static final org.slf4j.Logger log =
+                LoggerFactory.getLogger(BusinessOperationLoggingAspect.class);
+
+        // Pointcuts
         @Pointcut("execution(* com.ecclesiaflow.application.logging.aspect.BusinessOperationLoggingAspectTest.TestMemberService.registerMember(..))")
         public void memberRegistration() {}
 
         @Pointcut("execution(* com.ecclesiaflow.application.logging.aspect.BusinessOperationLoggingAspectTest.TestAuthModuleService.*(..))")
         public void authModuleCalls() {}
 
-        // Advices for member registration
+        // Advices pour l'enregistrement de membres
         @Before("memberRegistration()")
         public void logBeforeMemberRegistration(JoinPoint joinPoint) {
             log.info("BUSINESS: Tentative d'enregistrement d'un nouveau membre");
@@ -226,11 +309,13 @@ class BusinessOperationLoggingAspectTest {
             log.warn("BUSINESS: Échec de l'enregistrement du membre - {}", ex.getMessage());
         }
 
-        // Advices for authentication module calls
+        // Advices pour les appels au module d'authentification
         @Before("authModuleCalls()")
         public void logBeforeAuthModuleCall(JoinPoint joinPoint) {
             String methodName = joinPoint.getSignature().getName();
-            log.debug("AUTH MODULE: Appel à {} avec arguments: {}", methodName, java.util.Arrays.toString(joinPoint.getArgs()));
+            Object[] args = joinPoint.getArgs();
+            log.debug("AUTH MODULE: Appel à {} avec arguments: {}",
+                    methodName, java.util.Arrays.toString(args));
         }
 
         @AfterReturning(pointcut = "authModuleCalls()", returning = "result")
