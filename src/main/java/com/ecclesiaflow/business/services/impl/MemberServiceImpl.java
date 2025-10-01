@@ -89,7 +89,7 @@ public class MemberServiceImpl implements MemberService {
     @Override
     @Transactional(readOnly = true)
     public boolean isEmailConfirmed(String email) {
-        return memberRepository.findByEmail(email)
+        return memberRepository.getByEmail(email)
                 .map(Member::isConfirmed)
                 .orElse(false);
     }
@@ -107,7 +107,7 @@ public class MemberServiceImpl implements MemberService {
     @Override
     @Transactional(readOnly = true)
     public Member findById(UUID id) {
-        return memberRepository.findById(id)
+        return memberRepository.getById(id)
                 .orElseThrow(() -> new MemberNotFoundException("Membre non trouvé avec l'ID"));
     }
 

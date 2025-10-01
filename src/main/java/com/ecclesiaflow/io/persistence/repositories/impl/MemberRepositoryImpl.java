@@ -65,12 +65,12 @@ public class MemberRepositoryImpl implements MemberRepository {
     private final MemberPersistenceMapper mapper;
 
     @Override
-    public Optional<Member> findById(UUID id) {
+    public Optional<Member> getById(UUID id) {
         return springDataRepo.findById(id).map(mapper::toDomain);
     }
 
     @Override
-    public Optional<Member> findByEmail(String email) {
+    public Optional<Member> getByEmail(String email) {
         return springDataRepo.findByEmail(email).map(mapper::toDomain);
     }
 

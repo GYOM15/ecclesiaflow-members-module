@@ -60,7 +60,7 @@ public interface MemberRepository {
      * @return un Optional contenant le membre si trouvé, vide sinon
      * @throws IllegalArgumentException si id est null
      */
-    Optional<Member> findById(UUID id);
+    Optional<Member> getById(UUID id);
     
     /**
      * Recherche un membre par son adresse email.
@@ -72,7 +72,7 @@ public interface MemberRepository {
      * @return un Optional contenant le membre si trouvé, vide sinon
      * @throws IllegalArgumentException si email est null ou vide
      */
-    Optional<Member> findByEmail(String email);
+    Optional<Member> getByEmail(String email);
     
     /**
      * Vérifie l'existence d'un membre avec l'email spécifié.

@@ -72,46 +72,46 @@ class SpringDataMemberConfirmationRepositoryTest {
     }
 
     @Test
-    void findByMemberId_shouldReturnConfirmation() {
+    void getByMemberId_shouldReturnConfirmation() {
         Optional<MemberConfirmationEntity> found = confirmationRepository.findByMemberId(testMember.getMemberId());
         assertThat(found).isPresent();
         assertThat(found.get().getCode()).isEqualTo(confirmation1.getCode());
     }
 
     @Test
-    void findByMemberId_shouldReturnEmptyWhenNotFound() {
+    void getByMemberId_shouldReturnEmptyWhenNotFound() {
         Optional<MemberConfirmationEntity> found = confirmationRepository.findByMemberId(UUID.randomUUID());
         assertThat(found).isEmpty();
     }
 
     @Test
-    void findByMemberIdAndCode_shouldReturnConfirmation() {
+    void getByMemberIdAndCode_shouldReturnConfirmation() {
         Optional<MemberConfirmationEntity> found = confirmationRepository.findByMemberIdAndCode(testMember.getMemberId(), "CODE1A");
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(confirmation1.getId());
     }
 
     @Test
-    void findByMemberIdAndCode_shouldReturnEmptyWhenMemberIdMismatch() {
+    void getByMemberIdAndCode_shouldReturnEmptyWhenMemberIdMismatch() {
         Optional<MemberConfirmationEntity> found = confirmationRepository.findByMemberIdAndCode(UUID.randomUUID(), "CODE1A");
         assertThat(found).isEmpty();
     }
 
     @Test
-    void findByMemberIdAndCode_shouldReturnEmptyWhenCodeMismatch() {
+    void getByMemberIdAndCode_shouldReturnEmptyWhenCodeMismatch() {
         Optional<MemberConfirmationEntity> found = confirmationRepository.findByMemberIdAndCode(testMember.getMemberId(), "WRONGCODE");
         assertThat(found).isEmpty();
     }
 
     @Test
-    void findByCode_shouldReturnConfirmation() {
+    void getByCode_shouldReturnConfirmation() {
         Optional<MemberConfirmationEntity> found = confirmationRepository.findByCode("CODE1A");
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(confirmation1.getId());
     }
 
     @Test
-    void findByCode_shouldReturnEmptyWhenNotFound() {
+    void getByCode_shouldReturnEmptyWhenNotFound() {
         Optional<MemberConfirmationEntity> found = confirmationRepository.findByCode("NONEXISTENT");
         assertThat(found).isEmpty();
     }
@@ -129,7 +129,7 @@ class SpringDataMemberConfirmationRepositoryTest {
     }
 
     @Test
-    void findExpiredConfirmations_shouldReturnOnlyExpired() {
+    void getExpiredConfirmations_shouldReturnOnlyExpired() {
         // Confirmation2 est expirée, confirmation1 ne l'est pas
         List<MemberConfirmationEntity> expired = confirmationRepository.findExpiredConfirmations(LocalDateTime.now());
         assertThat(expired).hasSize(1);

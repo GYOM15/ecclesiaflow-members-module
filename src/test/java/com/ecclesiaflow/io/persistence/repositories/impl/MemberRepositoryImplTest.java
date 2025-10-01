@@ -81,11 +81,11 @@ class MemberRepositoryImplTest {
     }
 
     @Test
-    void findById_shouldReturnMappedDomainObject() {
+    void getById_shouldReturnMappedDomainObject() {
         when(springDataRepo.findById(testId)).thenReturn(Optional.of(testEntity));
         when(mapper.toDomain(testEntity)).thenReturn(testDomain);
 
-        Optional<Member> result = memberRepository.findById(testId);
+        Optional<Member> result = memberRepository.getById(testId);
 
         assertThat(result).isPresent();
         assertThat(result.get()).isEqualTo(testDomain);
@@ -94,10 +94,10 @@ class MemberRepositoryImplTest {
     }
 
     @Test
-    void findById_shouldReturnEmptyOptionalWhenNotFound() {
+    void getById_shouldReturnEmptyOptionalWhenNotFound() {
         when(springDataRepo.findById(testId)).thenReturn(Optional.empty());
 
-        Optional<Member> result = memberRepository.findById(testId);
+        Optional<Member> result = memberRepository.getById(testId);
 
         assertThat(result).isEmpty();
         verify(springDataRepo, times(1)).findById(testId);
@@ -105,11 +105,11 @@ class MemberRepositoryImplTest {
     }
 
     @Test
-    void findByEmail_shouldReturnMappedDomainObject() {
+    void getByEmail_shouldReturnMappedDomainObject() {
         when(springDataRepo.findByEmail(testEmail)).thenReturn(Optional.of(testEntity));
         when(mapper.toDomain(testEntity)).thenReturn(testDomain);
 
-        Optional<Member> result = memberRepository.findByEmail(testEmail);
+        Optional<Member> result = memberRepository.getByEmail(testEmail);
 
         assertThat(result).isPresent();
         assertThat(result.get()).isEqualTo(testDomain);
@@ -118,10 +118,10 @@ class MemberRepositoryImplTest {
     }
 
     @Test
-    void findByEmail_shouldReturnEmptyOptionalWhenNotFound() {
+    void getByEmail_shouldReturnEmptyOptionalWhenNotFound() {
         when(springDataRepo.findByEmail(testEmail)).thenReturn(Optional.empty());
 
-        Optional<Member> result = memberRepository.findByEmail(testEmail);
+        Optional<Member> result = memberRepository.getByEmail(testEmail);
 
         assertThat(result).isEmpty();
         verify(springDataRepo, times(1)).findByEmail(testEmail);
