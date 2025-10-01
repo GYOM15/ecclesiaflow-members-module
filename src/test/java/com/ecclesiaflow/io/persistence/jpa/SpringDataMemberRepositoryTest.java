@@ -26,8 +26,6 @@ class SpringDataMemberRepositoryTest {
     private TestEntityManager entityManager;
 
     private MemberEntity member1;
-    private MemberEntity member2;
-    private MemberEntity member3;
 
     @BeforeEach
     void setUp() {
@@ -51,7 +49,7 @@ class SpringDataMemberRepositoryTest {
                 .build();
         entityManager.persistAndFlush(member1);
 
-        member2 = MemberEntity.builder()
+        MemberEntity member2 = MemberEntity.builder()
                 .memberId(UUID.randomUUID())
                 .firstName("Bob")
                 .lastName("Johnson")
@@ -64,7 +62,7 @@ class SpringDataMemberRepositoryTest {
                 .build();
         entityManager.persistAndFlush(member2);
 
-        member3 = MemberEntity.builder()
+        MemberEntity member3 = MemberEntity.builder()
                 .memberId(UUID.randomUUID())
                 .firstName("Charlie")
                 .lastName("Brown")
