@@ -87,14 +87,14 @@ class MemberServiceImplTest {
                 .build();
         Member confirmedMember = member.confirm();
 
-        when(memberRepository.findByEmail("john.doe@mail.com")).thenReturn(Optional.of(confirmedMember));
+        when(memberRepository.getByEmail("john.doe@mail.com")).thenReturn(Optional.of(confirmedMember));
 
         assertTrue(memberService.isEmailConfirmed("john.doe@mail.com"));
     }
 
     @Test
     void isEmailConfirmed_shouldReturnFalseIfNotFound() {
-        when(memberRepository.findByEmail("unknown@mail.com")).thenReturn(Optional.empty());
+        when(memberRepository.getByEmail("unknown@mail.com")).thenReturn(Optional.empty());
 
         assertFalse(memberService.isEmailConfirmed("unknown@mail.com"));
     }
@@ -104,7 +104,7 @@ class MemberServiceImplTest {
         UUID id = UUID.randomUUID();
         Member member = Member.builder().memberId(id).firstName("Jane").email("jane@mail.com").build();
 
-        when(memberRepository.findById(id)).thenReturn(Optional.of(member));
+        when(memberRepository.getById(id)).thenReturn(Optional.of(member));
 
         Member result = memberService.findById(id);
 
@@ -114,7 +114,7 @@ class MemberServiceImplTest {
     @Test
     void findById_shouldThrowIfNotFound() {
         UUID id = UUID.randomUUID();
-        when(memberRepository.findById(id)).thenReturn(Optional.empty());
+        when(memberRepository.getById(id)).thenReturn(Optional.empty());
 
         assertThrows(MemberNotFoundException.class, () -> memberService.findById(id));
     }
@@ -135,7 +135,7 @@ class MemberServiceImplTest {
                 .build();
 
         when(memberRepository.existsByEmail("new@mail.com")).thenReturn(false);
-        when(memberRepository.findById(id)).thenReturn(Optional.of(existing));
+        when(memberRepository.getById(id)).thenReturn(Optional.of(existing));
         when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Member result = memberService.updateMember(update);
@@ -163,7 +163,7 @@ class MemberServiceImplTest {
 
         assertThrows(IllegalArgumentException.class, () -> memberService.updateMember(update));
 
-        verify(memberRepository, never()).findById(any());
+        verify(memberRepository, never()).getById(any());
         verify(memberRepository, never()).save(any());
     }
 
@@ -177,7 +177,7 @@ class MemberServiceImplTest {
                 .build();
 
         when(memberRepository.existsByEmail("new@mail.com")).thenReturn(false);
-        when(memberRepository.findById(id)).thenReturn(Optional.empty());
+        when(memberRepository.getById(id)).thenReturn(Optional.empty());
 
         assertThrows(MemberNotFoundException.class, () -> memberService.updateMember(update));
 
@@ -189,7 +189,7 @@ class MemberServiceImplTest {
         UUID id = UUID.randomUUID();
         Member existing = Member.builder().memberId(id).firstName("ToDelete").email("del@mail.com").build();
 
-        when(memberRepository.findById(id)).thenReturn(Optional.of(existing));
+        when(memberRepository.getById(id)).thenReturn(Optional.of(existing));
 
         memberService.deleteMember(id);
 

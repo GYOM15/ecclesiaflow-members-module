@@ -84,7 +84,7 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
     }
 
     private MemberConfirmation validateConfirmationCode(UUID memberId, String code) {
-        MemberConfirmation confirmation = confirmationRepository.findByMemberIdAndCode(memberId, code)
+        MemberConfirmation confirmation = confirmationRepository.getMemberIdAndCode(memberId, code)
                 .orElseThrow(() -> new InvalidConfirmationCodeException("Code de confirmation invalide"));
         if (confirmation.isExpired()) {
             throw new ExpiredConfirmationCodeException("Code de confirmation expiré");
@@ -93,12 +93,12 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
     }
 
     private Member getMemberOrThrow(UUID memberId) throws MemberNotFoundException, MemberAlreadyConfirmedException {
-        return memberRepository.findById(memberId)
+        return memberRepository.getById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException("Membre non trouvé"));
     }
 
     private void deleteExistingConfirmationCode(UUID memberId) {
-        confirmationRepository.findByMemberId(memberId)
+        confirmationRepository.getByMemberId(memberId)
                 .ifPresent(confirmationRepository::delete);
     }
 }

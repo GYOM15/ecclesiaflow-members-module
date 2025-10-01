@@ -63,11 +63,11 @@ class MemberConfirmationRepositoryImplTest {
     }
 
     @Test
-    void findByMemberId_shouldReturnMappedDomainObject() {
+    void getByMemberId_shouldReturnMappedDomainObject() {
         when(springDataRepo.findByMemberId(testMemberId)).thenReturn(Optional.of(testEntity));
         when(mapper.toDomain(testEntity)).thenReturn(testDomain);
 
-        Optional<MemberConfirmation> result = memberConfirmationRepository.findByMemberId(testMemberId);
+        Optional<MemberConfirmation> result = memberConfirmationRepository.getByMemberId(testMemberId);
 
         assertThat(result).isPresent();
         assertThat(result.get()).isEqualTo(testDomain);
@@ -76,10 +76,10 @@ class MemberConfirmationRepositoryImplTest {
     }
 
     @Test
-    void findByMemberId_shouldReturnEmptyOptionalWhenNotFound() {
+    void getByMemberId_shouldReturnEmptyOptionalWhenNotFound() {
         when(springDataRepo.findByMemberId(testMemberId)).thenReturn(Optional.empty());
 
-        Optional<MemberConfirmation> result = memberConfirmationRepository.findByMemberId(testMemberId);
+        Optional<MemberConfirmation> result = memberConfirmationRepository.getByMemberId(testMemberId);
 
         assertThat(result).isEmpty();
         verify(springDataRepo, times(1)).findByMemberId(testMemberId);
@@ -87,11 +87,11 @@ class MemberConfirmationRepositoryImplTest {
     }
 
     @Test
-    void findByMemberIdAndCode_shouldReturnMappedDomainObject() {
+    void getByMemberIdAndCode_shouldReturnMappedDomainObject() {
         when(springDataRepo.findByMemberIdAndCode(testMemberId, testCode)).thenReturn(Optional.of(testEntity));
         when(mapper.toDomain(testEntity)).thenReturn(testDomain);
 
-        Optional<MemberConfirmation> result = memberConfirmationRepository.findByMemberIdAndCode(testMemberId, testCode);
+        Optional<MemberConfirmation> result = memberConfirmationRepository.getMemberIdAndCode(testMemberId, testCode);
 
         assertThat(result).isPresent();
         assertThat(result.get()).isEqualTo(testDomain);
@@ -100,10 +100,10 @@ class MemberConfirmationRepositoryImplTest {
     }
 
     @Test
-    void findByMemberIdAndCode_shouldReturnEmptyOptionalWhenNotFound() {
+    void getByMemberIdAndCode_shouldReturnEmptyOptionalWhenNotFound() {
         when(springDataRepo.findByMemberIdAndCode(testMemberId, testCode)).thenReturn(Optional.empty());
 
-        Optional<MemberConfirmation> result = memberConfirmationRepository.findByMemberIdAndCode(testMemberId, testCode);
+        Optional<MemberConfirmation> result = memberConfirmationRepository.getMemberIdAndCode(testMemberId, testCode);
 
         assertThat(result).isEmpty();
         verify(springDataRepo, times(1)).findByMemberIdAndCode(testMemberId, testCode);
@@ -111,11 +111,11 @@ class MemberConfirmationRepositoryImplTest {
     }
 
     @Test
-    void findByCode_shouldReturnMappedDomainObject() {
+    void getByCode_shouldReturnMappedDomainObject() {
         when(springDataRepo.findByCode(testCode)).thenReturn(Optional.of(testEntity));
         when(mapper.toDomain(testEntity)).thenReturn(testDomain);
 
-        Optional<MemberConfirmation> result = memberConfirmationRepository.findByCode(testCode);
+        Optional<MemberConfirmation> result = memberConfirmationRepository.getByCode(testCode);
 
         assertThat(result).isPresent();
         assertThat(result.get()).isEqualTo(testDomain);
@@ -124,10 +124,10 @@ class MemberConfirmationRepositoryImplTest {
     }
 
     @Test
-    void findByCode_shouldReturnEmptyOptionalWhenNotFound() {
+    void getByCode_shouldReturnEmptyOptionalWhenNotFound() {
         when(springDataRepo.findByCode(testCode)).thenReturn(Optional.empty());
 
-        Optional<MemberConfirmation> result = memberConfirmationRepository.findByCode(testCode);
+        Optional<MemberConfirmation> result = memberConfirmationRepository.getByCode(testCode);
 
         assertThat(result).isEmpty();
         verify(springDataRepo, times(1)).findByCode(testCode);
@@ -157,7 +157,7 @@ class MemberConfirmationRepositoryImplTest {
     }
 
     @Test
-    void findExpiredConfirmations_shouldReturnMappedDomainObjects() {
+    void getExpiredConfirmations_shouldReturnMappedDomainObjects() {
         List<MemberConfirmationEntity> entities = Collections.singletonList(testEntity);
         List<MemberConfirmation> domains = Collections.singletonList(testDomain);
 
@@ -166,7 +166,7 @@ class MemberConfirmationRepositoryImplTest {
                 .thenReturn(entities);
         when(mapper.toDomain(testEntity)).thenReturn(testDomain);
 
-        List<MemberConfirmation> result = memberConfirmationRepository.findExpiredConfirmations();
+        List<MemberConfirmation> result = memberConfirmationRepository.getExpiredConfirmations();
 
         assertThat(result).containsExactly(testDomain);
         // Verify with ArgumentMatchers.any() because LocalDateTime.now() is called inside the method
@@ -175,11 +175,11 @@ class MemberConfirmationRepositoryImplTest {
     }
 
     @Test
-    void findExpiredConfirmations_shouldReturnEmptyListWhenNoneFound() {
+    void getExpiredConfirmations_shouldReturnEmptyListWhenNoneFound() {
         when(springDataRepo.findExpiredConfirmations(ArgumentMatchers.any(LocalDateTime.class)))
                 .thenReturn(Collections.emptyList());
 
-        List<MemberConfirmation> result = memberConfirmationRepository.findExpiredConfirmations();
+        List<MemberConfirmation> result = memberConfirmationRepository.getExpiredConfirmations();
 
         assertThat(result).isEmpty();
         verify(springDataRepo, times(1)).findExpiredConfirmations(ArgumentMatchers.any(LocalDateTime.class));

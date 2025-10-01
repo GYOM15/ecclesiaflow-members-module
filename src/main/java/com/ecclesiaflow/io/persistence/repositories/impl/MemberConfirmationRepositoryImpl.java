@@ -48,19 +48,19 @@ public class MemberConfirmationRepositoryImpl implements MemberConfirmationRepos
     private final MemberConfirmationPersistenceMapper mapper;
 
     @Override
-    public Optional<MemberConfirmation> findByMemberId(UUID memberId) {
+    public Optional<MemberConfirmation> getByMemberId(UUID memberId) {
         return springDataRepo.findByMemberId(memberId)
                 .map(mapper::toDomain);
     }
 
     @Override
-    public Optional<MemberConfirmation> findByMemberIdAndCode(UUID memberId, String code) {
+    public Optional<MemberConfirmation> getMemberIdAndCode(UUID memberId, String code) {
         return springDataRepo.findByMemberIdAndCode(memberId, code)
                 .map(mapper::toDomain);
     }
 
     @Override
-    public Optional<MemberConfirmation> findByCode(String code) {
+    public Optional<MemberConfirmation> getByCode(String code) {
         return springDataRepo.findByCode(code)
                 .map(mapper::toDomain);
     }
@@ -71,7 +71,7 @@ public class MemberConfirmationRepositoryImpl implements MemberConfirmationRepos
     }
 
     @Override
-    public List<MemberConfirmation> findExpiredConfirmations() {
+    public List<MemberConfirmation> getExpiredConfirmations() {
         return springDataRepo.findExpiredConfirmations(LocalDateTime.now())
                 .stream()
                 .map(mapper::toDomain)

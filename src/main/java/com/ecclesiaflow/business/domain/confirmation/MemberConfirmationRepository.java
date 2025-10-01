@@ -50,7 +50,7 @@ public interface MemberConfirmationRepository {
      * @return un {@link Optional} contenant le code de confirmation si trouvé, vide sinon
      * @throws IllegalArgumentException si memberId est null
      */
-    Optional<MemberConfirmation> findByMemberId(UUID memberId);
+    Optional<MemberConfirmation> getByMemberId(UUID memberId);
 
     /**
      * Recherche un code de confirmation spécifique pour un membre donné.
@@ -65,7 +65,7 @@ public interface MemberConfirmationRepository {
      * @return un {@link Optional} contenant le code si trouvé et valide, vide sinon
      * @throws IllegalArgumentException si un paramètre est null
      */
-    Optional<MemberConfirmation> findByMemberIdAndCode(UUID memberId, String code);
+    Optional<MemberConfirmation> getMemberIdAndCode(UUID memberId, String code);
 
     /**
      * Recherche une confirmation par son code.
@@ -77,7 +77,7 @@ public interface MemberConfirmationRepository {
      * @param code le code de confirmation, non null
      * @return un Optional contenant la confirmation si le code existe
      */
-    Optional<MemberConfirmation> findByCode(String code);
+    Optional<MemberConfirmation> getByCode(String code);
 
     /**
      * Vérifie l'existence d'une confirmation pour un membre.
@@ -96,7 +96,7 @@ public interface MemberConfirmationRepository {
      *
      * @return la liste des confirmations expirées
      */
-    List<MemberConfirmation> findExpiredConfirmations();
+    List<MemberConfirmation> getExpiredConfirmations();
 
     /**
      * Compte le nombre de confirmations en attente.

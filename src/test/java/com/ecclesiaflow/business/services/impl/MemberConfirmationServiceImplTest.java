@@ -62,8 +62,8 @@ class MemberConfirmationServiceImplTest {
                 .expiresAt(LocalDateTime.now().plusMinutes(10))
                 .build();
 
-        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
-        when(confirmationRepository.findByMemberIdAndCode(memberId, code)).thenReturn(Optional.of(confirmation));
+        when(memberRepository.getById(memberId)).thenReturn(Optional.of(member));
+        when(confirmationRepository.getMemberIdAndCode(memberId, code)).thenReturn(Optional.of(confirmation));
         when(authenticationService.retrievePostActivationToken(member.getEmail())).thenReturn("TEMP_TOKEN");
 
         // when
@@ -84,8 +84,8 @@ class MemberConfirmationServiceImplTest {
 
     @Test
     void confirmMember_ShouldThrow_WhenCodeInvalid() {
-        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
-        when(confirmationRepository.findByMemberIdAndCode(any(), any())).thenReturn(Optional.empty());
+        when(memberRepository.getById(memberId)).thenReturn(Optional.of(member));
+        when(confirmationRepository.getMemberIdAndCode(any(), any())).thenReturn(Optional.empty());
 
         assertThrows(InvalidConfirmationCodeException.class,
                 () -> service.confirmMember(MembershipConfirmation.builder().
@@ -103,8 +103,8 @@ class MemberConfirmationServiceImplTest {
                 .expiresAt(LocalDateTime.now().minusMinutes(1))
                 .build();
 
-        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
-        when(confirmationRepository.findByMemberIdAndCode(memberId, code)).thenReturn(Optional.of(expired));
+        when(memberRepository.getById(memberId)).thenReturn(Optional.of(member));
+        when(confirmationRepository.getMemberIdAndCode(memberId, code)).thenReturn(Optional.of(expired));
 
         assertThrows(ExpiredConfirmationCodeException.class,
                 () -> service.confirmMember(MembershipConfirmation.builder().
@@ -115,7 +115,7 @@ class MemberConfirmationServiceImplTest {
 
     @Test
     void sendConfirmationCode_ShouldGenerateAndSend() {
-        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+        when(memberRepository.getById(memberId)).thenReturn(Optional.of(member));
         when(codeGenerator.generateCode()).thenReturn("654321");
 
         service.sendConfirmationCode(memberId);
@@ -127,7 +127,7 @@ class MemberConfirmationServiceImplTest {
     @Test
     void sendConfirmationCode_ShouldThrow_WhenAlreadyConfirmed() {
         Member confirmedMember = member.confirm();
-        when(memberRepository.findById(memberId)).thenReturn(Optional.of(confirmedMember));
+        when(memberRepository.getById(memberId)).thenReturn(Optional.of(confirmedMember));
 
         assertThrows(MemberAlreadyConfirmedException.class, () -> service.sendConfirmationCode(memberId));
     }

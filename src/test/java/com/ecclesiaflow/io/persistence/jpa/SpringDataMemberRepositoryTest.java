@@ -80,14 +80,14 @@ class SpringDataMemberRepositoryTest {
     }
 
     @Test
-    void findByEmail_shouldReturnMember() {
+    void getByEmail_shouldReturnMember() {
         Optional<MemberEntity> found = memberRepository.findByEmail("alice.smith@example.com");
         assertThat(found).isPresent();
         assertThat(found.get().getFirstName()).isEqualTo("Alice");
     }
 
     @Test
-    void findByEmail_shouldReturnEmptyWhenNotFound() {
+    void getByEmail_shouldReturnEmptyWhenNotFound() {
         Optional<MemberEntity> found = memberRepository.findByEmail("nonexistent@example.com");
         assertThat(found).isEmpty();
     }
