@@ -1,197 +1,99 @@
 package com.ecclesiaflow.web.controller;
-import com.ecclesiaflow.business.services.MemberConfirmationService;
-import com.ecclesiaflow.web.mappers.ConfirmationResponseMapper;
-import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
-import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
-import com.ecclesiaflow.web.payloads.ConfirmationRequestPayload;
-import com.ecclesiaflow.web.dto.ConfirmationResponse;
+
+import com.ecclesiaflow.web.api.MemberConfirmationApi;
+import com.ecclesiaflow.web.delegate.MemberConfirmationDelegate;
+import com.ecclesiaflow.web.model.ConfirmationRequestPayload;
+import com.ecclesiaflow.web.model.ConfirmationResponse;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
 /**
- * Contrôleur REST pour la gestion du processus de confirmation des membres EcclesiaFlow.
+ * Contrôleur REST pour la gestion du processus de confirmation des membres - Pattern Delegate avec OpenAPI Generator.
  * <p>
- * Ce contrôleur gère le processus complet de confirmation des comptes membres :
- * validation des codes de confirmation envoyés par email, mise à jour du statut
- * de confirmation, et génération de tokens temporaires pour la définition des mots de passe.
+ * Ce contrôleur implémente l'interface générée par OpenAPI Generator et utilise le pattern Delegate
+ * pour séparer les responsabilités entre la gestion HTTP (contrôleur) et la logique métier (délégué).
+ * Respecte le principe d'inversion de dépendance (DIP) de SOLID.
  * </p>
  * 
- * <p><strong>Rôle architectural :</strong> Couche de présentation - API REST Confirmation</p>
+ * <p><strong>Architecture :</strong></p>
+ * <pre>
+ * OpenAPI Spec (members.yaml)
+ *    ↓ génère
+ * MemberConfirmationApi
+ *    ↓ implémentée par
+ * MembersConfirmationController ← Cette classe
+ *    ↓ délègue à
+ * MemberConfirmationDelegate
+ *    ↓ utilise
+ * MemberConfirmationService
+ * </pre>
  * 
- * <p><strong>Responsabilités principales :</strong></p>
+ * <p><strong>Responsabilités :</strong></p>
  * <ul>
- *   <li>Validation des codes de confirmation saisis par les membres</li>
- *   <li>Orchestration du processus de confirmation avec les services métier</li>
- *   <li>Génération et retour des tokens temporaires</li>
- *   <li>Gestion des erreurs de confirmation (code invalide, expiré, etc.)</li>
- *   <li>Endpoints de débogage pour les tests (temporaires)</li>
+ *   <li>Implémentation de l'interface MemberConfirmationApi générée</li>
+ *   <li>Délégation de la logique métier au délégué approprié</li>
+ *   <li>Respect strict des contrats définis dans la spécification OpenAPI</li>
+ *   <li>Gestion des annotations spécifiques (ex: @RateLimiter)</li>
  * </ul>
- * 
- * <p><strong>Dépendances critiques :</strong></p>
- * <ul>
- *   <li>{@link MemberConfirmationService} - Logique métier de confirmation</li>
- *   <li>Mappers - Transformation DTOs ↔ objets métier</li>
- *   <li>Spring Web MVC - Framework REST</li>
- * </ul>
- * 
- * <p><strong>Endpoints exposés :</strong></p>
- * <ul>
- *   <li>PATCH /ecclesiaflow/members/{memberId}/confirmation - Confirmer un compte (mise à jour d'état)</li>
- *   <li>POST /ecclesiaflow/members/{memberId}/confirmation-code - Renvoyer le code de confirmation</li>
- * </ul>
- * 
- * <p><strong>Flux typique :</strong></p>
- * <ol>
- *   <li>Membre reçoit un email avec code de confirmation</li>
- *   <li>Membre saisit le code via l'interface</li>
- *   <li>Validation du code et mise à jour du statut</li>
- *   <li>Génération d'un token temporaire pour définir le mot de passe</li>
- * </ol>
- * 
- * <p><strong>Garanties :</strong> Validation automatique, sécurité des codes, gestion d'erreurs.</p>
  * 
  * @author EcclesiaFlow Team
- * @since 1.0.0
+ * @since 2.0.0 (Refactorisé avec pattern Delegate)
  */
 @RestController
-@RequestMapping("/ecclesiaflow/members/{memberId}")
 @RequiredArgsConstructor
-@Tag(name = "Member Confirmation", description = "Confirmation des comptes membres")
-public class MembersConfirmationController {
+public class MembersConfirmationController implements MemberConfirmationApi {
 
-    private final MemberConfirmationService confirmationService;
-    private final ConfirmationResponseMapper confirmationResponseMapper;
+    private final MemberConfirmationDelegate memberConfirmationDelegate;
 
-    @PatchMapping(value = "/confirmation", produces = "application/vnd.ecclesiaflow.members.v1+json")
+    /**
+     * Confirmer le compte d'un membre (mise à jour d'état).
+     * <p>
+     * Met à jour l'état de confirmation d'un membre avec le code reçu par email.
+     * Génère un token temporaire et l'URL de redirection pour définir le mot de passe.
+     * </p>
+     * 
+     * @param memberId Identifiant unique du membre
+     * @param confirmationRequestPayload Payload contenant le code de confirmation
+     * @return {@link ResponseEntity} avec token temporaire et URL de redirection
+     * 
+     * @throws com.ecclesiaflow.business.exceptions.MemberNotFoundException si le membre n'existe pas
+     * @throws com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException si le code est invalide
+     * 
+     * @implNote Rate limiting activé pour prévenir les attaques par force brute
+     * @implNote <strong>Implémentation :</strong> Délègue au {@link MemberConfirmationDelegate}
+     * @see MemberConfirmationDelegate#confirmMember(UUID, ConfirmationRequestPayload)
+     */
     @RateLimiter(name = "confirmation-attempts")
-    @Operation(
-            summary = "Confirmer le compte d'un membre (mise à jour d'état)",
-            description = "Met à jour l'état de confirmation d'un membre avec le code reçu par email. " +
-                    "Génère un token temporaire et l'URL de redirection pour définir le mot de passe."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Confirmation réussie, token temporaire généré",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ConfirmationResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Code de confirmation invalide ou expiré",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(ref = "#/components/schemas/BadRequestError")
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Membre non trouvé",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(ref = "#/components/schemas/NotFoundError")
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "409",
-                    description = "Compte déjà confirmé",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(ref = "#/components/schemas/ConflictError")
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "429",
-                    description = "Trop de tentatives de confirmation - Rate limiting activé",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erreur interne du serveur",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            )
-    })
-    public ResponseEntity<ConfirmationResponse> confirmMember(
-            @PathVariable UUID memberId,
-            @Valid @RequestBody ConfirmationRequestPayload confirmationRequestPayload) {
-        MembershipConfirmation membershipConfirmation = MembershipConfirmation.builder().
-                memberId(memberId).
-                confirmationCode(confirmationRequestPayload.getCode()).
-                build();
-        MembershipConfirmationResult result = confirmationService.confirmMember(membershipConfirmation);
-        ConfirmationResponse response = confirmationResponseMapper.fromMemberConfirmationResult(result);
-        return ResponseEntity.ok(response);
+    @Override
+    public ResponseEntity<ConfirmationResponse> _confirmMember(
+            UUID memberId, ConfirmationRequestPayload confirmationRequestPayload) {
+        return memberConfirmationDelegate.confirmMember(memberId, confirmationRequestPayload);
     }
 
-    @PostMapping(value = "/confirmation-code", produces = "application/vnd.ecclesiaflow.members.v1+json")
+    /**
+     * Renvoyer le code de confirmation.
+     * <p>
+     * Renvoyer un nouveau code de confirmation par email.
+     * </p>
+     * 
+     * @param memberId Identifiant unique du membre
+     * @return {@link ResponseEntity} vide avec statut 200
+     * 
+     * @throws com.ecclesiaflow.business.exceptions.MemberNotFoundException si le membre n'existe pas
+     * @throws com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException si le compte est déjà confirmé
+     * 
+     * @implNote Rate limiting activé pour prévenir l'abus d'envoi d'emails
+     * @implNote <strong>Implémentation :</strong> Délègue au {@link MemberConfirmationDelegate}
+     * @see MemberConfirmationDelegate#resendConfirmationCode(UUID)
+     */
     @RateLimiter(name = "confirmation-resend")
-    @Operation(
-            summary = "Renvoyer le code de confirmation",
-            description = "Renvoyer un nouveau code de confirmation par email"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Nouveau code envoyé",
-                    content = @Content(
-                            mediaType = "application/vnd.ecclesiaflow.members.v1+json"
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Données invalides",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Membre non trouvé",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "409",
-                    description = "Compte déjà confirmé",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erreur interne du serveur",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            )
-    })
-    public ResponseEntity<Void> resendConfirmationCode(@PathVariable UUID memberId) {
-        confirmationService.sendConfirmationCode(memberId);
-        return ResponseEntity.ok().build();
+    @Override
+    public ResponseEntity<Void> _resendConfirmationCode(UUID memberId) {
+        return memberConfirmationDelegate.resendConfirmationCode(memberId);
     }
 
 }

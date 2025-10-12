@@ -1,94 +1,64 @@
 package com.ecclesiaflow.web.controller;
 
-import com.ecclesiaflow.business.domain.member.MembershipRegistration;
-import com.ecclesiaflow.business.services.MemberService;
-import com.ecclesiaflow.web.dto.MemberPageResponse;
-import com.ecclesiaflow.web.dto.SignUpResponse;
-import com.ecclesiaflow.web.payloads.SignUpRequestPayload;
-import com.ecclesiaflow.business.domain.member.Member;
-import com.ecclesiaflow.web.mappers.SignUpRequestMapper;
-import com.ecclesiaflow.web.mappers.MemberPageMapper;
-import com.ecclesiaflow.web.mappers.MemberResponseMapper;
-import com.ecclesiaflow.web.payloads.UpdateMemberRequestPayload;
-import com.ecclesiaflow.web.mappers.UpdateRequestMapper;
-import com.ecclesiaflow.business.domain.member.MembershipUpdate;
+import com.ecclesiaflow.web.api.MembersManagementApi;
+import com.ecclesiaflow.web.api.MembersTemporaryApi;
+import com.ecclesiaflow.web.delegate.MembersManagementDelegate;
+import com.ecclesiaflow.web.delegate.MembersTemporaryDelegate;
+import com.ecclesiaflow.web.model.GetMemberConfirmationStatus200Response;
+import com.ecclesiaflow.web.model.MemberPageResponse;
+import com.ecclesiaflow.web.model.SignUpRequestPayload;
+import com.ecclesiaflow.web.model.SignUpResponse;
+import com.ecclesiaflow.web.model.UpdateMemberRequestPayload;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.data.web.SortDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.lang.Nullable;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
 import java.util.UUID;
 
 /**
- * Contrôleur REST pour la gestion des membres EcclesiaFlow.
+ * Contrôleur REST pour la gestion des membres EcclesiaFlow - Pattern Delegate avec OpenAPI Generator.
  * <p>
- * Ce contrôleur expose les endpoints HTTP pour les opérations CRUD sur les membres :
- * inscription, consultation, mise à jour et suppression. Respecte les principes
- * REST et utilise une architecture en couches avec mappers pour la transformation
- * des données entre DTOs et objets métier.
+ * Ce contrôleur implémente les interfaces générées par OpenAPI Generator et utilise le pattern Delegate
+ * pour séparer les responsabilités entre la gestion HTTP (contrôleur) et la logique métier (délégués).
+ * Respecte le principe d'inversion de dépendance (DIP) de SOLID.
  * </p>
  * 
- * <p><strong>⚠️ STATUT TEMPORAIRE :</strong> Ce contrôleur sera migré vers le module
- * ecclesiaflow-member-management-module dans la future architecture multi-tenant.</p>
+ * <p><strong>Architecture :</strong></p>
+ * <pre>
+ * OpenAPI Spec (members.yaml)
+ *    ↓ génère
+ * Interfaces (MembersManagementApi, MembersTemporaryApi)
+ *    ↓ implémentées par
+ * MembersController ← Cette classe
+ *    ↓ délègue à
+ * Delegates (MembersManagementDelegate, MembersTemporaryDelegate)
+ *    ↓ utilisent
+ * Service Layer (MemberService)
+ * </pre>
  * 
- * <p><strong>Rôle architectural :</strong> Couche de présentation - API REST</p>
- * 
- * <p><strong>Responsabilités principales :</strong></p>
+ * <p><strong>Interfaces implémentées :</strong></p>
  * <ul>
- *   <li>Exposition des endpoints HTTP pour la gestion des membres</li>
- *   <li>Validation des données d'entrée via annotations Bean Validation</li>
- *   <li>Transformation des DTOs en objets métier via mappers</li>
- *   <li>Gestion des codes de statut HTTP appropriés</li>
- *   <li>Documentation OpenAPI/Swagger intégrée</li>
+ *   <li>{@link MembersManagementApi} - Gestion CRUD des membres</li>
+ *   <li>{@link MembersTemporaryApi} - Endpoints temporaires</li>
  * </ul>
- * 
- * <p><strong>Dépendances critiques :</strong></p>
- * <ul>
- *   <li>{@link MemberService} - Logique métier des membres</li>
- *   <li>Mappers - Transformation DTOs ↔ objets métier</li>
- *   <li>Spring Web MVC - Framework REST</li>
- * </ul>
- * 
- * <p><strong>Endpoints exposés :</strong></p>
- * <ul>
- *   <li>GET /ecclesiaflow/hello - Test d'authentification</li>
- *   <li>POST /ecclesiaflow/members - Inscription d'un nouveau membre</li>
- *   <li>GET /ecclesiaflow/members/{id} - Consultation d'un membre</li>
- *   <li>PATCH /ecclesiaflow/members/{id} - Mise à jour d'un membre</li>
- *   <li>DELETE /ecclesiaflow/members/{id} - Suppression d'un membre</li>
- *   <li>GET /ecclesiaflow/members - Liste de tous les membres</li>
- *   <li>GET /ecclesiaflow/members/{email}/confirmation-status - Statut de confirmation</li>
- * </ul>
- * 
- * <p><strong>Garanties :</strong> Validation automatique, gestion d'erreurs, documentation OpenAPI.</p>
  * 
  * @author EcclesiaFlow Team
- * @since 1.0.0
+ * @since 2.0.0 (Refactorisé avec pattern Delegate)
  */
 @RestController
-@RequestMapping("/ecclesiaflow")
 @RequiredArgsConstructor
-@Tag(name = "Members (Temporary)", description = "API temporaire - sera migrée vers le module de gestion des membres")
-public class MembersController {
-    private final MemberService memberService;
-    private final UpdateRequestMapper updateRequestMapper;
-    private final MemberPageMapper memberPageMapper;
+public class MembersController implements MembersManagementApi, MembersTemporaryApi {
+    
+    private final MembersManagementDelegate membersManagementDelegate;
+    private final MembersTemporaryDelegate membersTemporaryDelegate;
+
+    // ========================================
+    // Implémentation de MembersTemporaryApi
+    // ========================================
 
     /**
      * Endpoint de test d'authentification pour les membres.
@@ -101,92 +71,35 @@ public class MembersController {
      * @return {@link ResponseEntity} contenant le message "Hi Member" avec statut HTTP 200
      * 
      * @implNote Endpoint sécurisé nécessitant un token JWT valide.
+     * @implNote <strong>Implémentation :</strong> Délègue au {@link MembersTemporaryDelegate}
+     * @see MembersTemporaryDelegate#sayHello()
      */
-    @GetMapping(value = "/hello", produces = "application/vnd.ecclesiaflow.members.v1+json")
-    @Operation(
-        summary = "Message de bienvenue pour les membres",
-        description = "Endpoint de test pour les membres authentifiés"
-    )
-    @SecurityRequirement(name = "BearerAuth")
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Message de bienvenue",
-            content = @Content(
-                mediaType = "text/plain",
-                schema = @Schema(type = "string", example = "Hi Member")
-            )
-        ),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Token d'authentification invalide ou manquant",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-            )
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "Erreur interne du serveur",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-            )
-        )
-    })
-    public ResponseEntity<String> sayHello() {
-        return ResponseEntity.ok("Hi Member");
+    @Override
+    public ResponseEntity<String> _sayHello() {
+        return membersTemporaryDelegate.sayHello();
     }
 
-    @PostMapping(value = "/members", produces = "application/vnd.ecclesiaflow.members.v1+json")
-    @RateLimiter(name = "member-registration")
-    @Operation(
-        summary = "[TEMPORAIRE] Auto-enregistrement d'un membre",
-        description = "SERA REMPLACÉ par un système d'approbation admin dans le module de gestion des membres",
-        operationId = "createMember"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "201",
-            description = "Membre créé avec succès (temporaire - sera un système d'approbation)",
-            content = @Content(
-                mediaType = "application/vnd.ecclesiaflow.members.v1+json",
-                schema = @Schema(implementation = SignUpResponse.class)
-            )
-        ),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Données d'enregistrement invalides ou email déjà utilisé",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-            )
-        ),
-        @ApiResponse(
-            responseCode = "409",
-            description = "Email déjà utilisé par un autre membre",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-            )
-        ),
-        @ApiResponse(
-            responseCode = "429",
-            description = "Trop de tentatives d'inscription - Rate limiting activé",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-            )
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "Erreur interne du serveur",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-            )
-        )
-    })
+    /**
+     * Vérifie le statut de confirmation d'un membre par son email.
+     * <p>
+     * Endpoint interne pour que le module d'auth vérifie si un membre est confirmé.
+     * </p>
+     * 
+     * @param email Adresse email du membre à vérifier
+     * @return {@link ResponseEntity} avec objet contenant le statut de confirmation
+     * 
+     * @implNote <strong>Implémentation :</strong> Délègue au {@link MembersTemporaryDelegate}
+     * @see MembersTemporaryDelegate#getMemberConfirmationStatus(String)
+     */
+    @Override
+    public ResponseEntity<GetMemberConfirmationStatus200Response> _getMemberConfirmationStatus(String email) {
+        return membersTemporaryDelegate.getMemberConfirmationStatus(email);
+    }
+
+    // ========================================
+    // Implémentation de MembersManagementApi
+    // ========================================
+
     /**
      * Enregistre un nouveau membre dans le système.
      * <p>
@@ -199,237 +112,99 @@ public class MembersController {
      * 
      * @param signUpRequestPayload les données d'inscription du membre, validées automatiquement
      * @return {@link ResponseEntity} avec {@link SignUpResponse} et statut HTTP 201
-     * @throws org.springframework.web.bind.MethodArgumentNotValidException si les données sont invalides
+     * 
      * @throws IllegalArgumentException si l'email existe déjà
      * 
      * @implNote Utilise le pattern Mapper pour la transformation DTO → Objet métier → DTO.
+     * @implNote <strong>Implémentation :</strong> Délègue au {@link MembersManagementDelegate}
+     * @see MembersManagementDelegate#createMember(SignUpRequestPayload)
      */
-    public ResponseEntity<SignUpResponse> registerMember(@Valid @RequestBody SignUpRequestPayload signUpRequestPayload) {
-        MembershipRegistration registration = SignUpRequestMapper.fromSignUpRequest(signUpRequestPayload);
-        Member member = memberService.registerMember(registration);
-        SignUpResponse response = MemberResponseMapper.fromMember(member, "Member registered (temporary - approval system coming)");
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    @RateLimiter(name = "member-registration")
+    @Override
+    public ResponseEntity<SignUpResponse> _createMember(SignUpRequestPayload signUpRequestPayload) {
+        return membersManagementDelegate.createMember(signUpRequestPayload);
     }
 
-    @GetMapping(value = "/members/{memberId}", produces = "application/vnd.ecclesiaflow.members.v1+json")
-    @Operation(
-            summary = "Obtenir les informations d'un membre",
-            description = "Récupérer les détails d'un membre par son ID",
-            operationId = "getMemberById"
-    )
-    @SecurityRequirement(name = "BearerAuth")
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Membre trouvé",
-                    content = @Content(
-                            mediaType = "application/vnd.ecclesiaflow.members.v1+json",
-                            schema = @Schema(implementation = SignUpResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Membre non trouvé",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erreur interne du serveur",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            )
-    })
-    public ResponseEntity<SignUpResponse> getMember(@PathVariable UUID memberId) {
-        Member member = memberService.findById(memberId);
-        SignUpResponse response = MemberResponseMapper.fromMember(member, "Membre trouvé");
-        return ResponseEntity.ok(response);
+    /**
+     * Lister tous les membres.
+     * <p>
+     * Récupère la liste de tous les membres avec pagination et filtrage optionnel.
+     * </p>
+     * 
+     * @param page Numéro de page
+     * @param size Taille de la page
+     * @param search Terme de recherche (nom ou email)
+     * @param confirmed Filtrer par statut de confirmation
+     * @param sort Champ de tri
+     * @param direction Direction du tri (asc/desc)
+     * @return {@link ResponseEntity} avec la page de membres
+     * 
+     * @implNote <strong>Implémentation :</strong> Délègue au {@link MembersManagementDelegate}
+     * @see MembersManagementDelegate#getAllMembers(Integer, Integer, String, Boolean, String, String)
+     */
+    @Override
+    public ResponseEntity<MemberPageResponse> _getAllMembers(
+            Integer page, Integer size, @Nullable String search, 
+            @Nullable Boolean confirmed, String sort, String direction) {
+        return membersManagementDelegate.getAllMembers(page, size, search, confirmed, sort, direction);
     }
 
-    @PatchMapping(value = "/members/{memberId}", produces = "application/vnd.ecclesiaflow.members.v1+json")
-    @Operation(
-            summary = "Modifier un membre",
-            description = "Mettre à jour les informations d'un membre",
-            operationId = "updateMemberPartially"
-    )
-    @SecurityRequirement(name = "BearerAuth")
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Membre modifié avec succès",
-                    content = @Content(
-                            mediaType = "application/vnd.ecclesiaflow.members.v1+json",
-                            schema = @Schema(implementation = SignUpResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Données de mise à jour invalides",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Membre non trouvé",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erreur interne du serveur",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            )
-    })
-    public ResponseEntity<SignUpResponse> updateMember(@PathVariable UUID memberId,
-                                                       @Valid @RequestBody UpdateMemberRequestPayload updateRequest) {
-        MembershipUpdate businessRequest = updateRequestMapper.fromUpdateMemberRequest(memberId, updateRequest);
-        Member updatedMember = memberService.updateMember(businessRequest);
-        SignUpResponse response = MemberResponseMapper.fromMember(updatedMember, "Membre modifié avec succès");
-        return ResponseEntity.ok(response);
+    /**
+     * Obtenir les informations d'un membre.
+     * <p>
+     * Récupérer les détails d'un membre par son ID.
+     * </p>
+     * 
+     * @param memberId Identifiant unique du membre
+     * @return {@link ResponseEntity} avec les détails du membre
+     * 
+     * @throws com.ecclesiaflow.business.exceptions.MemberNotFoundException si le membre n'existe pas
+     * 
+     * @implNote <strong>Implémentation :</strong> Délègue au {@link MembersManagementDelegate}
+     * @see MembersManagementDelegate#getMemberById(UUID)
+     */
+    @Override
+    public ResponseEntity<SignUpResponse> _getMemberById(UUID memberId) {
+        return membersManagementDelegate.getMemberById(memberId);
     }
 
-    @GetMapping(value = "/members", produces = "application/vnd.ecclesiaflow.members.v1+json")
-    @SecurityRequirement(name = "BearerAuth")
-    @Operation(
-            summary = "Lister tous les membres",
-            description = "Récupère la liste de tous les membres avec pagination et filtrage optionnel"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Page de membres récupérée avec succès",
-                    content = @Content(
-                            mediaType = "application/vnd.ecclesiaflow.members.v1+json",
-                            schema = @Schema(implementation = MemberPageResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Paramètres de pagination ou de recherche invalides",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Token d'authentification invalide ou manquant",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Accès refusé - permissions insuffisantes",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erreur interne du serveur",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            )
-    })
-    public ResponseEntity<MemberPageResponse> getAllMembers(
-            @Parameter(description = "Recherche par nom ou email", example = "jean")
-            @RequestParam(required = false) String search,
-            
-            @Parameter(description = "Filtrer par statut de confirmation", example = "true")
-            @RequestParam(required = false) Boolean confirmed,
-            
-            @SortDefault(sort = "firstName", direction = Sort.Direction.ASC)
-            @PageableDefault(size = 20) Pageable pageable) {
-
-        Page<Member> memberPage = memberService.getAllMembers(pageable, search, confirmed);
-        MemberPageResponse response = memberPageMapper.toPageResponse(memberPage);
-        
-        return ResponseEntity.ok(response);
+    /**
+     * Met à jour partiellement un membre.
+     * <p>
+     * Permet de mettre à jour certaines informations d'un membre existant.
+     * </p>
+     * 
+     * @param memberId Identifiant unique du membre à mettre à jour
+     * @param updateMemberRequestPayload les informations à mettre à jour
+     * @return {@link ResponseEntity} avec les informations mises à jour
+     * 
+     * @throws com.ecclesiaflow.business.exceptions.MemberNotFoundException si le membre n'existe pas
+     * 
+     * @implNote <strong>Implémentation :</strong> Délègue au {@link MembersManagementDelegate}
+     * @see MembersManagementDelegate#updateMemberPartially(UUID, UpdateMemberRequestPayload)
+     */
+    @Override
+    public ResponseEntity<SignUpResponse> _updateMemberPartially(UUID memberId, UpdateMemberRequestPayload updateMemberRequestPayload) {
+        return membersManagementDelegate.updateMemberPartially(memberId, updateMemberRequestPayload);
     }
 
-    @GetMapping(value = "/members/{email}/confirmation-status", produces = "application/vnd.ecclesiaflow.members.v1+json")
-    @Operation(
-            summary = "Vérifier le statut de confirmation d'un membre",
-            description = "Endpoint interne pour que le module d'auth vérifie si un membre est confirmé"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Statut de confirmation récupéré",
-                    content = @Content(
-                            mediaType = "application/vnd.ecclesiaflow.members.v1+json",
-                            schema = @Schema(type = "object", example = "{\"confirmed\": true}")
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Membre non trouvé",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erreur interne du serveur",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            )
-    })
-    public ResponseEntity<Map<String, Boolean>> getMemberConfirmationStatus(@PathVariable String email) {
-        boolean isConfirmed = memberService.isEmailConfirmed(email);
-        return ResponseEntity.ok(Map.of("confirmed", isConfirmed));
-    }
-
-    @DeleteMapping(value = "/members/{memberId}", produces = "application/vnd.ecclesiaflow.members.v1+json")
-    @Operation(
-            summary = "Supprimer un membre",
-            description = "Supprimer définitivement un membre"
-    )
-    @SecurityRequirement(name = "BearerAuth")
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "Membre supprimé avec succès"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Membre non trouvé",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Erreur interne du serveur",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = com.ecclesiaflow.web.exception.model.ApiErrorResponse.class)
-                    )
-            )
-    })
-    public ResponseEntity<Void> deleteMember(@PathVariable UUID memberId) {
-        memberService.deleteMember(memberId);
-        return ResponseEntity.noContent().build();
+    /**
+     * Supprimer définitivement un membre.
+     * <p>
+     * <strong>⚠️ ATTENTION :</strong> Cette opération est irréversible !
+     * </p>
+     * 
+     * @param memberId Identifiant unique du membre à supprimer
+     * @return {@link ResponseEntity} vide avec statut 204 (No Content)
+     * 
+     * @throws com.ecclesiaflow.business.exceptions.MemberNotFoundException si le membre n'existe pas
+     * 
+     * @implNote <strong>Implémentation :</strong> Délègue au {@link MembersManagementDelegate}
+     * @see MembersManagementDelegate#deleteMember(UUID)
+     */
+    @Override
+    public ResponseEntity<Void> _deleteMember(UUID memberId) {
+        return membersManagementDelegate.deleteMember(memberId);
     }
 
 }
