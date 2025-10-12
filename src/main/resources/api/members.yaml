@@ -332,6 +332,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalServerError'
 
+    delete:
+      tags:
+        - Members Management
+      summary: Supprimer définitivement un membre
+      description: |
+        Supprime définitivement un membre du système.
+        
+        **⚠️ ATTENTION : Cette opération est irréversible !**
+        
+        **Conséquences de la suppression :**
+        - Toutes les données du membre seront supprimées
+        - L'email pourra être réutilisé pour un nouveau membre
+        - Les historiques associés seront perdus
+        
+        **Recommandation :** 
+        Envisagez plutôt une désactivation/archivage du compte si vous souhaitez conserver l'historique.
+      operationId: deleteMember
+      parameters:
+        - name: memberId
+          in: path
+          description: Identifiant unique du membre à supprimer
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '204':
+          description: Membre supprimé avec succès (pas de contenu retourné)
+        '404':
+          description: Membre introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+
 
   /ecclesiaflow/members/{memberId}/confirmation:
     patch:
