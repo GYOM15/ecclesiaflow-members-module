@@ -1,7 +1,7 @@
 package com.ecclesiaflow.web.mappers;
 
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
-import com.ecclesiaflow.web.payloads.UpdateMemberRequestPayload;
+import com.ecclesiaflow.web.model.UpdateMemberRequestPayload;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
