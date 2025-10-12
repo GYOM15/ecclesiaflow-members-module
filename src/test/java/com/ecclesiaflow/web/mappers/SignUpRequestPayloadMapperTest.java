@@ -1,7 +1,7 @@
 package com.ecclesiaflow.web.mappers;
 
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
-import com.ecclesiaflow.web.payloads.SignUpRequestPayload;
+import com.ecclesiaflow.web.model.SignUpRequestPayload;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
