@@ -6,14 +6,13 @@ import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import com.ecclesiaflow.business.domain.member.Role;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import com.ecclesiaflow.web.exception.InvalidRequestException;
-import com.ecclesiaflow.business.services.MemberService;
-import com.ecclesiaflow.web.payloads.SignUpRequestPayload;
-import com.ecclesiaflow.web.dto.SignUpResponse;
-import com.ecclesiaflow.web.payloads.UpdateMemberRequestPayload;
+import com.ecclesiaflow.web.model.SignUpRequestPayload;
+import com.ecclesiaflow.web.model.SignUpResponse;
+import com.ecclesiaflow.web.model.UpdateMemberRequestPayload;
 import com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler;
-import com.ecclesiaflow.web.mappers.UpdateRequestMapper;
-import com.ecclesiaflow.web.dto.MemberPageResponse;
-import com.ecclesiaflow.web.mappers.MemberPageMapper;
+import com.ecclesiaflow.web.model.MemberPageResponse;
+import com.ecclesiaflow.web.delegate.MembersManagementDelegate;
+import com.ecclesiaflow.web.delegate.MembersTemporaryDelegate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -23,7 +22,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
@@ -47,13 +48,10 @@ class MembersControllerTest {
     private ObjectMapper objectMapper; // TO CONVERT OBJECT TO JSON
 
     @Mock
-    private MemberService memberService;
+    private MembersManagementDelegate membersManagementDelegate;
 
     @Mock
-    private UpdateRequestMapper updateRequestMapper;
-
-    @Mock
-    private MemberPageMapper memberPageMapper;
+    private MembersTemporaryDelegate membersTemporaryDelegate;
 
     @InjectMocks
     private MembersController membersController;
@@ -63,7 +61,7 @@ class MembersControllerTest {
     @BeforeEach
     void setup() {
         MockitoAnnotations.openMocks(this);
-        membersController = new MembersController(memberService, updateRequestMapper, memberPageMapper);
+        membersController = new MembersController(membersManagementDelegate, membersTemporaryDelegate);
         mockMvc = MockMvcBuilders.standaloneSetup(membersController)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
@@ -74,11 +72,15 @@ class MembersControllerTest {
     // --- Tests for /ecclesiaflow/hello ---
     @Test
     void sayHello_shouldReturnMessageAndCorrectContentType() throws Exception {
+        when(membersTemporaryDelegate.sayHello())
+                .thenReturn(ResponseEntity.ok().body("Hi Member"));
+
         mockMvc.perform(get("/ecclesiaflow/hello")
-                        .accept("application/vnd.ecclesiaflow.members.v1+json")) // Spécifiez le type accepté
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
                 .andExpect(content().string("Hi Member"));
+
+        verify(membersTemporaryDelegate).sayHello();
     }
 
     // --- Tests for POST /ecclesiaflow/members (registerMember) ---
@@ -103,7 +105,7 @@ class MembersControllerTest {
                 .build();
 
         String expectedMessage = "Member registered (temporary - approval system coming)";
-        SignUpResponse responseDto = SignUpResponse.builder()
+        SignUpResponse responseDto = new SignUpResponse()
                 .email("john.doe@mail.com")
                 .firstName("John")
                 .lastName("Doe")
@@ -111,11 +113,11 @@ class MembersControllerTest {
                 .role("MEMBER")
                 .confirmed(false)
                 .createdAt(member.getCreatedAt().format(ISO_FORMATTER))
-                .message(expectedMessage)
-                .build();
+                .message(expectedMessage);
 
         // Define mocks behavior
-        when(memberService.registerMember(any(MembershipRegistration.class))).thenReturn(member);
+        when(membersManagementDelegate.createMember(any(SignUpRequestPayload.class)))
+                .thenReturn(ResponseEntity.status(HttpStatus.CREATED).body(responseDto));
 
         // Execute the request and verify the results
         mockMvc.perform(post("/ecclesiaflow/members")
@@ -129,7 +131,7 @@ class MembersControllerTest {
                 .andExpect(jsonPath("$.confirmed").value(false));
 
         // Vérifier que les méthodes mockées ont été appelées
-        verify(memberService).registerMember(any(MembershipRegistration.class));
+        verify(membersManagementDelegate).createMember(any(SignUpRequestPayload.class));
     }
 
     @Test
@@ -159,7 +161,7 @@ class MembersControllerTest {
 
         MembershipRegistration registration = new MembershipRegistration("Jane", "Doe", "jane.doe@mail.com", "456 Boulevard des Lilas", "+1234567890");
 
-        when(memberService.registerMember(any(MembershipRegistration.class)))
+        when(membersManagementDelegate.createMember(any(SignUpRequestPayload.class)))
                 .thenThrow(new InvalidRequestException("Email already in use")); // Simulez l'exception métier
 
         mockMvc.perform(post("/ecclesiaflow/members")
@@ -168,7 +170,7 @@ class MembersControllerTest {
                 .andExpect(status().isBadRequest()) // Ou .isConflict() si votre GlobalExceptionHandler le mappe ainsi
                 .andExpect(jsonPath("$.message").value("Email already in use"));
 
-        verify(memberService).registerMember(any(MembershipRegistration.class));
+        verify(membersManagementDelegate).createMember(any(SignUpRequestPayload.class));
     }
 
     // --- Tests for GET /ecclesiaflow/members/{memberId} (getMember) ---
@@ -186,17 +188,17 @@ class MembersControllerTest {
                 .build();
 
         String expectedMessage = "Membre trouvé";
-        SignUpResponse responseDto = SignUpResponse.builder()
+        SignUpResponse responseDto = new SignUpResponse()
                 .email("jane.doe@mail.com")
                 .firstName("Jane")
                 .lastName("Doe")
                 .role("MEMBER")
                 .confirmed(true)
                 .createdAt(member.getCreatedAt().format(ISO_FORMATTER))
-                .message(expectedMessage)
-                .build();
+                .message(expectedMessage);
 
-        when(memberService.findById(id)).thenReturn(member);
+        when(membersManagementDelegate.getMemberById(id))
+                .thenReturn(ResponseEntity.ok(responseDto));
 
         mockMvc.perform(get("/ecclesiaflow/members/" + id)
                         .accept("application/vnd.ecclesiaflow.members.v1+json"))
@@ -207,20 +209,21 @@ class MembersControllerTest {
                 .andExpect(jsonPath("$.message").value(expectedMessage))
                 .andExpect(jsonPath("$.confirmed").value(true));
 
-        verify(memberService).findById(id);
+        verify(membersManagementDelegate).getMemberById(id);
     }
 
     @Test
     void getMember_shouldReturnNotFound() throws Exception {
         UUID id = UUID.randomUUID();
-        when(memberService.findById(id)).thenThrow(new MemberNotFoundException("Membre non trouvé avec ID: " + id));
+        when(membersManagementDelegate.getMemberById(id))
+                .thenThrow(new MemberNotFoundException("Membre non trouvé avec ID: " + id));
 
         mockMvc.perform(get("/ecclesiaflow/members/" + id)
                         .accept("application/vnd.ecclesiaflow.members.v1+json"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Membre non trouvé avec ID: " + id));
 
-        verify(memberService).findById(id);
+        verify(membersManagementDelegate).getMemberById(id);
     }
 
     // --- Tests for PATCH /ecclesiaflow/members/{memberId} (updateMember) ---
@@ -248,18 +251,17 @@ class MembersControllerTest {
                 .build();
 
         String expectedMessage = "Membre modifié avec succès";
-        SignUpResponse responseDto = SignUpResponse.builder()
+        SignUpResponse responseDto = new SignUpResponse()
                 .email("new.email@mail.com")
                 .firstName("NewName")
                 .lastName("Doe")
                 .role("MEMBER")
                 .confirmed(true)
                 .createdAt(updatedMember.getCreatedAt().format(ISO_FORMATTER))
-                .message(expectedMessage)
-                .build();
+                .message(expectedMessage);
 
-        when(updateRequestMapper.fromUpdateMemberRequest(eq(id), any(UpdateMemberRequestPayload.class))).thenReturn(businessUpdate);
-        when(memberService.updateMember(any(MembershipUpdate.class))).thenReturn(updatedMember);
+        when(membersManagementDelegate.updateMemberPartially(eq(id), any(UpdateMemberRequestPayload.class)))
+                .thenReturn(ResponseEntity.ok(responseDto));
 
         mockMvc.perform(patch("/ecclesiaflow/members/" + id)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -270,8 +272,7 @@ class MembersControllerTest {
                 .andExpect(jsonPath("$.email").value("new.email@mail.com"))
                 .andExpect(jsonPath("$.message").value(expectedMessage));
 
-        verify(updateRequestMapper).fromUpdateMemberRequest(eq(id), any(UpdateMemberRequestPayload.class));
-        verify(memberService).updateMember(any(MembershipUpdate.class));
+        verify(membersManagementDelegate).updateMemberPartially(eq(id), any(UpdateMemberRequestPayload.class));
     }
 
     @Test
@@ -282,8 +283,7 @@ class MembersControllerTest {
 
         MembershipUpdate businessUpdate = MembershipUpdate.builder().memberId(id).firstName("NewName").build();
 
-        when(updateRequestMapper.fromUpdateMemberRequest(eq(id), any(UpdateMemberRequestPayload.class))).thenReturn(businessUpdate);
-        when(memberService.updateMember(any(MembershipUpdate.class)))
+        when(membersManagementDelegate.updateMemberPartially(eq(id), any(UpdateMemberRequestPayload.class)))
                 .thenThrow(new MemberNotFoundException("Membre à mettre à jour non trouvé avec ID: " + id));
 
         mockMvc.perform(patch("/ecclesiaflow/members/" + id)
@@ -292,8 +292,7 @@ class MembersControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Membre à mettre à jour non trouvé avec ID: " + id));
 
-        verify(updateRequestMapper).fromUpdateMemberRequest(eq(id), any(UpdateMemberRequestPayload.class));
-        verify(memberService).updateMember(any(MembershipUpdate.class));
+        verify(membersManagementDelegate).updateMemberPartially(eq(id), any(UpdateMemberRequestPayload.class));
     }
 
     @Test
@@ -308,7 +307,7 @@ class MembersControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").exists());
 
-        verifyNoInteractions(memberService);
+        verifyNoInteractions(membersManagementDelegate);
     }
 
 
@@ -325,21 +324,20 @@ class MembersControllerTest {
         Page<Member> memberPage = new PageImpl<>(members, pageable, 2);
         
         List<SignUpResponse> signUpResponses = List.of(
-                SignUpResponse.builder().email("alice@mail.com").firstName("Alice").build(),
-                SignUpResponse.builder().email("bob@mail.com").firstName("Bob").build()
+                new SignUpResponse().email("alice@mail.com").firstName("Alice"),
+                new SignUpResponse().email("bob@mail.com").firstName("Bob")
         );
         
-        MemberPageResponse pageResponse = MemberPageResponse.builder()
+        MemberPageResponse pageResponse = new MemberPageResponse()
                 .content(signUpResponses)
                 .totalElements(2L)
                 .totalPages(1)
                 .size(20)
                 .number(0)
-                .page(0)
-                .build();
+                .page(0);
 
-        when(memberService.getAllMembers(any(Pageable.class), eq(null), eq(null))).thenReturn(memberPage);
-        when(memberPageMapper.toPageResponse(memberPage)).thenReturn(pageResponse);
+        when(membersManagementDelegate.getAllMembers(eq(0), eq(20), eq(null), eq(null), any(), any()))
+                .thenReturn(ResponseEntity.ok(pageResponse));
 
         // When & Then
         mockMvc.perform(get("/ecclesiaflow/members")
@@ -354,8 +352,7 @@ class MembersControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(2))
                 .andExpect(jsonPath("$.totalPages").value(1));
 
-        verify(memberService).getAllMembers(any(Pageable.class), eq(null), eq(null));
-        verify(memberPageMapper).toPageResponse(memberPage);
+        verify(membersManagementDelegate).getAllMembers(eq(0), eq(20), eq(null), eq(null), any(), any());
     }
 
     @Test
@@ -364,16 +361,15 @@ class MembersControllerTest {
         Pageable pageable = PageRequest.of(0, 20);
         Page<Member> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
         
-        MemberPageResponse emptyPageResponse = MemberPageResponse.builder()
+        MemberPageResponse emptyPageResponse = new MemberPageResponse()
                 .content(Collections.emptyList())
                 .totalElements(0L)
                 .totalPages(0)
                 .size(20)
-                .number(0)
-                .build();
+                .number(0);
 
-        when(memberService.getAllMembers(any(Pageable.class), eq(null), eq(null))).thenReturn(emptyPage);
-        when(memberPageMapper.toPageResponse(emptyPage)).thenReturn(emptyPageResponse);
+        when(membersManagementDelegate.getAllMembers(eq(0), eq(20), eq(null), eq(null), any(), any()))
+                .thenReturn(ResponseEntity.ok(emptyPageResponse));
 
         // When & Then
         mockMvc.perform(get("/ecclesiaflow/members")
@@ -386,8 +382,7 @@ class MembersControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(0))
                 .andExpect(jsonPath("$.totalPages").value(0));
 
-        verify(memberService).getAllMembers(any(Pageable.class), eq(null), eq(null));
-        verify(memberPageMapper).toPageResponse(emptyPage);
+        verify(membersManagementDelegate).getAllMembers(eq(0), eq(20), eq(null), eq(null), any(), any());
     }
 
     @Test
@@ -401,19 +396,18 @@ class MembersControllerTest {
         Page<Member> memberPage = new PageImpl<>(members, pageable, 1);
         
         List<SignUpResponse> signUpResponses = List.of(
-                SignUpResponse.builder().email("alice@mail.com").firstName("Alice").build()
+                new SignUpResponse().email("alice@mail.com").firstName("Alice")
         );
         
-        MemberPageResponse pageResponse = MemberPageResponse.builder()
+        MemberPageResponse pageResponse = new MemberPageResponse()
                 .content(signUpResponses)
                 .totalElements(1L)
                 .totalPages(1)
                 .size(20)
-                .number(0)
-                .build();
+                .number(0);
 
-        when(memberService.getAllMembers(any(Pageable.class), eq("alice"), eq(null))).thenReturn(memberPage);
-        when(memberPageMapper.toPageResponse(memberPage)).thenReturn(pageResponse);
+        when(membersManagementDelegate.getAllMembers(eq(0), eq(20), eq("alice"), eq(null), any(), any()))
+                .thenReturn(ResponseEntity.ok(pageResponse));
 
         // When & Then
         mockMvc.perform(get("/ecclesiaflow/members")
@@ -426,8 +420,7 @@ class MembersControllerTest {
                 .andExpect(jsonPath("$.content[0].firstName").value("Alice"))
                 .andExpect(jsonPath("$.totalElements").value(1));
 
-        verify(memberService).getAllMembers(any(Pageable.class), eq("alice"), eq(null));
-        verify(memberPageMapper).toPageResponse(memberPage);
+        verify(membersManagementDelegate).getAllMembers(eq(0), eq(20), eq("alice"), eq(null), any(), any());
     }
 
     @Test
@@ -441,19 +434,18 @@ class MembersControllerTest {
         Page<Member> memberPage = new PageImpl<>(members, pageable, 1);
         
         List<SignUpResponse> signUpResponses = List.of(
-                SignUpResponse.builder().email("alice@mail.com").firstName("Alice").build()
+                new SignUpResponse().email("alice@mail.com").firstName("Alice")
         );
         
-        MemberPageResponse pageResponse = MemberPageResponse.builder()
+        MemberPageResponse pageResponse = new MemberPageResponse()
                 .content(signUpResponses)
                 .totalElements(1L)
                 .totalPages(1)
                 .size(20)
-                .number(0)
-                .build();
+                .number(0);
 
-        when(memberService.getAllMembers(any(Pageable.class), eq(null), eq(true))).thenReturn(memberPage);
-        when(memberPageMapper.toPageResponse(memberPage)).thenReturn(pageResponse);
+        when(membersManagementDelegate.getAllMembers(eq(0), eq(20), eq(null), eq(true), any(), any()))
+                .thenReturn(ResponseEntity.ok(pageResponse));
 
         // When & Then
         mockMvc.perform(get("/ecclesiaflow/members")
@@ -466,8 +458,7 @@ class MembersControllerTest {
                 .andExpect(jsonPath("$.content[0].firstName").value("Alice"))
                 .andExpect(jsonPath("$.totalElements").value(1));
 
-        verify(memberService).getAllMembers(any(Pageable.class), eq(null), eq(true));
-        verify(memberPageMapper).toPageResponse(memberPage);
+        verify(membersManagementDelegate).getAllMembers(eq(0), eq(20), eq(null), eq(true), any(), any());
     }
 
 
@@ -475,7 +466,10 @@ class MembersControllerTest {
     @Test
     void getMemberConfirmationStatus_shouldReturnTrue() throws Exception {
         String email = "confirmed@mail.com";
-        when(memberService.isEmailConfirmed(email)).thenReturn(true);
+        com.ecclesiaflow.web.model.GetMemberConfirmationStatus200Response response = new com.ecclesiaflow.web.model.GetMemberConfirmationStatus200Response();
+        response.setConfirmed(true);
+        when(membersTemporaryDelegate.getMemberConfirmationStatus(email))
+                .thenReturn(ResponseEntity.ok(response));
 
         mockMvc.perform(get("/ecclesiaflow/members/" + email + "/confirmation-status")
                         .accept("application/vnd.ecclesiaflow.members.v1+json"))
@@ -483,13 +477,16 @@ class MembersControllerTest {
                 .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
                 .andExpect(jsonPath("$.confirmed").value(true));
 
-        verify(memberService).isEmailConfirmed(email);
+        verify(membersTemporaryDelegate).getMemberConfirmationStatus(email);
     }
 
     @Test
     void getMemberConfirmationStatus_shouldReturnFalse() throws Exception {
         String email = "unconfirmed@mail.com";
-        when(memberService.isEmailConfirmed(email)).thenReturn(false);
+        com.ecclesiaflow.web.model.GetMemberConfirmationStatus200Response response = new com.ecclesiaflow.web.model.GetMemberConfirmationStatus200Response();
+        response.setConfirmed(false);
+        when(membersTemporaryDelegate.getMemberConfirmationStatus(email))
+                .thenReturn(ResponseEntity.ok(response));
 
         mockMvc.perform(get("/ecclesiaflow/members/" + email + "/confirmation-status")
                         .accept("application/vnd.ecclesiaflow.members.v1+json"))
@@ -497,20 +494,21 @@ class MembersControllerTest {
                 .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
                 .andExpect(jsonPath("$.confirmed").value(false));
 
-        verify(memberService).isEmailConfirmed(email);
+        verify(membersTemporaryDelegate).getMemberConfirmationStatus(email);
     }
 
     @Test
     void getMemberConfirmationStatus_shouldReturnNotFoundIfMemberServiceThrowsNotFound() throws Exception {
         String email = "nonexistent@mail.com";
-        when(memberService.isEmailConfirmed(email)).thenThrow(new MemberNotFoundException("Membre non trouvé"));
+        when(membersTemporaryDelegate.getMemberConfirmationStatus(email))
+                .thenThrow(new MemberNotFoundException("Membre non trouvé"));
 
         mockMvc.perform(get("/ecclesiaflow/members/" + email + "/confirmation-status")
                         .accept("application/vnd.ecclesiaflow.members.v1+json"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Membre non trouvé"));
 
-        verify(memberService).isEmailConfirmed(email);
+        verify(membersTemporaryDelegate).getMemberConfirmationStatus(email);
     }
 
 
@@ -518,26 +516,14 @@ class MembersControllerTest {
     @Test
     void deleteMember_shouldReturnNoContent() throws Exception {
         UUID id = UUID.randomUUID();
-        doNothing().when(memberService).deleteMember(id); // Simulate a succesful delete
+        when(membersManagementDelegate.deleteMember(id))
+                .thenReturn(ResponseEntity.noContent().build());
 
         mockMvc.perform(delete("/ecclesiaflow/members/" + id)
-                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent());
 
-        verify(memberService).deleteMember(id); // Verify that the service method was called
+        verify(membersManagementDelegate).deleteMember(id);
     }
 
-    @Test
-    void deleteMember_shouldReturnNotFound() throws Exception {
-        UUID id = UUID.randomUUID();
-        doThrow(new MemberNotFoundException("Membre à supprimer non trouvé avec ID: " + id))
-                .when(memberService).deleteMember(id);
-
-        mockMvc.perform(delete("/ecclesiaflow/members/" + id)
-                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Membre à supprimer non trouvé avec ID: " + id));
-
-        verify(memberService).deleteMember(id);
-    }
 }

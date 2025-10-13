@@ -3,7 +3,7 @@ package com.ecclesiaflow.web.controller;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
-import com.ecclesiaflow.web.payloads.ConfirmationRequestPayload;
+import com.ecclesiaflow.web.model.ConfirmationRequestPayload;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
