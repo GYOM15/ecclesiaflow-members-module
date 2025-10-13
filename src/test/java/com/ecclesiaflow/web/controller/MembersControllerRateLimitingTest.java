@@ -3,7 +3,7 @@ package com.ecclesiaflow.web.controller;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.services.MemberService;
-import com.ecclesiaflow.web.payloads.SignUpRequestPayload;
+import com.ecclesiaflow.web.model.SignUpRequestPayload;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
