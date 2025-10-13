@@ -4,54 +4,48 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.Signature;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
-import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
-import org.aspectj.lang.annotation.AfterReturning;
-import org.aspectj.lang.annotation.AfterThrowing;
-import org.aspectj.lang.annotation.Pointcut;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
- * Tests unitaires pour BusinessOperationLoggingAspect.
- * Tests la logique de logging des opérations métier critiques avec un aspect dédié aux tests.
+ * Tests unitaires directs pour BusinessOperationLoggingAspect.
+ * Teste chaque méthode d'advice individuellement avec des mocks.
  */
-@SpringBootTest(classes = BusinessOperationLoggingAspectTest.TestConfig.class)
-@DisplayName("BusinessOperationLoggingAspect - Tests unitaires")
+@DisplayName("BusinessOperationLoggingAspect - Tests unitaires directs")
 class BusinessOperationLoggingAspectTest {
 
-    @Autowired
-    private TestMemberService memberService;
-
-    @Autowired
-    private TestAuthModuleService authModuleService;
-
+    private BusinessOperationLoggingAspect aspect;
     private ListAppender<ILoggingEvent> listAppender;
     private Logger logger;
+    private JoinPoint joinPoint;
+    private Signature signature;
 
     @BeforeEach
     void setUp() {
-        // Configuration du logger pour capturer les logs de l'aspect
+        aspect = new BusinessOperationLoggingAspect();
+
+        // Configuration du logger pour capturer les logs
         logger = (Logger) LoggerFactory.getLogger(BusinessOperationLoggingAspect.class);
         listAppender = new ListAppender<>();
         listAppender.start();
         logger.addAppender(listAppender);
         logger.setLevel(Level.DEBUG);
+
+        // Mock du JoinPoint
+        joinPoint = mock(JoinPoint.class);
+        signature = mock(Signature.class);
+        when(joinPoint.getSignature()).thenReturn(signature);
     }
 
     @AfterEach
@@ -64,274 +58,252 @@ class BusinessOperationLoggingAspectTest {
         }
     }
 
-    // === TESTS MEMBRE ===
-    @Test
-    @DisplayName("Devrait logger l'enregistrement réussi d'un membre")
-    void shouldLogSuccessfulMemberRegistration() {
-        // Given
-        String email = "test@example.com";
+    // === TESTS POUR L'ENREGISTREMENT DE MEMBRES ===
 
+    @Test
+    @DisplayName("logBeforeMemberRegistration devrait logger l'information")
+    void logBeforeMemberRegistration_shouldLogInfo() {
         // When
-        String result = memberService.registerMember(email);
-
-        // Then
-        assertThat(result).isEqualTo("Member registered: " + email);
-
-        List<ILoggingEvent> logs = listAppender.list;
-        assertThat(logs)
-                .hasSize(2)
-                .satisfies(logList -> {
-                    // Log de début
-                    ILoggingEvent startLog = logList.getFirst();
-                    assertThat(startLog.getLevel()).isEqualTo(Level.INFO);
-                    assertThat(startLog.getFormattedMessage())
-                            .contains("BUSINESS: Tentative d'enregistrement d'un nouveau membre");
-
-                    // Log de succès
-                    ILoggingEvent successLog = logList.get(1);
-                    assertThat(successLog.getLevel()).isEqualTo(Level.INFO);
-                    assertThat(successLog.getFormattedMessage())
-                            .contains("BUSINESS: Nouveau membre enregistré avec succès");
-                });
-    }
-
-    @Test
-    @DisplayName("Devrait logger l'échec d'enregistrement d'un membre")
-    void shouldLogFailedMemberRegistration() {
-        // Given
-        String errorEmail = "throw_exception";
-
-        // When & Then
-        assertThatThrownBy(() -> memberService.registerMember(errorEmail))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Erreur d'enregistrement");
-
-        List<ILoggingEvent> logs = listAppender.list;
-        assertThat(logs)
-                .hasSize(2)
-                .satisfies(logList -> {
-                    // Log de début
-                    ILoggingEvent startLog = logList.getFirst();
-                    assertThat(startLog.getLevel()).isEqualTo(Level.INFO);
-                    assertThat(startLog.getFormattedMessage())
-                            .contains("BUSINESS: Tentative d'enregistrement d'un nouveau membre");
-
-                    // Log d'erreur
-                    ILoggingEvent errorLog = logList.get(1);
-                    assertThat(errorLog.getLevel()).isEqualTo(Level.WARN);
-                    assertThat(errorLog.getFormattedMessage())
-                            .contains("BUSINESS: Échec de l'enregistrement du membre")
-                            .contains("Erreur d'enregistrement");
-                });
-    }
-
-    // === TESTS AUTHENTIFICATION ===
-    @Test
-    @DisplayName("Devrait logger un appel d'authentification réussi avec retour")
-    void shouldLogSuccessfulAuthCallWithReturn() {
-        // Given
-        String username = "user";
-        String password = "pass";
-
-        // When
-        String result = authModuleService.login(username, password);
-
-        // Then
-        assertThat(result).isEqualTo("token_123");
-
-        List<ILoggingEvent> logs = listAppender.list;
-        assertThat(logs)
-                .hasSize(2)
-                .satisfies(logList -> {
-                    // Log de début
-                    ILoggingEvent startLog = logList.getFirst();
-                    assertThat(startLog.getLevel()).isEqualTo(Level.DEBUG);
-                    assertThat(startLog.getFormattedMessage())
-                            .contains("AUTH MODULE: Appel à login avec arguments: [user, pass]");
-
-                    // Log de succès
-                    ILoggingEvent successLog = logList.get(1);
-                    assertThat(successLog.getLevel()).isEqualTo(Level.DEBUG);
-                    assertThat(successLog.getFormattedMessage())
-                            .contains("AUTH MODULE: login a réussi avec résultat: token_123");
-                });
-    }
-
-    @Test
-    @DisplayName("Devrait logger un appel d'authentification réussi sans retour (void)")
-    void shouldLogSuccessfulAuthCallVoid() {
-        // When
-        authModuleService.logout();
+        aspect.logBeforeMemberRegistration(joinPoint);
 
         // Then
         List<ILoggingEvent> logs = listAppender.list;
-        assertThat(logs)
-                .hasSize(2)
-                .satisfies(logList -> {
-                    // Log de début
-                    ILoggingEvent startLog = logList.getFirst();
-                    assertThat(startLog.getLevel()).isEqualTo(Level.DEBUG);
-                    assertThat(startLog.getFormattedMessage())
-                            .contains("AUTH MODULE: Appel à logout avec arguments: []");
-
-                    // Log de succès
-                    ILoggingEvent successLog = logList.get(1);
-                    assertThat(successLog.getLevel()).isEqualTo(Level.DEBUG);
-                    assertThat(successLog.getFormattedMessage())
-                            .contains("AUTH MODULE: logout exécuté avec succès");
-                });
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getLevel()).isEqualTo(Level.INFO);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("BUSINESS: Tentative d'enregistrement d'un nouveau membre");
     }
 
     @Test
-    @DisplayName("Devrait logger un échec d'appel d'authentification")
-    void shouldLogFailedAuthCall() {
-        // Given
-        String invalidToken = "invalid_token";
-
-        // When & Then
-        assertThatThrownBy(() -> authModuleService.refreshToken(invalidToken))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Jeton invalide");
-
-        List<ILoggingEvent> logs = listAppender.list;
-        assertThat(logs)
-                .hasSize(2)
-                .satisfies(logList -> {
-                    // Log de début
-                    ILoggingEvent startLog = logList.getFirst();
-                    assertThat(startLog.getLevel()).isEqualTo(Level.DEBUG);
-                    assertThat(startLog.getFormattedMessage())
-                            .contains("AUTH MODULE: Appel à refreshToken avec arguments: [invalid_token]");
-
-                    // Log d'erreur
-                    ILoggingEvent errorLog = logList.get(1);
-                    assertThat(errorLog.getLevel()).isEqualTo(Level.WARN);
-                    assertThat(errorLog.getFormattedMessage())
-                            .contains("AUTH MODULE: Échec de l'appel à refreshToken")
-                            .contains("Jeton invalide");
-                });
-    }
-
-    @Test
-    @DisplayName("Devrait gérer les arguments null sans erreur")
-    void shouldHandleNullArgumentsGracefully() {
+    @DisplayName("logAfterSuccessfulRegistration devrait logger le succès")
+    void logAfterSuccessfulRegistration_shouldLogInfo() {
         // When
-        String result = authModuleService.login(null, null);
+        aspect.logAfterSuccessfulRegistration(joinPoint);
 
         // Then
-        assertThat(result).isEqualTo("token_123");
-
         List<ILoggingEvent> logs = listAppender.list;
-        ILoggingEvent startLog = logs.getFirst();
-        assertThat(startLog.getFormattedMessage())
-                .contains("AUTH MODULE: Appel à login avec arguments: [null, null]");
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getLevel()).isEqualTo(Level.INFO);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("BUSINESS: Nouveau membre enregistré avec succès");
     }
 
-    // === CONFIGURATION DE TEST ===
-    @Configuration
-    @EnableAspectJAutoProxy
-    static class TestConfig {
+    @Test
+    @DisplayName("logFailedRegistration devrait logger l'échec")
+    void logFailedRegistration_shouldLogWarning() {
+        // Given
+        RuntimeException exception = new RuntimeException("Erreur d'enregistrement");
 
-        @Bean
-        public BusinessOperationLoggingAspect businessOperationLoggingAspect() {
-            return new BusinessOperationLoggingAspect();
-        }
+        // When
+        aspect.logFailedRegistration(joinPoint, exception);
 
-        @Bean
-        public TestMemberService memberService() {
-            return new TestMemberService();
-        }
-
-        @Bean
-        public TestAuthModuleService authModuleService() {
-            return new TestAuthModuleService();
-        }
+        // Then
+        List<ILoggingEvent> logs = listAppender.list;
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getLevel()).isEqualTo(Level.WARN);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("BUSINESS: Échec de l'enregistrement du membre")
+                .contains("Erreur d'enregistrement");
     }
 
-    // === SERVICES DE TEST ===
-    @Service
-    static class TestMemberService {
+    // === TESTS POUR LES APPELS AU MODULE D'AUTHENTIFICATION ===
 
-        public String registerMember(String email) {
-            if ("throw_exception".equals(email)) {
-                throw new RuntimeException("Erreur d'enregistrement");
-            }
-            return "Member registered: " + email;
-        }
+    @Test
+    @DisplayName("logBeforeAuthModuleCall devrait logger avec le nom de méthode et arguments")
+    void logBeforeAuthModuleCall_shouldLogDebug() {
+        // Given
+        when(signature.getName()).thenReturn("login");
+        when(joinPoint.getArgs()).thenReturn(new Object[]{"user", "password"});
+
+        // When
+        aspect.logBeforeAuthModuleCall(joinPoint);
+
+        // Then
+        List<ILoggingEvent> logs = listAppender.list;
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("AUTH MODULE: Appel à login avec arguments: [user, password]");
     }
 
-    @Component
-    static class TestAuthModuleService {
+    @Test
+    @DisplayName("logAfterSuccessfulAuthModuleCall devrait logger avec résultat non null")
+    void logAfterSuccessfulAuthModuleCall_shouldLogWithResult() {
+        // Given
+        when(signature.getName()).thenReturn("getToken");
+        String result = "token_123";
 
-        public String login(String username, String password) {
-            return "token_123";
-        }
+        // When
+        aspect.logAfterSuccessfulAuthModuleCall(joinPoint, result);
 
-        public void logout() {
-            // Méthode void pour tester le cas sans retour
-        }
-
-        public void refreshToken(String token) {
-            if ("invalid_token".equals(token)) {
-                throw new RuntimeException("Jeton invalide");
-            }
-        }
+        // Then
+        List<ILoggingEvent> logs = listAppender.list;
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("AUTH MODULE: getToken a réussi avec résultat: token_123");
     }
 
-    // === ASPECT DE TEST (RÉPLIQUE EXACTE DE L'ASPECT RÉEL) ===
-    @Aspect
-    @Component
-    static class BusinessOperationLoggingAspect {
+    @Test
+    @DisplayName("logAfterSuccessfulAuthModuleCall devrait logger sans résultat si null")
+    void logAfterSuccessfulAuthModuleCall_shouldLogWithoutResult() {
+        // Given
+        when(signature.getName()).thenReturn("logout");
 
-        private static final org.slf4j.Logger log =
-                LoggerFactory.getLogger(BusinessOperationLoggingAspect.class);
+        // When
+        aspect.logAfterSuccessfulAuthModuleCall(joinPoint, null);
 
-        // Pointcuts
-        @Pointcut("execution(* com.ecclesiaflow.application.logging.aspect.BusinessOperationLoggingAspectTest.TestMemberService.registerMember(..))")
-        public void memberRegistration() {}
+        // Then
+        List<ILoggingEvent> logs = listAppender.list;
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("AUTH MODULE: logout exécuté avec succès");
+    }
 
-        @Pointcut("execution(* com.ecclesiaflow.application.logging.aspect.BusinessOperationLoggingAspectTest.TestAuthModuleService.*(..))")
-        public void authModuleCalls() {}
+    @Test
+    @DisplayName("logAuthModuleError devrait logger l'erreur")
+    void logAuthModuleError_shouldLogWarning() {
+        // Given
+        when(signature.getName()).thenReturn("refreshToken");
+        RuntimeException exception = new RuntimeException("Token expiré");
 
-        // Advices pour l'enregistrement de membres
-        @Before("memberRegistration()")
-        public void logBeforeMemberRegistration(JoinPoint joinPoint) {
-            log.info("BUSINESS: Tentative d'enregistrement d'un nouveau membre");
-        }
+        // When
+        aspect.logAuthModuleError(joinPoint, exception);
 
-        @AfterReturning("memberRegistration()")
-        public void logAfterMemberRegistrationSuccess(JoinPoint joinPoint) {
-            log.info("BUSINESS: Nouveau membre enregistré avec succès");
-        }
+        // Then
+        List<ILoggingEvent> logs = listAppender.list;
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getLevel()).isEqualTo(Level.WARN);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("AUTH MODULE: Échec de l'appel à refreshToken")
+                .contains("Token expiré");
+    }
 
-        @AfterThrowing(pointcut = "memberRegistration()", throwing = "ex")
-        public void logAfterMemberRegistrationFailure(JoinPoint joinPoint, Throwable ex) {
-            log.warn("BUSINESS: Échec de l'enregistrement du membre - {}", ex.getMessage());
-        }
+    // === TESTS POUR LES OPÉRATIONS EMAIL ===
 
-        // Advices pour les appels au module d'authentification
-        @Before("authModuleCalls()")
-        public void logBeforeAuthModuleCall(JoinPoint joinPoint) {
-            String methodName = joinPoint.getSignature().getName();
-            Object[] args = joinPoint.getArgs();
-            log.debug("AUTH MODULE: Appel à {} avec arguments: {}",
-                    methodName, java.util.Arrays.toString(args));
-        }
+    @Test
+    @DisplayName("logBeforeEmailOperation devrait logger avec email")
+    void logBeforeEmailOperation_shouldLogInfo() {
+        // Given
+        when(signature.getName()).thenReturn("sendConfirmationEmail");
+        when(joinPoint.getArgs()).thenReturn(new Object[]{"test@example.com", "subject"});
 
-        @AfterReturning(pointcut = "authModuleCalls()", returning = "result")
-        public void logAfterAuthModuleCallSuccess(JoinPoint joinPoint, Object result) {
-            String methodName = joinPoint.getSignature().getName();
-            if (result != null) {
-                log.debug("AUTH MODULE: {} a réussi avec résultat: {}", methodName, result);
-            } else {
-                log.debug("AUTH MODULE: {} exécuté avec succès", methodName);
-            }
-        }
+        // When
+        aspect.logBeforeEmailOperation(joinPoint);
 
-        @AfterThrowing(pointcut = "authModuleCalls()", throwing = "ex")
-        public void logAfterAuthModuleCallFailure(JoinPoint joinPoint, Throwable ex) {
-            String methodName = joinPoint.getSignature().getName();
-            log.warn("AUTH MODULE: Échec de l'appel à {} - {}", methodName, ex.getMessage());
-        }
+        // Then
+        List<ILoggingEvent> logs = listAppender.list;
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getLevel()).isEqualTo(Level.INFO);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("EMAIL: Début d'envoi asynchrone - sendConfirmationEmail vers test@example.com");
+    }
+
+    @Test
+    @DisplayName("logBeforeEmailOperation devrait gérer l'absence d'arguments")
+    void logBeforeEmailOperation_shouldHandleNoArgs() {
+        // Given
+        when(signature.getName()).thenReturn("sendEmail");
+        when(joinPoint.getArgs()).thenReturn(new Object[]{});
+
+        // When
+        aspect.logBeforeEmailOperation(joinPoint);
+
+        // Then
+        List<ILoggingEvent> logs = listAppender.list;
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("vers unknown");
+    }
+
+    @Test
+    @DisplayName("logAfterSuccessfulEmailOperation devrait logger le succès")
+    void logAfterSuccessfulEmailOperation_shouldLogInfo() {
+        // Given
+        when(signature.getName()).thenReturn("sendWelcomeEmail");
+        when(joinPoint.getArgs()).thenReturn(new Object[]{"user@example.com"});
+
+        // When
+        aspect.logAfterSuccessfulEmailOperation(joinPoint);
+
+        // Then
+        List<ILoggingEvent> logs = listAppender.list;
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getLevel()).isEqualTo(Level.INFO);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("EMAIL: Envoi asynchrone réussi - sendWelcomeEmail vers user@example.com");
+    }
+
+    @Test
+    @DisplayName("logEmailOperationError devrait logger l'erreur avec email")
+    void logEmailOperationError_shouldLogWarning() {
+        // Given
+        when(signature.getName()).thenReturn("sendConfirmationEmail");
+        when(joinPoint.getArgs()).thenReturn(new Object[]{"fail@example.com", "subject"});
+        RuntimeException exception = new RuntimeException("SMTP error");
+
+        // When
+        aspect.logEmailOperationError(joinPoint, exception);
+
+        // Then
+        List<ILoggingEvent> logs = listAppender.list;
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getLevel()).isEqualTo(Level.WARN);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("EMAIL: Échec d'envoi asynchrone - sendConfirmationEmail vers fail@example.com")
+                .contains("SMTP error");
+    }
+
+    @Test
+    @DisplayName("logEmailOperationError devrait gérer l'absence d'arguments")
+    void logEmailOperationError_shouldHandleNoArgs() {
+        // Given
+        when(signature.getName()).thenReturn("sendEmail");
+        when(joinPoint.getArgs()).thenReturn(new Object[]{});
+        RuntimeException exception = new RuntimeException("Error");
+
+        // When
+        aspect.logEmailOperationError(joinPoint, exception);
+
+        // Then
+        List<ILoggingEvent> logs = listAppender.list;
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("vers unknown");
+    }
+
+    @Test
+    @DisplayName("logAfterSuccessfulEmailOperation devrait gérer l'absence d'arguments")
+    void logAfterSuccessfulEmailOperation_shouldHandleNoArgs() {
+        // Given
+        when(signature.getName()).thenReturn("sendEmail");
+        when(joinPoint.getArgs()).thenReturn(new Object[]{});
+
+        // When
+        aspect.logAfterSuccessfulEmailOperation(joinPoint);
+
+        // Then
+        List<ILoggingEvent> logs = listAppender.list;
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("vers unknown");
+    }
+
+    @Test
+    @DisplayName("logBeforeAuthModuleCall devrait gérer les arguments vides")
+    void logBeforeAuthModuleCall_shouldHandleEmptyArgs() {
+        // Given
+        when(signature.getName()).thenReturn("logout");
+        when(joinPoint.getArgs()).thenReturn(new Object[]{});
+
+        // When
+        aspect.logBeforeAuthModuleCall(joinPoint);
+
+        // Then
+        List<ILoggingEvent> logs = listAppender.list;
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("AUTH MODULE: Appel à logout avec arguments: []");
     }
 }

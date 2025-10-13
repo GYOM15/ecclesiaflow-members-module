@@ -5,303 +5,356 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.ecclesiaflow.application.logging.annotation.LogExecution;
+import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Pointcut;
+import org.aspectj.lang.Signature;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
-import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
 
 /**
- * Tests d'intégration pour LoggingAspect.
- * * Ces tests utilisent un contexte Spring complet pour permettre le weaving AOP.
- * Contrairement aux tests unitaires avec mocks, ces tests permettent aux aspects
- * de fonctionner correctement en créant de vrais proxies Spring AOP.
+ * Tests unitaires directs pour LoggingAspect.
+ * Teste chaque méthode d'advice individuellement avec des mocks.
  */
-@SpringBootTest(classes = {LoggingAspectTest.TestConfig.class})
-@TestPropertySource(properties = {
-        "logging.level.com.ecclesiaflow.application.logging.aspect.LoggingAspect=DEBUG"
-})
-@DisplayName("LoggingAspect - Tests d'intégration AOP")
+@DisplayName("LoggingAspect - Tests unitaires directs")
 class LoggingAspectTest {
 
-    // Services are now static inner classes
-    @Autowired
-    private TestService testService;
-
-    @Autowired
-    private TestAnnotatedService testAnnotatedService;
-
+    private LoggingAspect aspect;
     private ListAppender<ILoggingEvent> listAppender;
     private Logger logger;
+    private ProceedingJoinPoint proceedingJoinPoint;
+    private JoinPoint joinPoint;
+    private Signature signature;
+    private Object target;
 
     @BeforeEach
     void setUp() {
-        // Configure the logger to capture logs in tests
+        aspect = new LoggingAspect();
+
+        // Configuration du logger pour capturer les logs
         logger = (Logger) LoggerFactory.getLogger(LoggingAspect.class);
         listAppender = new ListAppender<>();
         listAppender.start();
         logger.addAppender(listAppender);
         logger.setLevel(Level.DEBUG);
+
+        // Mock du ProceedingJoinPoint
+        proceedingJoinPoint = mock(ProceedingJoinPoint.class);
+        signature = mock(Signature.class);
+        target = new Object() {
+            @Override
+            public String toString() {
+                return "TestTarget";
+            }
+        };
+
+        when(proceedingJoinPoint.getSignature()).thenReturn(signature);
+        when(proceedingJoinPoint.getTarget()).thenReturn(target);
+        when(signature.getName()).thenReturn("testMethod");
+
+        // Mock du JoinPoint
+        joinPoint = mock(JoinPoint.class);
+        when(joinPoint.getSignature()).thenReturn(signature);
+        when(joinPoint.getTarget()).thenReturn(target);
     }
 
     @AfterEach
     void tearDown() {
-        // Clean up after each test
-        logger.detachAppender(listAppender);
-        listAppender.stop(); // Stop the appender after use
+        if (logger != null) {
+            logger.detachAppender(listAppender);
+        }
+        if (listAppender != null) {
+            listAppender.stop();
+        }
     }
 
+    // === TESTS POUR logServiceMethods ===
+
     @Test
-    @DisplayName("Devrait logger les méthodes de service avec succès")
-    void shouldLogServiceMethodsSuccessfully() {
+    @DisplayName("logServiceMethods devrait logger l'exécution rapide")
+    void logServiceMethods_shouldLogFastExecution() throws Throwable {
+        // Given
+        when(proceedingJoinPoint.proceed()).thenReturn("result");
+
         // When
-        String result = testService.testMethod();
+        Object result = aspect.logServiceMethods(proceedingJoinPoint);
 
         // Then
-        assertThat(result).isEqualTo("test result");
+        assertThat(result).isEqualTo("result");
+        List<ILoggingEvent> logs = listAppender.list;
+        assertThat(logs).hasSizeGreaterThanOrEqualTo(2);
 
-        List<ILoggingEvent> logsList = listAppender.list;
-        assertThat(logsList).anySatisfy(event -> {
-            assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
-            assertThat(event.getFormattedMessage()).contains("SERVICE: Début TestService.testMethod");
-        });
-        assertThat(logsList).anySatisfy(event -> {
-            assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
-            assertThat(event.getFormattedMessage()).contains("SERVICE: TestService.testMethod - Succès");
-        });
+        boolean hasStartLog = logs.stream()
+                .anyMatch(log -> log.getFormattedMessage().contains("SERVICE: Début"));
+        assertThat(hasStartLog).isTrue();
+
+        boolean hasSuccessLog = logs.stream()
+                .anyMatch(log -> log.getFormattedMessage().contains("SERVICE:")
+                        && log.getFormattedMessage().contains("Succès"));
+        assertThat(hasSuccessLog).isTrue();
     }
 
     @Test
-    @DisplayName("Devrait logger les exceptions dans les méthodes de service")
-    void shouldLogServiceMethodExceptions() {
+    @DisplayName("logServiceMethods devrait logger les exécutions lentes (>1s)")
+    void logServiceMethods_shouldLogSlowExecution() throws Throwable {
+        // Given
+        when(proceedingJoinPoint.proceed()).thenAnswer(invocation -> {
+            Thread.sleep(1100); // > 1 seconde
+            return "result";
+        });
+
+        // When
+        Object result = aspect.logServiceMethods(proceedingJoinPoint);
+
+        // Then
+        assertThat(result).isEqualTo("result");
+        List<ILoggingEvent> logs = listAppender.list;
+
+        boolean hasSlowWarning = logs.stream()
+                .anyMatch(log -> log.getLevel().equals(Level.WARN)
+                        && log.getFormattedMessage().contains("Exécution lente"));
+        assertThat(hasSlowWarning).isTrue();
+    }
+
+    @Test
+    @DisplayName("logServiceMethods devrait logger les exceptions")
+    void logServiceMethods_shouldLogException() throws Throwable {
+        // Given
+        Exception testException = new RuntimeException("Test error");
+        when(proceedingJoinPoint.proceed()).thenThrow(testException);
+
         // When & Then
-        assertThatThrownBy(() -> testService.exceptionMethod())
+        assertThatThrownBy(() -> aspect.logServiceMethods(proceedingJoinPoint))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("Test exception");
+                .hasMessage("Test error");
 
-        List<ILoggingEvent> logsList = listAppender.list;
-        assertThat(logsList).anySatisfy(event -> {
-            assertThat(event.getLevel()).isEqualTo(Level.ERROR);
-            assertThat(event.getFormattedMessage()).contains("SERVICE: TestService.exceptionMethod - Échec");
-            assertThat(event.getFormattedMessage()).contains("Test exception");
-        });
+        List<ILoggingEvent> logs = listAppender.list;
+        boolean hasErrorLog = logs.stream()
+                .anyMatch(log -> log.getLevel().equals(Level.ERROR)
+                        && log.getFormattedMessage().contains("Échec"));
+        assertThat(hasErrorLog).isTrue();
     }
 
+    // === TESTS POUR logAnnotatedMethods ===
+
     @Test
-    @DisplayName("Devrait détecter les méthodes lentes (> 1 seconde)")
-    void shouldDetectSlowMethods() {
+    @DisplayName("logAnnotatedMethods devrait utiliser le message personnalisé")
+    void logAnnotatedMethods_shouldUseCustomMessage() throws Throwable {
+        // Given
+        LogExecution logExecution = mock(LogExecution.class);
+        when(logExecution.value()).thenReturn("Custom operation");
+        when(logExecution.includeParams()).thenReturn(false);
+        when(logExecution.includeExecutionTime()).thenReturn(false);
+        when(proceedingJoinPoint.proceed()).thenReturn("result");
+
         // When
-        String result = testService.slowMethod();
+        Object result = aspect.logAnnotatedMethods(proceedingJoinPoint, logExecution);
 
         // Then
-        assertThat(result).isEqualTo("slow result");
+        assertThat(result).isEqualTo("result");
+        List<ILoggingEvent> logs = listAppender.list;
 
-        List<ILoggingEvent> logsList = listAppender.list;
-        assertThat(logsList).anySatisfy(event -> {
-            assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
-            assertThat(event.getFormattedMessage()).contains("SERVICE: Début TestService.slowMethod");
-        });
-        assertThat(logsList).anySatisfy(event -> {
-            assertThat(event.getLevel()).isEqualTo(Level.WARN);
-            assertThat(event.getFormattedMessage()).contains("SERVICE: TestService.slowMethod - Exécution lente");
-        });
+        boolean hasCustomMessage = logs.stream()
+                .anyMatch(log -> log.getFormattedMessage().contains("Custom operation"));
+        assertThat(hasCustomMessage).isTrue();
     }
 
     @Test
-    @DisplayName("Devrait logger les méthodes annotées avec @LogExecution (cas par défaut)")
-    void shouldLogAnnotatedMethods() {
+    @DisplayName("logAnnotatedMethods devrait utiliser le nom par défaut si value est vide")
+    void logAnnotatedMethods_shouldUseDefaultName() throws Throwable {
+        // Given
+        LogExecution logExecution = mock(LogExecution.class);
+        when(logExecution.value()).thenReturn("");
+        when(logExecution.includeParams()).thenReturn(false);
+        when(logExecution.includeExecutionTime()).thenReturn(false);
+        when(proceedingJoinPoint.proceed()).thenReturn("result");
+
         // When
-        String result = testAnnotatedService.annotatedMethod();
+        Object result = aspect.logAnnotatedMethods(proceedingJoinPoint, logExecution);
 
         // Then
-        assertThat(result).isEqualTo("annotated result");
+        assertThat(result).isEqualTo("result");
+        List<ILoggingEvent> logs = listAppender.list;
 
-        List<ILoggingEvent> logsList = listAppender.list;
-        assertThat(logsList).anySatisfy(event -> {
-            assertThat(event.getLevel()).isEqualTo(Level.INFO);
-            assertThat(event.getFormattedMessage()).contains("Début: TestAnnotatedService.annotatedMethod");
-        });
-        assertThat(logsList).anySatisfy(event -> {
-            assertThat(event.getLevel()).isEqualTo(Level.INFO);
-            assertThat(event.getFormattedMessage()).contains("Succès: TestAnnotatedService.annotatedMethod");
-        });
+        boolean hasDefaultName = logs.stream()
+                .anyMatch(log -> log.getFormattedMessage().contains("testMethod"));
+        assertThat(hasDefaultName).isTrue();
     }
 
     @Test
-    @DisplayName("Devrait utiliser un message personnalisé dans @LogExecution")
-    void shouldUseCustomMessageInLogExecution() {
+    @DisplayName("logAnnotatedMethods devrait logger les paramètres si includeParams est true")
+    void logAnnotatedMethods_shouldLogParameters() throws Throwable {
+        // Given
+        LogExecution logExecution = mock(LogExecution.class);
+        when(logExecution.value()).thenReturn("Operation");
+        when(logExecution.includeParams()).thenReturn(true);
+        when(logExecution.includeExecutionTime()).thenReturn(false);
+        when(proceedingJoinPoint.getArgs()).thenReturn(new Object[]{"param1", "param2"});
+        when(proceedingJoinPoint.proceed()).thenReturn("result");
+
         // When
-        String result = testAnnotatedService.customMessageMethod();
+        Object result = aspect.logAnnotatedMethods(proceedingJoinPoint, logExecution);
 
         // Then
-        assertThat(result).isEqualTo("custom result");
+        assertThat(result).isEqualTo("result");
+        List<ILoggingEvent> logs = listAppender.list;
 
-        List<ILoggingEvent> logsList = listAppender.list;
-        assertThat(logsList).anySatisfy(event -> {
-            assertThat(event.getLevel()).isEqualTo(Level.INFO);
-            assertThat(event.getFormattedMessage()).contains("Début: Custom operation");
-        });
-        assertThat(logsList).anySatisfy(event -> {
-            assertThat(event.getLevel()).isEqualTo(Level.INFO);
-            assertThat(event.getFormattedMessage()).contains("Succès: Custom operation");
-        });
+        boolean hasParams = logs.stream()
+                .anyMatch(log -> log.getFormattedMessage().contains("Paramètres: [param1, param2]"));
+        assertThat(hasParams).isTrue();
     }
 
     @Test
-    @DisplayName("Devrait inclure les paramètres quand demandé dans @LogExecution")
-    void shouldIncludeParametersWhenRequested() {
+    @DisplayName("logAnnotatedMethods ne devrait pas logger les paramètres si includeParams est false")
+    void logAnnotatedMethods_shouldNotLogParameters() throws Throwable {
+        // Given
+        LogExecution logExecution = mock(LogExecution.class);
+        when(logExecution.value()).thenReturn("Operation");
+        when(logExecution.includeParams()).thenReturn(false);
+        when(logExecution.includeExecutionTime()).thenReturn(false);
+        when(proceedingJoinPoint.getArgs()).thenReturn(new Object[]{"param1"});
+        when(proceedingJoinPoint.proceed()).thenReturn("result");
+
         // When
-        String result = testAnnotatedService.paramsMethod("param1", "param2");
+        aspect.logAnnotatedMethods(proceedingJoinPoint, logExecution);
 
         // Then
-        assertThat(result).isEqualTo("params result");
-
-        List<ILoggingEvent> logsList = listAppender.list;
-        assertThat(logsList).anySatisfy(event -> {
-            assertThat(event.getLevel()).isEqualTo(Level.INFO);
-            assertThat(event.getFormattedMessage()).contains("Paramètres: [param1, param2]");
-        });
+        List<ILoggingEvent> logs = listAppender.list;
+        boolean hasParams = logs.stream()
+                .anyMatch(log -> log.getFormattedMessage().contains("Paramètres:"));
+        assertThat(hasParams).isFalse();
     }
 
     @Test
-    @DisplayName("Devrait inclure le temps d'exécution quand demandé")
-    void shouldIncludeExecutionTime() {
+    @DisplayName("logAnnotatedMethods devrait logger le temps d'exécution si includeExecutionTime est true")
+    void logAnnotatedMethods_shouldLogExecutionTime() throws Throwable {
+        // Given
+        LogExecution logExecution = mock(LogExecution.class);
+        when(logExecution.value()).thenReturn("Operation");
+        when(logExecution.includeParams()).thenReturn(false);
+        when(logExecution.includeExecutionTime()).thenReturn(true);
+        when(proceedingJoinPoint.proceed()).thenReturn("result");
+
         // When
-        String result = testAnnotatedService.executionTimeMethod();
+        Object result = aspect.logAnnotatedMethods(proceedingJoinPoint, logExecution);
 
         // Then
-        assertThat(result).isEqualTo("time result");
+        assertThat(result).isEqualTo("result");
+        List<ILoggingEvent> logs = listAppender.list;
 
-        List<ILoggingEvent> logsList = listAppender.list;
-        assertThat(logsList).anySatisfy(event -> {
-            assertThat(event.getLevel()).isEqualTo(Level.INFO);
-            assertThat(event.getFormattedMessage()).contains("Début: TestAnnotatedService.executionTimeMethod");
-        });
-        assertThat(logsList).anySatisfy(event -> {
-            assertThat(event.getLevel()).isEqualTo(Level.INFO);
-            assertThat(event.getFormattedMessage()).contains("Succès: TestAnnotatedService.executionTimeMethod");
-            assertThat(event.getFormattedMessage()).contains("ms)");
-        });
+        boolean hasExecutionTime = logs.stream()
+                .anyMatch(log -> log.getFormattedMessage().matches(".*Succès.*\\(\\d+ms\\).*"));
+        assertThat(hasExecutionTime).isTrue();
     }
 
     @Test
-    @DisplayName("Devrait logger les exceptions dans les méthodes annotées")
-    void shouldLogAnnotatedMethodExceptions() {
+    @DisplayName("logAnnotatedMethods ne devrait pas logger le temps si includeExecutionTime est false")
+    void logAnnotatedMethods_shouldNotLogExecutionTime() throws Throwable {
+        // Given
+        LogExecution logExecution = mock(LogExecution.class);
+        when(logExecution.value()).thenReturn("Operation");
+        when(logExecution.includeParams()).thenReturn(false);
+        when(logExecution.includeExecutionTime()).thenReturn(false);
+        when(proceedingJoinPoint.proceed()).thenReturn("result");
+
+        // When
+        aspect.logAnnotatedMethods(proceedingJoinPoint, logExecution);
+
+        // Then
+        List<ILoggingEvent> logs = listAppender.list;
+
+        // Le message de succès ne devrait pas contenir de temps
+        boolean hasSuccessWithoutTime = logs.stream()
+                .anyMatch(log -> log.getFormattedMessage().contains("Succès: Operation")
+                        && !log.getFormattedMessage().matches(".*\\(\\d+ms\\).*"));
+        assertThat(hasSuccessWithoutTime).isTrue();
+    }
+
+    @Test
+    @DisplayName("logAnnotatedMethods devrait logger les exceptions avec le temps")
+    void logAnnotatedMethods_shouldLogExceptionWithTime() throws Throwable {
+        // Given
+        LogExecution logExecution = mock(LogExecution.class);
+        when(logExecution.value()).thenReturn("Operation");
+        when(logExecution.includeParams()).thenReturn(false);
+        when(logExecution.includeExecutionTime()).thenReturn(false);
+
+        Exception testException = new RuntimeException("Test error");
+        when(proceedingJoinPoint.proceed()).thenThrow(testException);
+
         // When & Then
-        assertThatThrownBy(() -> testAnnotatedService.exceptionAnnotatedMethod())
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Annotation test exception");
+        assertThatThrownBy(() -> aspect.logAnnotatedMethods(proceedingJoinPoint, logExecution))
+                .isInstanceOf(RuntimeException.class);
 
-        List<ILoggingEvent> logsList = listAppender.list;
-        assertThat(logsList).anySatisfy(event -> {
-            assertThat(event.getLevel()).isEqualTo(Level.ERROR);
-            assertThat(event.getFormattedMessage()).contains("Échec: TestAnnotatedService.exceptionAnnotatedMethod");
-            assertThat(event.getFormattedMessage()).contains("Annotation test exception");
-        });
+        List<ILoggingEvent> logs = listAppender.list;
+        boolean hasErrorWithTime = logs.stream()
+                .anyMatch(log -> log.getLevel().equals(Level.ERROR)
+                        && log.getFormattedMessage().contains("Échec")
+                        && log.getFormattedMessage().matches(".*\\(\\d+ms\\).*"));
+        assertThat(hasErrorWithTime).isTrue();
     }
 
-    // Spring test configuration to enable AOP
-    @Configuration
-    @EnableAspectJAutoProxy
-    static class TestConfig {
+    // === TESTS POUR logControllerAccess ===
 
-        @Bean
-        public TestLoggingAspect testLoggingAspect() {
-            return new TestLoggingAspect();
-        }
+    @Test
+    @DisplayName("logControllerAccess devrait logger en DEBUG")
+    void logControllerAccess_shouldLogDebug() {
+        // When
+        aspect.logControllerAccess(joinPoint);
 
-        @Bean
-        public TestService testService() {
-            return new TestService();
-        }
-
-        @Bean
-        public TestAnnotatedService testAnnotatedService() {
-            return new TestAnnotatedService();
-        }
+        // Then
+        List<ILoggingEvent> logs = listAppender.list;
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("API:")
+                .contains("testMethod");
     }
 
-    // CHANGE: Class is made STATIC
-    @Service
-    static class TestService {
+    // === TESTS POUR logUnhandledException ===
 
-        public String testMethod() {
-            return "test result";
-        }
+    @Test
+    @DisplayName("logUnhandledException devrait logger l'exception")
+    void logUnhandledException_shouldLogException() {
+        // Given
+        RuntimeException exception = new RuntimeException("Unhandled error");
 
-        public String slowMethod() {
-            try {
-                Thread.sleep(1100); // Simulate slow execution > 1 second
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            return "slow result";
-        }
+        // When
+        aspect.logUnhandledException(joinPoint, exception);
 
-        public String exceptionMethod() {
-            throw new RuntimeException("Test exception");
-        }
+        // Then
+        List<ILoggingEvent> logs = listAppender.list;
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getLevel()).isEqualTo(Level.ERROR);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("Exception non gérée")
+                .contains("testMethod")
+                .contains("RuntimeException")
+                .contains("Unhandled error");
     }
 
-    // CHANGE: Class is made STATIC
-    @Service
-    static class TestAnnotatedService {
+    @Test
+    @DisplayName("logUnhandledException devrait logger différents types d'exceptions")
+    void logUnhandledException_shouldLogDifferentExceptionTypes() {
+        // Given
+        IllegalArgumentException exception = new IllegalArgumentException("Invalid argument");
 
-        @LogExecution // Ensure the annotation is correctly imported
-        public String annotatedMethod() {
-            return "annotated result";
-        }
+        // When
+        aspect.logUnhandledException(joinPoint, exception);
 
-        @LogExecution(value = "Custom operation")
-        public String customMessageMethod() {
-            return "custom result";
-        }
-
-        @LogExecution(includeParams = true)
-        public String paramsMethod(String param1, String param2) {
-            return "params result";
-        }
-
-        @LogExecution(includeExecutionTime = true)
-        public String executionTimeMethod() {
-            return "time result";
-        }
-
-        @LogExecution
-        public String exceptionAnnotatedMethod() {
-            throw new RuntimeException("Annotation test exception");
-        }
-    }
-
-    // CHANGE: Class is made STATIC
-    @Aspect
-    @Component
-    static class TestLoggingAspect extends LoggingAspect {
-
-        // CHANGE: Pointcut targets static inner class names with correct AspectJ syntax
-        @Pointcut("execution(* com.ecclesiaflow.application.logging.aspect.LoggingAspectTest.TestService.*(..))")
-        public void testServiceMethods() {}
-
-        // Advice for test service methods
-        @Around("testServiceMethods()")
-        public Object logTestServiceMethods(ProceedingJoinPoint joinPoint) throws Throwable {
-            return super.logServiceMethods(joinPoint); // Using the public method
-        }
+        // Then
+        List<ILoggingEvent> logs = listAppender.list;
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getFormattedMessage())
+                .contains("IllegalArgumentException")
+                .contains("Invalid argument");
     }
 }
