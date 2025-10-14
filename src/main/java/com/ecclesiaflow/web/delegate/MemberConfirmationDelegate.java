@@ -1,11 +1,11 @@
 package com.ecclesiaflow.web.delegate;
 
-import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
+import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.web.mappers.OpenApiModelMapper;
-import com.ecclesiaflow.web.model.ConfirmationRequestPayload;
 import com.ecclesiaflow.web.model.ConfirmationResponse;
+import com.ecclesiaflow.web.model.ResendConfirmationLink200Response;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -47,31 +47,22 @@ public class MemberConfirmationDelegate {
     private final OpenApiModelMapper openApiModelMapper;
 
     /**
-     * Confirme le compte d'un membre avec le code de confirmation.
+     * Confirme le compte d'un membre avec le token de confirmation reçu par email.
      * <p>
      * Processus :
-     * 1. Conversion du modèle OpenAPI vers l'objet métier
-     * 2. Validation du code via le service métier
-     * 3. Mise à jour du statut de confirmation
-     * 4. Génération d'un token temporaire pour définir le mot de passe
+     * 1. Validation du token via le service métier
+     * 2. Mise à jour du statut de confirmation
+     * 3. Génération d'un token temporaire pour définir le mot de passe
+     * 4. Suppression du token de confirmation (usage unique)
      * 5. Transformation de la réponse vers le modèle OpenAPI
      * </p>
      * 
-     * @param memberId Identifiant du membre
-     * @param confirmationRequestPayload Payload contenant le code de confirmation (modèle OpenAPI)
-     * @return Réponse avec token temporaire et URL de redirection
+     * @param token Token de confirmation UUID reçu par email
+     * @return Réponse avec token temporaire et endpoint pour définir le mot de passe
      */
-    public ResponseEntity<ConfirmationResponse> confirmMember(
-            UUID memberId, ConfirmationRequestPayload confirmationRequestPayload) {
-        
-        // Conversion du modèle OpenAPI vers l'objet métier
-        MembershipConfirmation membershipConfirmation = MembershipConfirmation.builder()
-                .memberId(memberId)
-                .confirmationCode(confirmationRequestPayload.getCode())
-                .build();
-        
+    public ResponseEntity<ConfirmationResponse> confirmMemberByToken(UUID token) {
         // Validation et confirmation via le service métier
-        MembershipConfirmationResult result = confirmationService.confirmMember(membershipConfirmation);
+        MembershipConfirmationResult result = confirmationService.confirmMemberByToken(token);
         
         // Transformation de la réponse vers le modèle OpenAPI
         ConfirmationResponse response = openApiModelMapper.createConfirmationResponse(result);
@@ -80,19 +71,41 @@ public class MemberConfirmationDelegate {
     }
 
     /**
-     * Renvoie un nouveau code de confirmation par email.
+     * Renvoie un nouveau lien de confirmation par email via l'adresse email du membre.
      * <p>
-     * Cette méthode permet de renvoyer un code de confirmation si :
-     * - Le code précédent a expiré
+     * Cette méthode permet de renvoyer un lien de confirmation si :
+     * - Le token précédent a expiré
      * - Le membre n'a pas reçu l'email
-     * - Le membre a perdu le code
+     * - Le membre a perdu le lien
      * </p>
      * 
-     * @param memberId Identifiant du membre
-     * @return Réponse vide avec statut 200
+     * <p><strong>Sécurité anti-énumération (approche hybride):</strong>
+     * <ul>
+     *   <li>Retourne 200 OK même si l'email n'existe pas (anti-énumération)</li>
+     *   <li>Retourne 409 Conflict si le compte est déjà confirmé (UX claire)</li>
+     * </ul>
+     * </p>
+     * 
+     * <p>
+     * Processus :
+     * 1. Recherche du membre par email
+     * 2. Vérification du statut de confirmation
+     * 3. Invalidation de l'ancien token (si existant)
+     * 4. Génération d'un nouveau token UUID sécurisé
+     * 5. Envoi du nouveau lien par email
+     * </p>
+     * 
+     * @param email Adresse email du membre
+     * @return Réponse avec message de confirmation et durée de validité (24h)
+     * @throws MemberAlreadyConfirmedException si le compte est déjà confirmé (409 Conflict)
      */
-    public ResponseEntity<Void> resendConfirmationCode(UUID memberId) {
-        confirmationService.sendConfirmationCode(memberId);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<ResendConfirmationLink200Response> resendConfirmationLink(String email) {
+        confirmationService.sendConfirmationLink(email);
+        
+        ResendConfirmationLink200Response response = new ResendConfirmationLink200Response()
+                .message("Si cette adresse email est associée à un compte non confirmé, un nouveau lien de confirmation a été envoyé.")
+                .expiresIn(86400L);
+        
+        return ResponseEntity.ok(response);
     }
 }
