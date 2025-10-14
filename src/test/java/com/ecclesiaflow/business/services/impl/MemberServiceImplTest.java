@@ -59,7 +59,7 @@ class MemberServiceImplTest {
         assertNotNull(result);
         assertEquals("John", result.getFirstName());
         verify(memberRepository).save(any(Member.class));
-        verify(confirmationService).sendConfirmationCode(result);
+        verify(confirmationService).sendConfirmationLink(result);
     }
 
     @Test
@@ -291,5 +291,113 @@ class MemberServiceImplTest {
                 () -> memberService.getAllMembers(null, null, null));
         
         verifyNoInteractions(memberRepository);
+    }
+
+    @Test
+    void getAllMembers_shouldNormalizeEmptySearchToNull() {
+        // Given - Empty search string should be normalized to null
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Member> members = List.of(
+                Member.builder().memberId(UUID.randomUUID()).firstName("A").email("a@mail.com").build()
+        );
+        Page<Member> memberPage = new PageImpl<>(members, pageable, 1);
+
+        when(memberRepository.getAll(pageable)).thenReturn(memberPage);
+
+        // When - Empty string should be normalized to null
+        Page<Member> result = memberService.getAllMembers(pageable, "", null);
+
+        // Then - Should call getAll (no search criteria)
+        assertEquals(1, result.getContent().size());
+        verify(memberRepository, times(1)).getAll(pageable);
+        verify(memberRepository, never()).getMembersBySearchTerm(anyString(), any());
+    }
+
+    @Test
+    void getAllMembers_shouldNormalizeWhitespaceSearchToNull() {
+        // Given - Whitespace-only search should be normalized to null
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Member> members = List.of(
+                Member.builder().memberId(UUID.randomUUID()).firstName("A").email("a@mail.com").build()
+        );
+        Page<Member> memberPage = new PageImpl<>(members, pageable, 1);
+
+        when(memberRepository.getAll(pageable)).thenReturn(memberPage);
+
+        // When - Whitespace-only string should be normalized to null
+        Page<Member> result = memberService.getAllMembers(pageable, "   ", null);
+
+        // Then - Should call getAll (no search criteria)
+        assertEquals(1, result.getContent().size());
+        verify(memberRepository, times(1)).getAll(pageable);
+        verify(memberRepository, never()).getMembersBySearchTerm(anyString(), any());
+    }
+
+    @Test
+    void getAllMembers_shouldTrimSearchTerm() {
+        // Given - Search with leading/trailing spaces should be trimmed
+        Pageable pageable = PageRequest.of(0, 20);
+        String searchTermWithSpaces = "  john  ";
+        String trimmedSearchTerm = "john";
+        List<Member> members = List.of(
+                Member.builder().memberId(UUID.randomUUID()).firstName("John").email("john@mail.com").build()
+        );
+        Page<Member> memberPage = new PageImpl<>(members, pageable, 1);
+
+        when(memberRepository.getMembersBySearchTerm(trimmedSearchTerm, pageable)).thenReturn(memberPage);
+
+        // When - Search term should be trimmed
+        Page<Member> result = memberService.getAllMembers(pageable, searchTermWithSpaces, null);
+
+        // Then - Should call with trimmed search term
+        assertEquals(1, result.getContent().size());
+        assertEquals("John", result.getContent().get(0).getFirstName());
+        verify(memberRepository, times(1)).getMembersBySearchTerm(trimmedSearchTerm, pageable);
+        verify(memberRepository, never()).getMembersBySearchTerm(searchTermWithSpaces, pageable);
+    }
+
+    @Test
+    void getAllMembers_shouldTrimSearchTermWithConfirmationStatus() {
+        // Given - Search with spaces and confirmation status
+        Pageable pageable = PageRequest.of(0, 20);
+        String searchTermWithSpaces = "  jane  ";
+        String trimmedSearchTerm = "jane";
+        Boolean confirmed = true;
+        List<Member> members = List.of(
+                Member.builder().memberId(UUID.randomUUID()).firstName("Jane").email("jane@mail.com").confirmed(true).build()
+        );
+        Page<Member> memberPage = new PageImpl<>(members, pageable, 1);
+
+        when(memberRepository.getMembersBySearchTermAndConfirmationStatus(trimmedSearchTerm, confirmed, pageable))
+                .thenReturn(memberPage);
+
+        // When
+        Page<Member> result = memberService.getAllMembers(pageable, searchTermWithSpaces, confirmed);
+
+        // Then - Should call with trimmed search term
+        assertEquals(1, result.getContent().size());
+        assertTrue(result.getContent().get(0).isConfirmed());
+        verify(memberRepository, times(1)).getMembersBySearchTermAndConfirmationStatus(trimmedSearchTerm, confirmed, pageable);
+    }
+
+    @Test
+    void getAllMembers_shouldHandleEmptySearchWithConfirmedStatus() {
+        // Given - Empty search with confirmation status should ignore search
+        Pageable pageable = PageRequest.of(0, 20);
+        Boolean confirmed = false;
+        List<Member> members = List.of(
+                Member.builder().memberId(UUID.randomUUID()).firstName("A").email("a@mail.com").confirmed(false).build()
+        );
+        Page<Member> memberPage = new PageImpl<>(members, pageable, 1);
+
+        when(memberRepository.getByConfirmedStatus(confirmed, pageable)).thenReturn(memberPage);
+
+        // When - Empty search should be normalized to null
+        Page<Member> result = memberService.getAllMembers(pageable, "  ", confirmed);
+
+        // Then - Should only filter by confirmation status
+        assertEquals(1, result.getContent().size());
+        verify(memberRepository, times(1)).getByConfirmedStatus(confirmed, pageable);
+        verify(memberRepository, never()).getMembersBySearchTermAndConfirmationStatus(anyString(), any(), any());
     }
 }
