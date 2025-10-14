@@ -13,7 +13,7 @@ import java.util.UUID;
 /**
  * Entité JPA représentant une confirmation de membre en base de données.
  * <p>
- * Cette entité gère la persistance des codes de confirmation des membres
+ * Cette entité gère la persistance des tokens de confirmation des membres
  * dans la base de données. Elle contient toutes les annotations JPA nécessaires
  * pour le mapping objet-relationnel et les contraintes de validation.
  * </p>
@@ -22,7 +22,7 @@ import java.util.UUID;
  * 
  * <p><strong>Responsabilités principales :</strong></p>
  * <ul>
- *   <li>Persistance des codes de confirmation en base de données</li>
+ *   <li>Persistance des tokens de confirmation en base de données</li>
  *   <li>Gestion des contraintes d'intégrité référentielle</li>
  *   <li>Horodatage automatique des créations</li>
  *   <li>Validation des données au niveau persistance</li>
@@ -30,7 +30,7 @@ import java.util.UUID;
  * 
  * <p><strong>Contraintes de base de données :</strong></p>
  * <ul>
- *   <li>Code obligatoire et non vide</li>
+ *   <li>Token UUID obligatoire et unique</li>
  *   <li>MemberId obligatoire avec contrainte de clé étrangère</li>
  *   <li>Identifiant UUID pour la scalabilité</li>
  *   <li>Dates d'expiration obligatoires</li>
@@ -76,12 +76,12 @@ public class MemberConfirmationEntity {
     private UUID memberId;
 
     /**
-     * Code de confirmation à 6 chiffres.
+     * Token de confirmation UUID sécurisé.
      * Généré par le service métier et stocké en base.
      */
-    @NotBlank(message = "Le code de confirmation est obligatoire")
-    @Column(name = "code", length = 6, nullable = false)
-    private String code;
+    @NotNull(message = "Le token de confirmation est obligatoire")
+    @Column(name = "token", columnDefinition = "BINARY(16)", nullable = false, unique = true)
+    private UUID token;
 
     /**
      * Date et heure de création de la confirmation.
@@ -92,7 +92,7 @@ public class MemberConfirmationEntity {
     private LocalDateTime createdAt;
 
     /**
-     * Date et heure d'expiration du code de confirmation.
+     * Date et heure d'expiration du token de confirmation.
      * Calculée par le service métier (généralement +24h).
      */
     @NotNull(message = "La date d'expiration est obligatoire")

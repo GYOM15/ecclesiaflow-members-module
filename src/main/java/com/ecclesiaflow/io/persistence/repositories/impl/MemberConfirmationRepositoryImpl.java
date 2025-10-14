@@ -54,14 +54,14 @@ public class MemberConfirmationRepositoryImpl implements MemberConfirmationRepos
     }
 
     @Override
-    public Optional<MemberConfirmation> getMemberIdAndCode(UUID memberId, String code) {
-        return springDataRepo.findByMemberIdAndCode(memberId, code)
+    public Optional<MemberConfirmation> getMemberIdAndToken(UUID memberId, UUID token) {
+        return springDataRepo.findByMemberIdAndToken(memberId, token)
                 .map(mapper::toDomain);
     }
 
     @Override
-    public Optional<MemberConfirmation> getByCode(String code) {
-        return springDataRepo.findByCode(code)
+    public Optional<MemberConfirmation> getByToken(UUID token) {
+        return springDataRepo.findByToken(token)
                 .map(mapper::toDomain);
     }
 
