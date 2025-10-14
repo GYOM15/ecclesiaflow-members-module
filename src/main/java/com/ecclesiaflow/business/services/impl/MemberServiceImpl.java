@@ -22,7 +22,7 @@ import java.util.UUID;
  * <p>
  * Cette classe implémente l'interface {@link MemberService} et fournit toutes les opérations
  * CRUD pour la gestion des membres : inscription, consultation, mise à jour, suppression.
- * Gère également la génération automatique des codes de confirmation lors de l'inscription.
+ * Gère également la génération automatique des tokens de confirmation lors de l'inscription.
  * </p>
  *
  * <p><strong>Rôle architectural :</strong> Implémentation de service - Logique métier des membres</p>
@@ -30,7 +30,7 @@ import java.util.UUID;
  * <p><strong>Responsabilités principales :</strong></p>
  * <ul>
  *   <li>Inscription de nouveaux membres avec validation d'unicité email</li>
- *   <li>Génération automatique de codes de confirmation à l'inscription</li>
+ *   <li>Génération automatique de tokens de confirmation à l'inscription</li>
  *   <li>Opérations CRUD complètes sur les profils membres</li>
  *   <li>Validation du statut de confirmation des comptes</li>
  *   <li>Orchestration avec les services d'email pour les notifications</li>
@@ -39,7 +39,7 @@ import java.util.UUID;
  * <p><strong>Dépendances critiques :</strong></p>
  * <ul>
  *   <li>{@link MemberRepository} - Persistance et requêtes sur les membres</li>
- *   <li>{@link MemberConfirmationRepository} - Gestion des codes de confirmation</li>
+ *   <li>{@link MemberConfirmationRepository} - Gestion des tokens de confirmation</li>
  *   <li>{@link EmailService} - Envoi des emails de confirmation</li>
  * </ul>
  *
@@ -48,8 +48,8 @@ import java.util.UUID;
  *   <li>Vérification de l'unicité de l'email</li>
  *   <li>Création de l'entité Member avec statut non confirmé</li>
  *   <li>Persistance en base de données</li>
- *   <li>Génération d'un code de confirmation à 6 chiffres</li>
- *   <li>Envoi automatique de l'email de confirmation</li>
+ *   <li>Génération d'un token de confirmation sécurisé (UUID)</li>
+ *   <li>Envoi automatique de l'email avec lien de confirmation</li>
  * </ol>
  *
  * <p><strong>Garanties :</strong> Thread-safe, transactionnel, gestion d'erreurs robuste.</p>
@@ -75,7 +75,7 @@ public class MemberServiceImpl implements MemberService {
         }
         Member member = createMemberFromRegistration(registration);
         Member savedMember = memberRepository.save(member);
-        confirmationService.sendConfirmationCode(savedMember);
+        confirmationService.sendConfirmationLink(savedMember);
         
         return savedMember;
     }
