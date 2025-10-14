@@ -32,7 +32,7 @@ class MemberConfirmationRepositoryImplTest {
     private MemberConfirmationRepositoryImpl memberConfirmationRepository;
 
     private UUID testMemberId;
-    private String testCode;
+    private UUID testToken;
     private MemberConfirmationEntity testEntity;
     private MemberConfirmation testDomain;
 
@@ -41,14 +41,14 @@ class MemberConfirmationRepositoryImplTest {
         MockitoAnnotations.openMocks(this);
 
         testMemberId = UUID.randomUUID();
-        testCode = "123456";
+        testToken = UUID.randomUUID();
         LocalDateTime now = LocalDateTime.now();
 
         // Initialiser une entité et un domaine de test
         testEntity = MemberConfirmationEntity.builder()
                 .id(UUID.randomUUID())
                 .memberId(testMemberId)
-                .code(testCode)
+                .token(testToken)
                 .createdAt(now.minusHours(1))
                 .expiresAt(now.plusDays(1))
                 .build();
@@ -56,7 +56,7 @@ class MemberConfirmationRepositoryImplTest {
         testDomain = MemberConfirmation.builder()
                 .id(testEntity.getId())
                 .memberId(testMemberId)
-                .code(testCode)
+                .token(testToken)
                 .createdAt(testEntity.getCreatedAt())
                 .expiresAt(testEntity.getExpiresAt())
                 .build();
@@ -87,50 +87,50 @@ class MemberConfirmationRepositoryImplTest {
     }
 
     @Test
-    void getByMemberIdAndCode_shouldReturnMappedDomainObject() {
-        when(springDataRepo.findByMemberIdAndCode(testMemberId, testCode)).thenReturn(Optional.of(testEntity));
+    void getByMemberIdAndToken_shouldReturnMappedDomainObject() {
+        when(springDataRepo.findByMemberIdAndToken(testMemberId, testToken)).thenReturn(Optional.of(testEntity));
         when(mapper.toDomain(testEntity)).thenReturn(testDomain);
 
-        Optional<MemberConfirmation> result = memberConfirmationRepository.getMemberIdAndCode(testMemberId, testCode);
+        Optional<MemberConfirmation> result = memberConfirmationRepository.getMemberIdAndToken(testMemberId, testToken);
 
         assertThat(result).isPresent();
         assertThat(result.get()).isEqualTo(testDomain);
-        verify(springDataRepo, times(1)).findByMemberIdAndCode(testMemberId, testCode);
+        verify(springDataRepo, times(1)).findByMemberIdAndToken(testMemberId, testToken);
         verify(mapper, times(1)).toDomain(testEntity);
     }
 
     @Test
-    void getByMemberIdAndCode_shouldReturnEmptyOptionalWhenNotFound() {
-        when(springDataRepo.findByMemberIdAndCode(testMemberId, testCode)).thenReturn(Optional.empty());
+    void getByMemberIdAndToken_shouldReturnEmptyOptionalWhenNotFound() {
+        when(springDataRepo.findByMemberIdAndToken(testMemberId, testToken)).thenReturn(Optional.empty());
 
-        Optional<MemberConfirmation> result = memberConfirmationRepository.getMemberIdAndCode(testMemberId, testCode);
+        Optional<MemberConfirmation> result = memberConfirmationRepository.getMemberIdAndToken(testMemberId, testToken);
 
         assertThat(result).isEmpty();
-        verify(springDataRepo, times(1)).findByMemberIdAndCode(testMemberId, testCode);
+        verify(springDataRepo, times(1)).findByMemberIdAndToken(testMemberId, testToken);
         verifyNoInteractions(mapper);
     }
 
     @Test
-    void getByCode_shouldReturnMappedDomainObject() {
-        when(springDataRepo.findByCode(testCode)).thenReturn(Optional.of(testEntity));
+    void getByToken_shouldReturnMappedDomainObject() {
+        when(springDataRepo.findByToken(testToken)).thenReturn(Optional.of(testEntity));
         when(mapper.toDomain(testEntity)).thenReturn(testDomain);
 
-        Optional<MemberConfirmation> result = memberConfirmationRepository.getByCode(testCode);
+        Optional<MemberConfirmation> result = memberConfirmationRepository.getByToken(testToken);
 
         assertThat(result).isPresent();
         assertThat(result.get()).isEqualTo(testDomain);
-        verify(springDataRepo, times(1)).findByCode(testCode);
+        verify(springDataRepo, times(1)).findByToken(testToken);
         verify(mapper, times(1)).toDomain(testEntity);
     }
 
     @Test
-    void getByCode_shouldReturnEmptyOptionalWhenNotFound() {
-        when(springDataRepo.findByCode(testCode)).thenReturn(Optional.empty());
+    void getByToken_shouldReturnEmptyOptionalWhenNotFound() {
+        when(springDataRepo.findByToken(testToken)).thenReturn(Optional.empty());
 
-        Optional<MemberConfirmation> result = memberConfirmationRepository.getByCode(testCode);
+        Optional<MemberConfirmation> result = memberConfirmationRepository.getByToken(testToken);
 
         assertThat(result).isEmpty();
-        verify(springDataRepo, times(1)).findByCode(testCode);
+        verify(springDataRepo, times(1)).findByToken(testToken);
         verifyNoInteractions(mapper);
     }
 

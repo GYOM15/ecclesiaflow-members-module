@@ -30,6 +30,8 @@ class SpringDataMemberConfirmationRepositoryTest {
     private MemberEntity testMember;
     private MemberConfirmationEntity confirmation1;
     private MemberConfirmationEntity confirmation2;
+    private UUID token1;
+    private UUID token2;
 
     @BeforeEach
     void setUp() {
@@ -52,17 +54,19 @@ class SpringDataMemberConfirmationRepositoryTest {
         entityManager.persistAndFlush(testMember);
 
 
+        token1 = UUID.randomUUID();
         confirmation1 = MemberConfirmationEntity.builder()
                 .memberId(testMember.getMemberId())
-                .code("CODE1A")
+                .token(token1)
                 .createdAt(LocalDateTime.now().minusHours(1))
                 .expiresAt(LocalDateTime.now().plusDays(1))
                 .build();
         entityManager.persistAndFlush(confirmation1);
 
+        token2 = UUID.randomUUID();
         confirmation2 = MemberConfirmationEntity.builder()
                 .memberId(UUID.randomUUID())
-                .code("CODE2B")
+                .token(token2)
                 .createdAt(LocalDateTime.now().minusHours(2))
                 .expiresAt(LocalDateTime.now().minusHours(1))
                 .build();
@@ -75,7 +79,7 @@ class SpringDataMemberConfirmationRepositoryTest {
     void getByMemberId_shouldReturnConfirmation() {
         Optional<MemberConfirmationEntity> found = confirmationRepository.findByMemberId(testMember.getMemberId());
         assertThat(found).isPresent();
-        assertThat(found.get().getCode()).isEqualTo(confirmation1.getCode());
+        assertThat(found.get().getToken()).isEqualTo(confirmation1.getToken());
     }
 
     @Test
@@ -85,34 +89,34 @@ class SpringDataMemberConfirmationRepositoryTest {
     }
 
     @Test
-    void getByMemberIdAndCode_shouldReturnConfirmation() {
-        Optional<MemberConfirmationEntity> found = confirmationRepository.findByMemberIdAndCode(testMember.getMemberId(), "CODE1A");
+    void getByMemberIdAndToken_shouldReturnConfirmation() {
+        Optional<MemberConfirmationEntity> found = confirmationRepository.findByMemberIdAndToken(testMember.getMemberId(), token1);
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(confirmation1.getId());
     }
 
     @Test
-    void getByMemberIdAndCode_shouldReturnEmptyWhenMemberIdMismatch() {
-        Optional<MemberConfirmationEntity> found = confirmationRepository.findByMemberIdAndCode(UUID.randomUUID(), "CODE1A");
+    void getByMemberIdAndToken_shouldReturnEmptyWhenMemberIdMismatch() {
+        Optional<MemberConfirmationEntity> found = confirmationRepository.findByMemberIdAndToken(UUID.randomUUID(), token1);
         assertThat(found).isEmpty();
     }
 
     @Test
-    void getByMemberIdAndCode_shouldReturnEmptyWhenCodeMismatch() {
-        Optional<MemberConfirmationEntity> found = confirmationRepository.findByMemberIdAndCode(testMember.getMemberId(), "WRONGCODE");
+    void getByMemberIdAndToken_shouldReturnEmptyWhenTokenMismatch() {
+        Optional<MemberConfirmationEntity> found = confirmationRepository.findByMemberIdAndToken(testMember.getMemberId(), UUID.randomUUID());
         assertThat(found).isEmpty();
     }
 
     @Test
-    void getByCode_shouldReturnConfirmation() {
-        Optional<MemberConfirmationEntity> found = confirmationRepository.findByCode("CODE1A");
+    void getByToken_shouldReturnConfirmation() {
+        Optional<MemberConfirmationEntity> found = confirmationRepository.findByToken(token1);
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(confirmation1.getId());
     }
 
     @Test
-    void getByCode_shouldReturnEmptyWhenNotFound() {
-        Optional<MemberConfirmationEntity> found = confirmationRepository.findByCode("NONEXISTENT");
+    void getByToken_shouldReturnEmptyWhenNotFound() {
+        Optional<MemberConfirmationEntity> found = confirmationRepository.findByToken(UUID.randomUUID());
         assertThat(found).isEmpty();
     }
 
@@ -171,7 +175,7 @@ class SpringDataMemberConfirmationRepositoryTest {
 
         MemberConfirmationEntity anotherConfirmation = MemberConfirmationEntity.builder()
                 .memberId(anotherMember.getMemberId())
-                .code("CODE3C")
+                .token(UUID.randomUUID())
                 .createdAt(LocalDateTime.now().minusHours(1))
                 .expiresAt(LocalDateTime.now().plusDays(1))
                 .build();
@@ -194,9 +198,10 @@ class SpringDataMemberConfirmationRepositoryTest {
 
     @Test
     void save_shouldPersistNewConfirmation() {
+        UUID newToken = UUID.randomUUID();
         MemberConfirmationEntity newConfirmation = MemberConfirmationEntity.builder()
                 .memberId(testMember.getMemberId())
-                .code("NEWCDE")
+                .token(newToken)
                 .expiresAt(LocalDateTime.now().plusDays(2))
                 .build();
 
@@ -206,7 +211,7 @@ class SpringDataMemberConfirmationRepositoryTest {
 
         assertThat(savedConfirmation).isNotNull();
         assertThat(savedConfirmation.getId()).isNotNull();
-        assertThat(savedConfirmation.getCode()).isEqualTo("NEWCDE");
+        assertThat(savedConfirmation.getToken()).isEqualTo(newToken);
         assertThat(savedConfirmation.getCreatedAt()).isNotNull();
         assertThat(confirmationRepository.findById(savedConfirmation.getId())).isPresent();
     }

@@ -25,14 +25,14 @@ class MemberConfirmationPersistenceMapperTest {
         // Arrange
         UUID id = UUID.randomUUID();
         UUID memberId = UUID.randomUUID();
-        String code = "123456";
+        UUID token = UUID.randomUUID();
         LocalDateTime createdAt = LocalDateTime.now().minusDays(1);
         LocalDateTime expiresAt = LocalDateTime.now().plusDays(1);
 
         MemberConfirmationEntity entity = MemberConfirmationEntity.builder()
                 .id(id)
                 .memberId(memberId)
-                .code(code)
+                .token(token)
                 .createdAt(createdAt)
                 .expiresAt(expiresAt)
                 .build();
@@ -44,7 +44,7 @@ class MemberConfirmationPersistenceMapperTest {
         assertThat(domain).isNotNull();
         assertThat(domain.getId()).isEqualTo(id);
         assertThat(domain.getMemberId()).isEqualTo(memberId);
-        assertThat(domain.getCode()).isEqualTo(code);
+        assertThat(domain.getToken()).isEqualTo(token);
         assertThat(domain.getCreatedAt()).isEqualTo(createdAt);
         assertThat(domain.getExpiresAt()).isEqualTo(expiresAt);
     }
@@ -63,14 +63,14 @@ class MemberConfirmationPersistenceMapperTest {
         // Arrange
         UUID id = UUID.randomUUID();
         UUID memberId = UUID.randomUUID();
-        String code = "654321";
+        UUID token = UUID.randomUUID();
         LocalDateTime createdAt = LocalDateTime.now().minusHours(5);
         LocalDateTime expiresAt = LocalDateTime.now().plusHours(12);
 
         MemberConfirmation domain = MemberConfirmation.builder()
                 .id(id)
                 .memberId(memberId)
-                .code(code)
+                .token(token)
                 .createdAt(createdAt)
                 .expiresAt(expiresAt)
                 .build();
@@ -82,7 +82,7 @@ class MemberConfirmationPersistenceMapperTest {
         assertThat(entity).isNotNull();
         assertThat(entity.getId()).isEqualTo(id);
         assertThat(entity.getMemberId()).isEqualTo(memberId);
-        assertThat(entity.getCode()).isEqualTo(code);
+        assertThat(entity.getToken()).isEqualTo(token);
         assertThat(entity.getCreatedAt()).isEqualTo(createdAt);
         assertThat(entity.getExpiresAt()).isEqualTo(expiresAt);
     }
