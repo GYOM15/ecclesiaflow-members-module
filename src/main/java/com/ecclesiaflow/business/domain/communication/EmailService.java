@@ -47,26 +47,27 @@ import java.util.concurrent.CompletableFuture;
 public interface EmailService {
     
     /**
-     * Envoie un email contenant le code de confirmation d'inscription de manière asynchrone.
+     * Envoie un email contenant un lien de confirmation sécurisé de manière asynchrone.
      * <p>
      * Cette méthode génère et envoie un email personnalisé contenant
-     * le code de confirmation nécessaire pour activer le compte membre.
-     * L'email utilise un template HTML avec le nom du membre et le code.
+     * un lien cliquable avec token UUID pour activer le compte membre en 1 clic.
+     * L'email utilise un template HTML moderne avec bouton CTA.
      * <strong>Exécution asynchrone :</strong> L'envoi se fait en arrière-plan pour
      * améliorer les performances et l'expérience utilisateur.
      * </p>
      * 
      * @param email l'adresse email du destinataire, non null et valide
-     * @param code le code de confirmation à 6 chiffres, non null
+     * @param confirmationUrl l'URL complète de confirmation avec token, non null
      * @param firstName le prénom du membre pour personnalisation, non null
      * @return CompletableFuture<Void> pour permettre le suivi asynchrone de l'envoi
      * @throws ConfirmationEmailException si l'envoi échoue (SMTP, réseau, etc.)
      * @throws IllegalArgumentException si un paramètre est null ou invalide
      * 
-     * @implNote Utilise le template 'confirmation-email.html' avec retry automatique.
+     * @implNote Utilise un template email avec lien cliquable et retry automatique.
      *           Exécution asynchrone via @Async avec pool de threads dédié.
+     *           Le lien expire après 24 heures.
      */
-    CompletableFuture<Void> sendConfirmationCode(String email, String code, String firstName) throws ConfirmationEmailException;
+    CompletableFuture<Void> sendConfirmationCode(String email, String confirmationUrl, String firstName) throws ConfirmationEmailException;
     
     /**
      * Envoie un email de bienvenue après confirmation réussie du compte de manière asynchrone.

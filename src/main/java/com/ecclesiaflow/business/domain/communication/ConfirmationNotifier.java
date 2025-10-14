@@ -3,11 +3,13 @@ package com.ecclesiaflow.business.domain.communication;
 import com.ecclesiaflow.io.notification.email.EmailConfirmationNotifier;
 import com.ecclesiaflow.io.exception.EmailSendingException;
 
+import java.util.UUID;
+
 /**
- * Interface définissant le contrat d'envoi de codes de confirmation EcclesiaFlow.
+ * Interface définissant le contrat d'envoi de liens de confirmation EcclesiaFlow.
  * <p>
  * Cette interface respecte le principe SRP et le principe d'inversion de dépendance
- * en définissant un contrat abstrait pour l'envoi de codes de confirmation,
+ * en définissant un contrat abstrait pour l'envoi de liens de confirmation sécurisés,
  * indépendamment du canal de communication utilisé (email, SMS, push notification, etc.).
  * Permet une architecture extensible et testable.
  * </p>
@@ -16,7 +18,7 @@ import com.ecclesiaflow.io.exception.EmailSendingException;
  * 
  * <p><strong>Responsabilité unique :</strong></p>
  * <ul>
- *   <li>Définir le contrat d'envoi de codes de confirmation</li>
+ *   <li>Définir le contrat d'envoi de liens de confirmation</li>
  *   <li>Abstraction du canal de communication</li>
  *   <li>Support de l'extensibilité multi-canaux</li>
  * </ul>
@@ -46,21 +48,22 @@ import com.ecclesiaflow.io.exception.EmailSendingException;
 public interface ConfirmationNotifier {
 
     /**
-     * Envoie un code de confirmation à un membre via le canal configuré.
+     * Envoie un lien de confirmation sécurisé à un membre via le canal configuré.
      * <p>
-     * Méthode abstraite permettant l'envoi d'un code de confirmation
-     * à un membre identifié par son email et prénom. L'implémentation
-     * concrète détermine le canal de communication utilisé.
+     * Méthode permettant l'envoi d'un lien de confirmation cliquable
+     * contenant un token UUID sécurisé. L'implémentation concrète
+     * détermine le canal de communication utilisé et construit l'URL complète.
      * </p>
      * 
      * @param email l'adresse email du destinataire, non null
-     * @param confirmationCode le code de confirmation à envoyer, non null
+     * @param confirmationToken le token de confirmation UUID à inclure dans le lien, non null
      * @param firstName le prénom du membre pour personnalisation, non null
      * 
      * @throws EmailSendingException si l'envoi échoue pour des raisons techniques
      * 
-     * @implNote Les implémentations doivent gérer les erreurs de façon appropriée
-     *           et fournir des logs détaillés pour le debugging.
+     * @implNote Les implémentations doivent construire une URL complète du type:
+     *           https://app.ecclesiaflow.com/ecclesiaflow/members/confirmation?token={confirmationToken}
+     *           et gérer les erreurs de façon appropriée avec logs détaillés.
      */
-    void sendCode(String email, String confirmationCode, String firstName);
+    void sendConfirmationLink(String email, UUID confirmationToken, String firstName);
 }
