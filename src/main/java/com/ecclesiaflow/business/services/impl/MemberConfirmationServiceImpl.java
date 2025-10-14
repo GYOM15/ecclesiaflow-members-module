@@ -1,10 +1,9 @@
 package com.ecclesiaflow.business.services.impl;
 
-import com.ecclesiaflow.business.domain.communication.CodeGenerator;
 import com.ecclesiaflow.business.domain.communication.ConfirmationNotifier;
+import com.ecclesiaflow.business.domain.confirmation.ConfirmationTokenGenerator;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmation;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
-import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
@@ -29,17 +28,25 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
     private final MemberConfirmationRepository confirmationRepository;
     private final AuthenticationService authenticationService;
     private final ConfirmationNotifier confirmationNotifier;
-    private final CodeGenerator codeGenerator;
+    private final ConfirmationTokenGenerator tokenGenerator;
 
     @Override
     @Transactional
-    public MembershipConfirmationResult confirmMember(MembershipConfirmation membershipConfirmation) {
-        UUID memberId = membershipConfirmation.getMemberId();
-        String code = membershipConfirmation.getConfirmationCode();
+    public MembershipConfirmationResult confirmMemberByToken(UUID token) {
+        if (token == null) {
+            throw new IllegalArgumentException("Le token ne peut pas être null");
+        }
+        MemberConfirmation confirmation = confirmationRepository.getByToken(token)
+                .orElseThrow(() -> new InvalidConfirmationCodeException("Token de confirmation invalide ou déjà utilisé"));
 
-        Member member = getMemberOrThrow(memberId);
-        MemberConfirmation confirmation = validateConfirmationCode(memberId, code);
-
+        if (confirmation.isExpired()) {
+            throw new ExpiredConfirmationCodeException("Token de confirmation expiré");
+        }
+        Member member = getMemberOrThrow(confirmation.getMemberId());
+        
+        if (member.isConfirmed()) {
+            throw new MemberAlreadyConfirmedException("Le compte est déjà confirmé");
+        }
         Member confirmedMember = member.confirm();
         memberRepository.save(confirmedMember);
 
@@ -48,7 +55,7 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
         String temporaryToken = authenticationService.retrievePostActivationToken(member.getEmail());
 
         return MembershipConfirmationResult.builder()
-                .message("Compte confirmé avec succès")
+                .message("Compte confirmé avec succès. Vous pouvez maintenant définir votre mot de passe.")
                 .temporaryToken(temporaryToken)
                 .expiresInSeconds(900)
                 .build();
@@ -57,47 +64,45 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
 
     @Override
     @Transactional
-    public void sendConfirmationCode(UUID memberId) {
-        Member member = getMemberOrThrow(memberId);
-        if (member.isConfirmed()) {
-            throw new MemberAlreadyConfirmedException("Le compte est déjà confirmé. Aucun nouveau code n'est requis.");
+    public void sendConfirmationLink(String email) {
+        Member member = memberRepository.getByEmail(email).orElse(null);
+        if (member == null) {
+            return;
         }
-        generateAndSaveCode(member);
+        if (member.isConfirmed()) {
+            throw new MemberAlreadyConfirmedException(
+                "Votre compte est déjà confirmé. Vous pouvez vous connecter directement."
+            );
+        }
+        generateAndSaveToken(member);
     }
 
     @Override
     @Transactional
-    public void sendConfirmationCode(Member member) {
-        generateAndSaveCode(member);
+    public void sendConfirmationLink(Member member) {
+        generateAndSaveToken(member);
     }
 
-    private void generateAndSaveCode(Member member) {
-        deleteExistingConfirmationCode(member.getId());
-        String newCode = codeGenerator.generateCode();
+    private void generateAndSaveToken(Member member) {
+        deleteExistingConfirmationToken(member.getId());
+        UUID newToken = tokenGenerator.generateToken();
         MemberConfirmation confirmation = MemberConfirmation.builder()
                 .memberId(member.getId())
-                .code(newCode)
+                .token(newToken)
+                .createdAt(LocalDateTime.now())
                 .expiresAt(LocalDateTime.now().plusHours(24))
                 .build();
         confirmationRepository.save(confirmation);
-        confirmationNotifier.sendCode(member.getEmail(), newCode, member.getFirstName());
+        confirmationNotifier.sendConfirmationLink(member.getEmail(), newToken, member.getFirstName());
     }
 
-    private MemberConfirmation validateConfirmationCode(UUID memberId, String code) {
-        MemberConfirmation confirmation = confirmationRepository.getMemberIdAndCode(memberId, code)
-                .orElseThrow(() -> new InvalidConfirmationCodeException("Code de confirmation invalide"));
-        if (confirmation.isExpired()) {
-            throw new ExpiredConfirmationCodeException("Code de confirmation expiré");
-        }
-        return confirmation;
-    }
 
     private Member getMemberOrThrow(UUID memberId) throws MemberNotFoundException, MemberAlreadyConfirmedException {
         return memberRepository.getById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException("Membre non trouvé"));
     }
 
-    private void deleteExistingConfirmationCode(UUID memberId) {
+    private void deleteExistingConfirmationToken(UUID memberId) {
         confirmationRepository.getByMemberId(memberId)
                 .ifPresent(confirmationRepository::delete);
     }
