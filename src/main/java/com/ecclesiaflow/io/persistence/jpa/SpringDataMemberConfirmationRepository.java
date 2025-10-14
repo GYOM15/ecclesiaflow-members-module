@@ -32,7 +32,7 @@ import java.util.UUID;
  * <p><strong>Optimisations :</strong></p>
  * <ul>
  *   <li>Requêtes natives pour les opérations de nettoyage</li>
- *   <li>Index sur memberId et code pour les performances</li>
+ *   <li>Index sur memberId et token pour les performances</li>
  *   <li>Requêtes avec paramètres pour éviter les injections SQL</li>
  * </ul>
  *
@@ -51,25 +51,25 @@ public interface SpringDataMemberConfirmationRepository extends JpaRepository<Me
     Optional<MemberConfirmationEntity> findByMemberId(UUID memberId);
 
     /**
-     * Recherche une confirmation par l'identifiant du membre et le code.
+     * Recherche une confirmation par l'identifiant du membre et le token.
      * <p>
-     * Cette méthode permet de valider qu'un code appartient bien au membre spécifié.
+     * Cette méthode permet de valider qu'un token appartient bien au membre spécifié.
      * Utile pour éviter les attaques par force brute inter-comptes.
      * </p>
      * 
      * @param memberId l'identifiant du membre
-     * @param code le code de confirmation
+     * @param token le token de confirmation UUID
      * @return un Optional contenant la confirmation si trouvée
      */
-    Optional<MemberConfirmationEntity> findByMemberIdAndCode(UUID memberId, String code);
+    Optional<MemberConfirmationEntity> findByMemberIdAndToken(UUID memberId, UUID token);
 
     /**
-     * Recherche une confirmation par son code.
+     * Recherche une confirmation par son token UUID.
      * 
-     * @param code le code de confirmation
+     * @param token le token de confirmation UUID
      * @return un Optional contenant la confirmation si trouvée
      */
-    Optional<MemberConfirmationEntity> findByCode(String code);
+    Optional<MemberConfirmationEntity> findByToken(UUID token);
 
     /**
      * Vérifie l'existence d'une confirmation pour un membre.

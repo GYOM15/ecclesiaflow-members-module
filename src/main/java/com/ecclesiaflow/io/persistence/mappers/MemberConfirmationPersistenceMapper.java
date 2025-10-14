@@ -50,7 +50,7 @@ public class MemberConfirmationPersistenceMapper {
         return MemberConfirmation.builder()
                 .id(entity.getId())
                 .memberId(entity.getMemberId())
-                .code(entity.getCode())
+                .token(entity.getToken())
                 .createdAt(entity.getCreatedAt())
                 .expiresAt(entity.getExpiresAt())
                 .build();
@@ -76,7 +76,7 @@ public class MemberConfirmationPersistenceMapper {
         return MemberConfirmationEntity.builder()
                 .id(domain.getId())
                 .memberId(domain.getMemberId())
-                .code(domain.getCode())
+                .token(domain.getToken())
                 .createdAt(domain.getCreatedAt())
                 .expiresAt(domain.getExpiresAt())
                 .build();
