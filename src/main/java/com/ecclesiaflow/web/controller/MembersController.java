@@ -9,12 +9,9 @@ import com.ecclesiaflow.web.model.MemberPageResponse;
 import com.ecclesiaflow.web.model.SignUpRequestPayload;
 import com.ecclesiaflow.web.model.SignUpResponse;
 import com.ecclesiaflow.web.model.UpdateMemberRequestPayload;
-import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.Nullable;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -119,7 +116,6 @@ public class MembersController implements MembersManagementApi, MembersTemporary
      * @implNote <strong>Implémentation :</strong> Délègue au {@link MembersManagementDelegate}
      * @see MembersManagementDelegate#createMember(SignUpRequestPayload)
      */
-    @RateLimiter(name = "member-registration")
     @Override
     public ResponseEntity<SignUpResponse> _createMember(SignUpRequestPayload signUpRequestPayload) {
         return membersManagementDelegate.createMember(signUpRequestPayload);

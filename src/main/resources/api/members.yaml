@@ -182,7 +182,6 @@ paths:
 
         **Note:** Le membre devra confirmer son compte via email avant de pouvoir se connecter.
       operationId: createMember
-      x-rate-limit-name: member-registration
       requestBody:
         required: true
         content:
@@ -438,12 +437,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConflictError'
-        '429':
-          description: Trop de tentatives de renvoi (rate limiting)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TooManyRequestsError'
         '500':
           description: Erreur interne du serveur
           content:
@@ -465,7 +458,6 @@ paths:
         2. Vérification que le compte n'est pas déjà confirmé
         3. Génération d'un nouveau code si nécessaire
         4. Envoi du code par email
-        5. Limitation des abus avec rate limiting
       operationId: resendConfirmationCode
       parameters:
         - name: memberId
@@ -908,21 +900,6 @@ components:
               description: Not applicable to this error type.
               type: "null"
 
-    TooManyRequestsError:
-      allOf:
-        - $ref: '#/components/schemas/ApiErrorResponse'
-        - type: object
-          properties:
-            status:
-              example: 429
-            error:
-              example: "Too Many Requests"
-            message:
-              example: "Trop de requêtes. Veuillez réessayer plus tard"
-            errors:
-              description: Not applicable to this error type.
-              type: "null"
-
     InternalServerError:
       allOf:
         - $ref: '#/components/schemas/ApiErrorResponse'
@@ -1030,5 +1007,4 @@ tags:
 
       **Sécurité:**
       - Codes à 6 chiffres avec expiration (15 minutes)
-      - Rate limiting pour prévenir les abus
       - Tentatives limitées de validation
