@@ -4,7 +4,6 @@ import com.ecclesiaflow.web.api.MemberConfirmationApi;
 import com.ecclesiaflow.web.delegate.MemberConfirmationDelegate;
 import com.ecclesiaflow.web.model.ConfirmationRequestPayload;
 import com.ecclesiaflow.web.model.ConfirmationResponse;
-import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,7 +36,7 @@ import java.util.UUID;
  *   <li>Implémentation de l'interface MemberConfirmationApi générée</li>
  *   <li>Délégation de la logique métier au délégué approprié</li>
  *   <li>Respect strict des contrats définis dans la spécification OpenAPI</li>
- *   <li>Gestion des annotations spécifiques (ex: @RateLimiter)</li>
+ *   <li>Respect des bonnes pratiques REST</li>
  * </ul>
  * 
  * @author EcclesiaFlow Team
@@ -63,11 +62,9 @@ public class MembersConfirmationController implements MemberConfirmationApi {
      * @throws com.ecclesiaflow.business.exceptions.MemberNotFoundException si le membre n'existe pas
      * @throws com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException si le code est invalide
      * 
-     * @implNote Rate limiting activé pour prévenir les attaques par force brute
      * @implNote <strong>Implémentation :</strong> Délègue au {@link MemberConfirmationDelegate}
      * @see MemberConfirmationDelegate#confirmMember(UUID, ConfirmationRequestPayload)
      */
-    @RateLimiter(name = "confirmation-attempts")
     @Override
     public ResponseEntity<ConfirmationResponse> _confirmMember(
             UUID memberId, ConfirmationRequestPayload confirmationRequestPayload) {
@@ -86,11 +83,9 @@ public class MembersConfirmationController implements MemberConfirmationApi {
      * @throws com.ecclesiaflow.business.exceptions.MemberNotFoundException si le membre n'existe pas
      * @throws com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException si le compte est déjà confirmé
      * 
-     * @implNote Rate limiting activé pour prévenir l'abus d'envoi d'emails
      * @implNote <strong>Implémentation :</strong> Délègue au {@link MemberConfirmationDelegate}
      * @see MemberConfirmationDelegate#resendConfirmationCode(UUID)
      */
-    @RateLimiter(name = "confirmation-resend")
     @Override
     public ResponseEntity<Void> _resendConfirmationCode(UUID memberId) {
         return memberConfirmationDelegate.resendConfirmationCode(memberId);
