@@ -40,7 +40,7 @@ class EmailServiceImplTest {
     @Test
     void sendConfirmationCode_shouldSendCorrectEmail() throws ConfirmationEmailException {
         String recipientEmail = "test@example.com";
-        String code = "123456";
+        String confirmationUrl = "http://localhost:8080/ecclesiaflow/members/confirmation?token=550e8400-e29b-41d4-a716-446655440000";
         String firstName = "John";
 
         // Create an ArgumentCaptor to capture the SimpleMailMessage sent to mailSender.send()
@@ -49,7 +49,7 @@ class EmailServiceImplTest {
         // Configure the mock mailSender to do nothing when send is called (success scenario)
         doNothing().when(mailSender).send(any(SimpleMailMessage.class));
 
-        emailService.sendConfirmationCode(recipientEmail, code, firstName);
+        emailService.sendConfirmationCode(recipientEmail, confirmationUrl, firstName);
 
         // Verify that mailSender.send() was called exactly once
         verify(mailSender, times(1)).send(messageCaptor.capture());
@@ -60,19 +60,19 @@ class EmailServiceImplTest {
         // Assert the properties of the sent message
         assertThat(sentMessage.getFrom()).isEqualTo(testFromEmail);
         assertThat(sentMessage.getTo()).containsExactly(recipientEmail);
-        assertThat(sentMessage.getSubject()).isEqualTo("Code de confirmation - " + testAppName);
+        assertThat(sentMessage.getSubject()).isEqualTo("Confirmez votre compte - " + testAppName);
         assertThat(sentMessage.getText())
                 .contains("Bonjour John,")
                 .contains("Bienvenue dans " + testAppName + " !")
-                .contains(code)
-                .contains("Ce code est valable pendant 24 heures.")
+                .contains(confirmationUrl)
+                .contains("Ce lien est valable pendant 24 heures")
                 .contains("L'équipe " + testAppName);
     }
 
     @Test
     void sendConfirmationCode_shouldThrowConfirmationEmailExceptionOnError() {
         String recipientEmail = "error@example.com";
-        String code = "654321";
+        String confirmationUrl = "http://localhost:8080/ecclesiaflow/members/confirmation?token=550e8400-e29b-41d4-a716-446655440001";
         String firstName = "Jane";
 
         // Configure the mock mailSender to throw an exception when send is called
@@ -80,7 +80,7 @@ class EmailServiceImplTest {
 
         // Verify that ConfirmationEmailException is thrown
         ConfirmationEmailException exception = assertThrows(ConfirmationEmailException.class, () ->
-                emailService.sendConfirmationCode(recipientEmail, code, firstName)
+                emailService.sendConfirmationCode(recipientEmail, confirmationUrl, firstName)
         );
 
         // Assert the message of the thrown exception
