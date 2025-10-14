@@ -8,10 +8,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class EmailConfirmationNotifierTest {
@@ -28,47 +31,47 @@ class EmailConfirmationNotifierTest {
     }
 
     @Test
-    void sendCode_shouldCallEmailServiceSendConfirmationCode() throws ConfirmationEmailException {
+    void sendConfirmationLink_shouldCallEmailServiceWithConfirmationUrl() throws ConfirmationEmailException {
         // Arrange
         String email = "test@example.com";
-        String code = "123456";
+        UUID token = UUID.randomUUID();
         String firstName = "John";
 
         // Configure the mock EmailService to return a completed CompletableFuture when sendConfirmationCode is called
-        when(emailService.sendConfirmationCode(email, code, firstName))
+        when(emailService.sendConfirmationCode(eq(email), anyString(), eq(firstName)))
                 .thenReturn(CompletableFuture.completedFuture(null));
 
         // Act
-        emailConfirmationNotifier.sendCode(email, code, firstName);
+        emailConfirmationNotifier.sendConfirmationLink(email, token, firstName);
 
         // Assert
-        // Verify that emailService.sendConfirmationCode was called exactly once with the correct arguments
-        verify(emailService, times(1)).sendConfirmationCode(email, code, firstName);
+        // Verify that emailService.sendConfirmationCode was called exactly once with a URL containing the token
+        verify(emailService, times(1)).sendConfirmationCode(eq(email), contains(token.toString()), eq(firstName));
     }
 
     @Test
-    void sendCode_shouldPropagateConfirmationEmailException() {
+    void sendConfirmationLink_shouldPropagateConfirmationEmailException() {
         // Arrange
         String email = "error@example.com";
-        String code = "654321";
+        UUID token = UUID.randomUUID();
         String firstName = "Jane";
         // Create an instance of the specific exception
         ConfirmationEmailException expectedException = new ConfirmationEmailException("Email sending failed", new RuntimeException("Mock Mail Error"));
 
         // Configure the mock EmailService to throw this specific exception
-        when(emailService.sendConfirmationCode(email, code, firstName))
+        when(emailService.sendConfirmationCode(eq(email), anyString(), eq(firstName)))
                 .thenThrow(expectedException);
 
         // Act & Assert
         // Verify that the exception thrown by EmailService is propagated by EmailConfirmationNotifier
         ConfirmationEmailException actualException = assertThrows(ConfirmationEmailException.class, () ->
-                emailConfirmationNotifier.sendCode(email, code, firstName)
+                emailConfirmationNotifier.sendConfirmationLink(email, token, firstName)
         );
 
         // Assert that the propagated exception is the same instance or has the same message and cause
         assertThat(actualException).isSameAs(expectedException); // Use isSameAs for instance equality
 
         // Verify that emailService.sendConfirmationCode was called exactly once
-        verify(emailService, times(1)).sendConfirmationCode(email, code, firstName);
+        verify(emailService, times(1)).sendConfirmationCode(eq(email), anyString(), eq(firstName));
     }
 }
