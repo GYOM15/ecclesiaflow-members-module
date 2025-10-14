@@ -11,7 +11,7 @@ info:
 
     **Fonctionnalités principales:**
     - Gestion complète des profils membres (CRUD)
-    - Système de confirmation par email avec codes temporaires
+    - Système de confirmation par email avec liens sécurisés (tokens UUID)
     - Gestion sécurisée des mots de passe
     - Notifications email automatisées
     - Validation stricte des données d'entrée
@@ -169,19 +169,20 @@ paths:
     post:
       tags:
         - Members Management
-      summary: Créer un nouveau membre
+      summary: Créer un nouveau membre (inscription)
       description: |
-        Crée un nouveau membre dans le système.
+        Crée un nouveau membre dans le système (endpoint d'inscription publique).
 
         **Processus:**
         1. Validation des données d'entrée
         2. Vérification de l'unicité de l'email
         3. Création du membre avec statut "non confirmé"
-        4. Génération automatique d'un code de confirmation
-        5. Envoi d'un email de confirmation
+        4. Génération automatique d'un token de confirmation sécurisé (UUID)
+        5. Envoi d'un email avec lien de confirmation cliquable
 
-        **Note:** Le membre devra confirmer son compte via email avant de pouvoir se connecter.
+        **Note:** Le membre devra confirmer son compte en cliquant sur le lien reçu par email avant de pouvoir se connecter.
       operationId: createMember
+      security: []  # Pas d'authentification requise - endpoint d'inscription publique
       requestBody:
         required: true
         content:
@@ -374,59 +375,59 @@ paths:
                 $ref: '#/components/schemas/InternalServerError'
 
 
-  /ecclesiaflow/members/{memberId}/confirmation:
-    patch:
+  /ecclesiaflow/members/confirmation:
+    get:
       tags:
         - Member Confirmation
-      summary: Confirmer le compte d'un membre
+      summary: Confirmer le compte d'un membre via lien email
       description: |
-        Met à jour l'état de confirmation d'un membre avec le code reçu par email.
-        Génère un token temporaire et l'URL de redirection sécurisée pour définir le mot de passe.
+        Confirme automatiquement le compte d'un membre en utilisant le token unique reçu par email.
+        Génère un token temporaire d'authentification et retourne une réponse JSON avec les informations nécessaires.
 
         **Processus de confirmation:**
-        1. Validation du code de confirmation
-        2. Mise à jour de l'état du compte (non confirmé → confirmé)
-        3. Génération d'un token temporaire
-        4. Retour du token dans la réponse JSON et de l'URL de redirection sécurisée (sans token)
+        1. Validation du token de confirmation (UUID)
+        2. Vérification de l'expiration (24h)
+        3. Vérification que le token n'a pas déjà été utilisé
+        4. Mise à jour de l'état du compte (non confirmé → confirmé)
+        5. Génération d'un token temporaire d'authentification
+        6. Suppression du token de confirmation (usage unique)
         
-        **Sécurité:** Le token temporaire est fourni dans la réponse JSON, pas dans l'URL de redirection.
-        Le client doit stocker temporairement le token et l'utiliser dans le header Authorization.
-      operationId: confirmMember
+        **Expérience utilisateur:**
+        - L'utilisateur clique sur le lien dans son email
+        - Confirmation automatique sans saisie manuelle
+        - Retour d'un token temporaire pour définir le mot de passe
+        
+        **Sécurité:** 
+        - Token UUID impossible à deviner (128 bits d'entropie)
+        - Usage unique (token supprimé après utilisation)
+        - Expiration 24h
+        - Protection contre les attaques par force brute
+      operationId: confirmMemberByToken
+      security: []  # Pas d'authentification requise pour la confirmation
       parameters:
-        - name: memberId
-          in: path
-          description: Identifiant unique du membre
+        - name: token
+          in: query
+          description: Token de confirmation unique reçu par email (UUID)
           required: true
           schema:
             type: string
             format: uuid
             example: "550e8400-e29b-41d4-a716-446655440000"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ConfirmationRequestPayload'
-            examples:
-              valid_code:
-                summary: Code valide
-                value:
-                  code: "123456"
       responses:
         '200':
-          description: Compte confirmé avec succès, token temporaire généré
+          description: Compte confirmé avec succès - Token temporaire généré
           content:
             application/vnd.ecclesiaflow.members.v1+json:
               schema:
                 $ref: '#/components/schemas/ConfirmationResponse'
         '400':
-          description: Code de confirmation invalide ou expiré
+          description: Token de confirmation invalide ou mal formaté
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
         '404':
-          description: Membre introuvable
+          description: Token introuvable ou déjà utilisé
           content:
             application/json:
               schema:
@@ -437,6 +438,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConflictError'
+        '410':
+          description: Token expiré (24h dépassées)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoneError'
         '500':
           description: Erreur interne du serveur
           content:
@@ -444,51 +451,74 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalServerError'
 
-  /ecclesiaflow/members/{memberId}/confirmation-code:
+  /ecclesiaflow/members/new-confirmation:
     post:
       tags:
         - Member Confirmation
-      summary: Renvoyer le code de confirmation
+      summary: Renvoyer le lien de confirmation
       description: |
-        Renvoie le code de confirmation actuel par email.
-        Réutilise le code existant s'il est encore valide ou génère un nouveau code si l'ancien est expiré.
+        Renvoie un nouveau lien de confirmation par email.
+        L'utilisateur fournit simplement son adresse email, le système retrouve son compte
+        et génère un nouveau token de confirmation.
 
         **Processus de renvoi:**
-        1. Vérification de l'existence du membre
+        1. Recherche du membre par email
         2. Vérification que le compte n'est pas déjà confirmé
-        3. Génération d'un nouveau code si nécessaire
-        4. Envoi du code par email
-      operationId: resendConfirmationCode
-      parameters:
-        - name: memberId
-          in: path
-          description: Identifiant unique du membre
-          required: true
-          schema:
-            type: string
-            format: uuid
-            example: "550e8400-e29b-41d4-a716-446655440000"
+        3. Invalidation de l'ancien token (si existant)
+        4. Génération d'un nouveau token UUID sécurisé
+        5. Envoi du nouveau lien par email
+        
+        **Sécurité:**
+        - Chaque renvoi invalide le token précédent
+        - Nouveau token avec nouvelle expiration (24h)
+        - Protection contre les abus via rate limiting Envoy
+        - Réponse identique même si l'email n'existe pas (anti-énumération)
+      operationId: resendConfirmationLink
+      security: []  # Pas d'authentification requise - l'utilisateur n'est pas encore connecté
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendConfirmationLinkRequest'
       responses:
         '200':
-          description: Code de confirmation renvoyé avec succès
+          description: |
+            Requête traitée avec succès.
+            
+            **Note:** Pour des raisons de sécurité (anti-énumération), cette réponse est 
+            retournée même si l'email n'existe pas dans le système. Cela empêche un attaquant
+            de déterminer quels emails sont enregistrés.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Si cette adresse email est associée à un compte non confirmé, un nouveau lien de confirmation a été envoyé."
+                  expiresIn:
+                    type: integer
+                    format: int64
+                    description: Durée de validité du lien en secondes
+                    example: 86400
         '400':
-          description: Code de confirmation invalide ou expiré
+          description: Requête invalide (email mal formaté)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
-        '404':
-          description: Membre introuvable
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotFoundError'
         '409':
-          description: Membre déjà confirmé
+          description: Compte déjà confirmé
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConflictError'
+              example:
+                status: 409
+                error: "Conflict"
+                message: "Votre compte est déjà confirmé. Vous pouvez vous connecter directement."
+                timestamp: "2024-01-15T10:30:00Z"
         '500':
           description: Erreur interne du serveur
           content:
@@ -628,21 +658,18 @@ components:
           pattern: "^\\+?[1-9]\\d{1,14}$"
           example: "+33987654321"
 
-    ConfirmationRequestPayload:
+    ResendConfirmationLinkRequest:
       type: object
-      description: "Code de confirmation à 6 chiffres pour valider l'adresse email"
+      description: "Requête pour renvoyer un lien de confirmation par email"
       required:
-        - code
+        - email
       properties:
-        code:
+        email:
           type: string
-          description: "Code de confirmation à 6 chiffres reçu par email"
-          pattern: "\\d{6}"
-          minLength: 6
-          maxLength: 6
-          example: "123456"
-
-
+          format: email
+          description: "Adresse email du compte à confirmer"
+          maxLength: 100
+          example: "jean.dupont@example.com"
 
     # Response Schemas
     SignUpResponse:
@@ -900,6 +927,21 @@ components:
               description: Not applicable to this error type.
               type: "null"
 
+    GoneError:
+      allOf:
+        - $ref: '#/components/schemas/ApiErrorResponse'
+        - type: object
+          properties:
+            status:
+              example: 410
+            error:
+              example: "Gone"
+            message:
+              example: "La ressource n'est plus disponible (token expiré)"
+            errors:
+              description: Not applicable to this error type.
+              type: "null"
+
     InternalServerError:
       allOf:
         - $ref: '#/components/schemas/ApiErrorResponse'
@@ -1000,11 +1042,13 @@ tags:
       Système de confirmation des comptes membres
 
       **Processus:**
-      - Génération de codes de confirmation temporaires
-      - Envoi par email avec modèles personnalisés
-      - Validation des codes avec gestion d'expiration
+      - Génération de tokens de confirmation sécurisés (UUID)
+      - Envoi par email de liens cliquables
+      - Validation automatique au clic avec gestion d'expiration
       - Activation des comptes après confirmation
 
       **Sécurité:**
-      - Codes à 6 chiffres avec expiration (15 minutes)
-      - Tentatives limitées de validation
+      - Tokens UUID impossibles à deviner (128 bits d'entropie)
+      - Expiration 24h
+      - Usage unique (suppression après utilisation)
+      - Protection contre les attaques par force brute
