@@ -3,22 +3,26 @@ package com.ecclesiaflow.io.notification.email;
 import com.ecclesiaflow.business.domain.communication.ConfirmationNotifier;
 import com.ecclesiaflow.business.domain.communication.EmailService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 /**
- * Implémentation de {@link ConfirmationNotifier} pour l'envoi de codes via email.
+ * Implémentation de {@link ConfirmationNotifier} pour l'envoi de liens de confirmation via email.
  * <p>
  * Cette classe respecte le principe SRP en se concentrant uniquement sur
- * l'envoi de codes de confirmation par email. Délègue la logique d'envoi
+ * l'envoi de liens de confirmation sécurisés par email. Délègue la logique d'envoi
  * d'email au service spécialisé {@link EmailService} tout en implémentant
  * le contrat d'envoi de notifications de confirmation.
  * </p>
  * 
- * <p><strong>Rôle architectural :</strong> Implémentation de service - Envoi email de codes</p>
+ * <p><strong>Rôle architectural :</strong> Implémentation de service - Envoi email de liens</p>
  * 
  * <p><strong>Responsabilité unique :</strong></p>
  * <ul>
- *   <li>Envoi de codes de confirmation via email uniquement</li>
+ *   <li>Envoi de liens de confirmation via email uniquement</li>
+ *   <li>Construction des URLs de confirmation</li>
  *   <li>Adaptation du contrat {@link ConfirmationNotifier} pour l'email</li>
  *   <li>Délégation au service email spécialisé</li>
  * </ul>
@@ -52,27 +56,51 @@ import org.springframework.stereotype.Service;
 public class EmailConfirmationNotifier implements ConfirmationNotifier {
 
     private final EmailService emailService;
+    
+    @Value("${ecclesiaflow.members.base-url:http://localhost:8080}")
+    private String baseUrl;
 
     /**
      * {@inheritDoc}
      * <p>
-     * Implémentation spécifique pour l'envoi via email asynchrone. Délègue l'envoi
-     * effectif au service {@link EmailService} qui gère tous les détails
-     * techniques de l'envoi d'email (SMTP, templates, etc.).
+     * Implémentation pour l'envoi d'un lien de confirmation sécurisé via email asynchrone.
+     * Construit l'URL complète avec le token UUID et délègue l'envoi au service
+     * {@link EmailService} qui gère tous les détails techniques de l'envoi d'email.
      * <strong>Exécution asynchrone :</strong> L'envoi se fait en arrière-plan,
      * permettant une réponse immédiate à l'utilisateur.
      * </p>
      * 
+     * <p><strong>Format du lien :</strong> 
+     * {@code {baseUrl}/ecclesiaflow/members/confirmation?token={uuid}}
+     * </p>
+     * 
+     * <p><strong>Exemple :</strong>
+     * {@code https://app.ecclesiaflow.com/ecclesiaflow/members/confirmation?token=550e8400-e29b-41d4-a716-446655440000}
+     * </p>
+     * 
      * @param email l'adresse email du destinataire, non null
-     * @param confirmationCode le code de confirmation à envoyer, non null
+     * @param confirmationToken le token de confirmation UUID à inclure dans le lien, non null
      * @param firstName le prénom du membre pour personnalisation, non null
      * 
-     * @implNote Toute la logique d'envoi d'email (formatage, templates, SMTP)
+     * @implNote L'URL de base est configurée via la propriété
+     *           {@code ecclesiaflow.members.base-url} (par défaut: http://localhost:8080).
+     *           Toute la logique d'envoi d'email (formatage, templates, SMTP)
      *           est déléguée au {@link EmailService} pour respecter SRP.
      *           L'exécution asynchrone améliore l'expérience utilisateur.
      */
     @Override
-    public void sendCode(String email, String confirmationCode, String firstName) {
-        emailService.sendConfirmationCode(email, confirmationCode, firstName);
+    public void sendConfirmationLink(String email, UUID confirmationToken, String firstName) {
+        String confirmationUrl = buildConfirmationUrl(confirmationToken);
+        emailService.sendConfirmationCode(email, confirmationUrl, firstName);
+    }
+
+    /**
+     * Construit l'URL complète de confirmation avec le token UUID.
+     * 
+     * @param token le token de confirmation UUID
+     * @return l'URL complète de confirmation
+     */
+    private String buildConfirmationUrl(UUID token) {
+        return String.format("%s/ecclesiaflow/members/confirmation?token=%s", baseUrl, token);
     }
 }

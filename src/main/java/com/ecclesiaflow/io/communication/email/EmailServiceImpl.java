@@ -16,7 +16,7 @@ import java.util.concurrent.CompletableFuture;
  * Implémentation complète du service d'envoi d'emails pour EcclesiaFlow.
  * <p>
  * Cette classe implémente l'interface {@link EmailService} et fournit toutes les
- * fonctionnalités d'envoi d'emails : codes de confirmation, emails de bienvenue,
+ * fonctionnalités d'envoi d'emails : liens de confirmation, emails de bienvenue,
  * et réinitialisation de mot de passe. Utilise Spring Mail avec JavaMailSender
  * pour l'envoi effectif des emails.
  * </p>
@@ -25,7 +25,7 @@ import java.util.concurrent.CompletableFuture;
  * 
  * <p><strong>Responsabilités principales :</strong></p>
  * <ul>
- *   <li>Envoi d'emails de confirmation avec codes à 6 chiffres</li>
+ *   <li>Envoi d'emails de confirmation avec liens sécurisés (UUID tokens)</li>
  *   <li>Envoi d'emails de bienvenue après confirmation</li>
  *   <li>Envoi d'emails de réinitialisation de mot de passe</li>
  *   <li>Construction des contenus d'emails personnalisés</li>
@@ -69,13 +69,13 @@ public class EmailServiceImpl implements EmailService {
 
     @Async("taskExecutor")
     @Override
-    public CompletableFuture<Void> sendConfirmationCode(String email, String code, String firstName) throws ConfirmationEmailException {
+    public CompletableFuture<Void> sendConfirmationCode(String email, String confirmationUrl, String firstName) throws ConfirmationEmailException {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(email);
-            message.setSubject("Code de confirmation - " + appName);
-            message.setText(buildConfirmationEmailText(code, firstName));
+            message.setSubject("Confirmez votre compte - " + appName);
+            message.setText(buildConfirmationEmailText(confirmationUrl, firstName));
             mailSender.send(message);
             return CompletableFuture.completedFuture(null);
 
@@ -104,32 +104,32 @@ public class EmailServiceImpl implements EmailService {
     /**
      * Construit le contenu textuel de l'email de confirmation.
      * <p>
-     * Génère un message personnalisé contenant le code de confirmation,
+     * Génère un message personnalisé contenant le lien de confirmation cliquable,
      * les instructions d'utilisation, et la durée de validité (24h).
      * Utilise les text blocks Java pour une meilleure lisibilité.
      * </p>
      * 
-     * @param code le code de confirmation à 6 chiffres, non null
+     * @param confirmationUrl l'URL complète de confirmation avec token, non null
      * @param firstName le prénom du destinataire pour personnalisation, non null
      * @return le contenu complet de l'email formaté
      */
-    private String buildConfirmationEmailText(String code, String firstName) {
+    private String buildConfirmationEmailText(String confirmationUrl, String firstName) {
         return String.format("""
                 Bonjour %s,
                 
                 Bienvenue dans %s !
                 
-                Pour confirmer votre inscription, veuillez utiliser le code de confirmation suivant :
+                Pour confirmer votre inscription, veuillez cliquer sur le lien suivant :
                 
                 %s
                 
-                Ce code est valable pendant 24 heures.
+                Ce lien est valable pendant 24 heures et ne peut être utilisé qu'une seule fois.
                 
                 Si vous n'avez pas créé de compte, vous pouvez ignorer cet email.
                 
                 Cordialement,
                 L'équipe %s
-                """, firstName, appName, code, appName);
+                """, firstName, appName, confirmationUrl, appName);
     }
 
     /**
