@@ -299,7 +299,12 @@
 						<exclude>**/com/ecclesiaflow/web/api/**</exclude>
 						<exclude>**/com/ecclesiaflow/web/model/**</exclude>
 						<!-- Exclure les configurations Spring Boot -->
-						<exclude>**/com/ecclesiaflow/EcclesiaflowMembersModuleApplication.class</exclude>
+						<exclude>**/com/ecclesiaflow/MembersModuleApplication.class</exclude>
+						<!-- Exceptions métier simples -->
+						<exclude>**/exceptions/ExpiredConfirmationCodeException.class</exclude>
+						<exclude>**/exceptions/InvalidConfirmationCodeException.class</exclude>
+						<exclude>**/exceptions/MemberAlreadyConfirmedException.class</exclude>
+						<exclude>**/exception/InvalidRequestException.class</exclude>
 					</excludes>
 				</configuration>
 				<executions>
