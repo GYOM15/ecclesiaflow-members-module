@@ -3,10 +3,10 @@ package com.ecclesiaflow.web.controller;
 import com.ecclesiaflow.business.exceptions.ExpiredConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
-import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import com.ecclesiaflow.web.delegate.MemberConfirmationDelegate;
-import com.ecclesiaflow.web.model.ConfirmationRequestPayload;
 import com.ecclesiaflow.web.model.ConfirmationResponse;
+import com.ecclesiaflow.web.model.ResendConfirmationLink200Response;
+import com.ecclesiaflow.web.model.ResendConfirmationLinkRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,12 +43,10 @@ class MembersConfirmationControllerTest {
     @MockBean
     private MemberConfirmationDelegate memberConfirmationDelegate;
 
-    // --- Tests for PATCH /ecclesiaflow/members/{memberId}/confirmation (confirmMember) ---
+    // --- Tests for GET /ecclesiaflow/members/confirmation?token={uuid} (confirmMemberByToken) ---
     @Test
-    void confirmMember_shouldReturnSuccessWithToken() throws Exception {
-        UUID memberId = UUID.randomUUID();
-        ConfirmationRequestPayload request = new ConfirmationRequestPayload();
-        request.setCode("123456");
+    void confirmMemberByToken_shouldReturnSuccessWithToken() throws Exception {
+        UUID token = UUID.randomUUID();
 
         ConfirmationResponse response = new ConfirmationResponse()
                 .message("Compte confirmé avec succès")
@@ -61,137 +59,129 @@ class MembersConfirmationControllerTest {
             // Ignore
         }
 
-        when(memberConfirmationDelegate.confirmMember(eq(memberId), any(ConfirmationRequestPayload.class)))
+        when(memberConfirmationDelegate.confirmMemberByToken(token))
                 .thenReturn(ResponseEntity.ok(response));
 
-        mockMvc.perform(patch("/ecclesiaflow/members/" + memberId + "/confirmation")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(get("/ecclesiaflow/members/confirmation")
+                        .param("token", token.toString()))
                 .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
                 .andExpect(jsonPath("$.message").value("Compte confirmé avec succès"))
                 .andExpect(jsonPath("$.temporaryToken").value("temp-token-abc123"))
                 .andExpect(jsonPath("$.passwordEndpoint").exists())
                 .andExpect(jsonPath("$.expiresIn").value(900));
 
-        verify(memberConfirmationDelegate).confirmMember(eq(memberId), any(ConfirmationRequestPayload.class));
+        verify(memberConfirmationDelegate).confirmMemberByToken(token);
     }
 
     @Test
-    void confirmMember_shouldReturnBadRequestForInvalidCode() throws Exception {
-        UUID memberId = UUID.randomUUID();
-        ConfirmationRequestPayload request = new ConfirmationRequestPayload();
-        request.setCode("999999");
+    void confirmMemberByToken_shouldReturnBadRequestForInvalidToken() throws Exception {
+        UUID token = UUID.randomUUID();
 
-        when(memberConfirmationDelegate.confirmMember(eq(memberId), any(ConfirmationRequestPayload.class)))
-                .thenThrow(new InvalidConfirmationCodeException("Code de confirmation invalide"));
+        when(memberConfirmationDelegate.confirmMemberByToken(token))
+                .thenThrow(new InvalidConfirmationCodeException("Token de confirmation invalide"));
 
-        mockMvc.perform(patch("/ecclesiaflow/members/" + memberId + "/confirmation")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(get("/ecclesiaflow/members/confirmation")
+                        .param("token", token.toString()))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Code de confirmation invalide"));
+                .andExpect(jsonPath("$.message").value("Token de confirmation invalide"));
 
-        verify(memberConfirmationDelegate).confirmMember(eq(memberId), any(ConfirmationRequestPayload.class));
+        verify(memberConfirmationDelegate).confirmMemberByToken(token);
     }
 
     @Test
-    void confirmMember_shouldReturnBadRequestForExpiredCode() throws Exception {
-        UUID memberId = UUID.randomUUID();
-        ConfirmationRequestPayload request = new ConfirmationRequestPayload();
-        request.setCode("123456");
+    void confirmMemberByToken_shouldReturnBadRequestForExpiredToken() throws Exception {
+        UUID token = UUID.randomUUID();
 
-        when(memberConfirmationDelegate.confirmMember(eq(memberId), any(ConfirmationRequestPayload.class)))
-                .thenThrow(new ExpiredConfirmationCodeException("Code de confirmation expiré"));
+        when(memberConfirmationDelegate.confirmMemberByToken(token))
+                .thenThrow(new ExpiredConfirmationCodeException("Token de confirmation expiré"));
 
-        mockMvc.perform(patch("/ecclesiaflow/members/" + memberId + "/confirmation")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(get("/ecclesiaflow/members/confirmation")
+                        .param("token", token.toString()))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Code de confirmation expiré"));
+                .andExpect(jsonPath("$.message").value("Token de confirmation expiré"));
 
-        verify(memberConfirmationDelegate).confirmMember(eq(memberId), any(ConfirmationRequestPayload.class));
+        verify(memberConfirmationDelegate).confirmMemberByToken(token);
     }
 
     @Test
-    void confirmMember_shouldReturnNotFoundForNonexistentMember() throws Exception {
-        UUID memberId = UUID.randomUUID();
-        ConfirmationRequestPayload request = new ConfirmationRequestPayload();
-        request.setCode("123456");
+    void confirmMemberByToken_shouldReturnConflictForAlreadyConfirmed() throws Exception {
+        UUID token = UUID.randomUUID();
 
-        when(memberConfirmationDelegate.confirmMember(eq(memberId), any(ConfirmationRequestPayload.class)))
-                .thenThrow(new MemberNotFoundException("Membre non trouvé"));
+        when(memberConfirmationDelegate.confirmMemberByToken(token))
+                .thenThrow(new MemberAlreadyConfirmedException("Le compte est déjà confirmé"));
 
-        mockMvc.perform(patch("/ecclesiaflow/members/" + memberId + "/confirmation")
+        mockMvc.perform(get("/ecclesiaflow/members/confirmation")
+                        .param("token", token.toString()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Le compte est déjà confirmé"));
+
+        verify(memberConfirmationDelegate).confirmMemberByToken(token);
+    }
+
+
+    // --- Tests for POST /ecclesiaflow/members/new-confirmation (resendConfirmationLink) ---
+    @Test
+    void resendConfirmationLink_shouldReturnOk() throws Exception {
+        String email = "john@test.com";
+        ResendConfirmationLinkRequest request = new ResendConfirmationLinkRequest();
+        request.setEmail(email);
+
+        ResendConfirmationLink200Response response = new ResendConfirmationLink200Response()
+                .message("Si cette adresse email est associée à un compte non confirmé, un nouveau lien de confirmation a été envoyé.")
+                .expiresIn(86400L);
+
+        when(memberConfirmationDelegate.resendConfirmationLink(email))
+                .thenReturn(ResponseEntity.ok(response));
+
+        mockMvc.perform(post("/ecclesiaflow/members/new-confirmation")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Membre non trouvé"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Si cette adresse email est associée à un compte non confirmé, un nouveau lien de confirmation a été envoyé."))
+                .andExpect(jsonPath("$.expiresIn").value(86400));
 
-        verify(memberConfirmationDelegate).confirmMember(eq(memberId), any(ConfirmationRequestPayload.class));
-    }
-
-
-    // --- Tests for POST /ecclesiaflow/members/{memberId}/confirmation/resend (resendConfirmationCode) ---
-    // Note: Ces tests appellent directement le contrôleur au lieu d'utiliser MockMvc car @WebMvcTest
-    // a des limitations avec certains mappings d'interfaces OpenAPI générées
-    
-    @Test
-    void resendConfirmationCode_shouldReturnOk() {
-        // Given
-        UUID memberId = UUID.randomUUID();
-        when(memberConfirmationDelegate.resendConfirmationCode(memberId))
-                .thenReturn(ResponseEntity.ok().build());
-
-        // When
-        ResponseEntity<Void> response = getController()._resendConfirmationCode(memberId);
-
-        // Then
-        assertThat(response.getStatusCodeValue()).isEqualTo(200);
-        verify(memberConfirmationDelegate).resendConfirmationCode(memberId);
+        verify(memberConfirmationDelegate).resendConfirmationLink(email);
     }
 
     @Test
-    void resendConfirmationCode_shouldPropagateNotFoundException() {
-        // Given
-        UUID memberId = UUID.randomUUID();
-        when(memberConfirmationDelegate.resendConfirmationCode(memberId))
-                .thenThrow(new MemberNotFoundException("Membre non trouvé"));
+    void resendConfirmationLink_shouldReturnConflictForAlreadyConfirmed() throws Exception {
+        String email = "confirmed@test.com";
+        ResendConfirmationLinkRequest request = new ResendConfirmationLinkRequest();
+        request.setEmail(email);
 
-        // When & Then - Vérifie que l'exception est bien propagée
-        // Le GlobalExceptionHandler la convertira en 404 dans un vrai contexte
-        try {
-            getController()._resendConfirmationCode(memberId);
-            throw new AssertionError("Expected MemberNotFoundException");
-        } catch (MemberNotFoundException e) {
-            assertThat(e.getMessage()).isEqualTo("Membre non trouvé");
-        }
+        when(memberConfirmationDelegate.resendConfirmationLink(email))
+                .thenThrow(new MemberAlreadyConfirmedException("Votre compte est déjà confirmé. Vous pouvez vous connecter directement."));
 
-        verify(memberConfirmationDelegate).resendConfirmationCode(memberId);
+        mockMvc.perform(post("/ecclesiaflow/members/new-confirmation")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Votre compte est déjà confirmé. Vous pouvez vous connecter directement."));
+
+        verify(memberConfirmationDelegate).resendConfirmationLink(email);
     }
 
     @Test
-    void resendConfirmationCode_shouldPropagateAlreadyConfirmedException() {
-        // Given
-        UUID memberId = UUID.randomUUID();
-        when(memberConfirmationDelegate.resendConfirmationCode(memberId))
-                .thenThrow(new MemberAlreadyConfirmedException("Le compte est déjà confirmé. Aucun nouveau code n'est requis."));
+    void resendConfirmationLink_shouldReturnOkEvenForNonexistentEmail() throws Exception {
+        // Anti-enumeration: même comportement si l'email n'existe pas
+        String email = "nonexistent@test.com";
+        ResendConfirmationLinkRequest request = new ResendConfirmationLinkRequest();
+        request.setEmail(email);
 
-        // When & Then - Vérifie que l'exception est bien propagée
-        // Le GlobalExceptionHandler la convertira en 400 dans un vrai contexte
-        try {
-            getController()._resendConfirmationCode(memberId);
-            throw new AssertionError("Expected MemberAlreadyConfirmedException");
-        } catch (MemberAlreadyConfirmedException e) {
-            assertThat(e.getMessage()).isEqualTo("Le compte est déjà confirmé. Aucun nouveau code n'est requis.");
-        }
+        ResendConfirmationLink200Response response = new ResendConfirmationLink200Response()
+                .message("Si cette adresse email est associée à un compte non confirmé, un nouveau lien de confirmation a été envoyé.")
+                .expiresIn(86400L);
 
-        verify(memberConfirmationDelegate).resendConfirmationCode(memberId);
-    }
+        when(memberConfirmationDelegate.resendConfirmationLink(email))
+                .thenReturn(ResponseEntity.ok(response));
 
-    // Helper method pour obtenir le contrôleur depuis le contexte Spring
-    private MembersConfirmationController getController() {
-        return new MembersConfirmationController(memberConfirmationDelegate);
+        mockMvc.perform(post("/ecclesiaflow/members/new-confirmation")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Si cette adresse email est associée à un compte non confirmé, un nouveau lien de confirmation a été envoyé."));
+
+        verify(memberConfirmationDelegate).resendConfirmationLink(email);
     }
 
 }

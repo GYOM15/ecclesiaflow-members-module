@@ -1,15 +1,13 @@
 package com.ecclesiaflow.web.delegate;
 
-import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import com.ecclesiaflow.business.exceptions.ExpiredConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
-import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.web.mappers.OpenApiModelMapper;
-import com.ecclesiaflow.web.model.ConfirmationRequestPayload;
 import com.ecclesiaflow.web.model.ConfirmationResponse;
+import com.ecclesiaflow.web.model.ResendConfirmationLink200Response;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -37,14 +35,11 @@ class MemberConfirmationDelegateTest {
     @InjectMocks
     private MemberConfirmationDelegate memberConfirmationDelegate;
 
-    // --- Tests for confirmMember ---
+    // --- Tests for confirmMemberByToken ---
     @Test
-    void confirmMember_shouldReturnSuccessResponse() {
+    void confirmMemberByToken_shouldReturnSuccessResponse() {
         // Given
-        UUID memberId = UUID.randomUUID();
-        String code = "123456";
-        ConfirmationRequestPayload requestPayload = new ConfirmationRequestPayload();
-        requestPayload.setCode(code);
+        UUID token = UUID.randomUUID();
 
         MembershipConfirmationResult businessResult = MembershipConfirmationResult.builder()
                 .message("Compte confirmé avec succès")
@@ -57,13 +52,13 @@ class MemberConfirmationDelegateTest {
                 .temporaryToken("temp-token-abc123")
                 .expiresIn(900L);
 
-        when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
+        when(confirmationService.confirmMemberByToken(token))
                 .thenReturn(businessResult);
         when(openApiModelMapper.createConfirmationResponse(businessResult))
                 .thenReturn(expectedResponse);
 
         // When
-        ResponseEntity<ConfirmationResponse> response = memberConfirmationDelegate.confirmMember(memberId, requestPayload);
+        ResponseEntity<ConfirmationResponse> response = memberConfirmationDelegate.confirmMemberByToken(token);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -72,17 +67,14 @@ class MemberConfirmationDelegateTest {
         assertThat(response.getBody().getTemporaryToken()).isEqualTo("temp-token-abc123");
         assertThat(response.getBody().getExpiresIn()).isEqualTo(900L);
 
-        verify(confirmationService).confirmMember(any(MembershipConfirmation.class));
+        verify(confirmationService).confirmMemberByToken(token);
         verify(openApiModelMapper).createConfirmationResponse(businessResult);
     }
 
     @Test
-    void confirmMember_shouldPassCorrectMemberIdAndCode() {
+    void confirmMemberByToken_shouldPassCorrectToken() {
         // Given
-        UUID memberId = UUID.randomUUID();
-        String code = "654321";
-        ConfirmationRequestPayload requestPayload = new ConfirmationRequestPayload();
-        requestPayload.setCode(code);
+        UUID token = UUID.randomUUID();
 
         MembershipConfirmationResult businessResult = MembershipConfirmationResult.builder()
                 .message("Success")
@@ -95,122 +87,116 @@ class MemberConfirmationDelegateTest {
                 .temporaryToken("token")
                 .expiresIn(900L);
 
-        when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
+        when(confirmationService.confirmMemberByToken(token))
                 .thenReturn(businessResult);
         when(openApiModelMapper.createConfirmationResponse(businessResult))
                 .thenReturn(response);
 
         // When
-        memberConfirmationDelegate.confirmMember(memberId, requestPayload);
+        memberConfirmationDelegate.confirmMemberByToken(token);
 
         // Then
-        verify(confirmationService).confirmMember(argThat(confirmation ->
-                confirmation.getMemberId().equals(memberId) &&
-                        confirmation.getConfirmationCode().equals(code)
-        ));
+        verify(confirmationService).confirmMemberByToken(token);
     }
 
     @Test
-    void confirmMember_shouldPropagateInvalidConfirmationCodeException() {
+    void confirmMemberByToken_shouldPropagateInvalidConfirmationCodeException() {
         // Given
-        UUID memberId = UUID.randomUUID();
-        ConfirmationRequestPayload requestPayload = new ConfirmationRequestPayload();
-        requestPayload.setCode("999999");
+        UUID token = UUID.randomUUID();
 
-        when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
-                .thenThrow(new InvalidConfirmationCodeException("Code de confirmation invalide"));
+        when(confirmationService.confirmMemberByToken(token))
+                .thenThrow(new InvalidConfirmationCodeException("Token de confirmation invalide"));
 
         // When/Then
-        assertThatThrownBy(() -> memberConfirmationDelegate.confirmMember(memberId, requestPayload))
+        assertThatThrownBy(() -> memberConfirmationDelegate.confirmMemberByToken(token))
                 .isInstanceOf(InvalidConfirmationCodeException.class)
-                .hasMessage("Code de confirmation invalide");
+                .hasMessage("Token de confirmation invalide");
 
-        verify(confirmationService).confirmMember(any(MembershipConfirmation.class));
+        verify(confirmationService).confirmMemberByToken(token);
         verifyNoInteractions(openApiModelMapper);
     }
 
     @Test
-    void confirmMember_shouldPropagateExpiredConfirmationCodeException() {
+    void confirmMemberByToken_shouldPropagateExpiredConfirmationCodeException() {
         // Given
-        UUID memberId = UUID.randomUUID();
-        ConfirmationRequestPayload requestPayload = new ConfirmationRequestPayload();
-        requestPayload.setCode("123456");
+        UUID token = UUID.randomUUID();
 
-        when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
-                .thenThrow(new ExpiredConfirmationCodeException("Code de confirmation expiré"));
+        when(confirmationService.confirmMemberByToken(token))
+                .thenThrow(new ExpiredConfirmationCodeException("Token de confirmation expiré"));
 
         // When/Then
-        assertThatThrownBy(() -> memberConfirmationDelegate.confirmMember(memberId, requestPayload))
+        assertThatThrownBy(() -> memberConfirmationDelegate.confirmMemberByToken(token))
                 .isInstanceOf(ExpiredConfirmationCodeException.class)
-                .hasMessage("Code de confirmation expiré");
+                .hasMessage("Token de confirmation expiré");
 
-        verify(confirmationService).confirmMember(any(MembershipConfirmation.class));
+        verify(confirmationService).confirmMemberByToken(token);
         verifyNoInteractions(openApiModelMapper);
     }
 
     @Test
-    void confirmMember_shouldPropagateMemberNotFoundException() {
+    void confirmMemberByToken_shouldPropagateMemberAlreadyConfirmedException() {
         // Given
-        UUID memberId = UUID.randomUUID();
-        ConfirmationRequestPayload requestPayload = new ConfirmationRequestPayload();
-        requestPayload.setCode("123456");
+        UUID token = UUID.randomUUID();
 
-        when(confirmationService.confirmMember(any(MembershipConfirmation.class)))
-                .thenThrow(new MemberNotFoundException("Membre non trouvé"));
+        when(confirmationService.confirmMemberByToken(token))
+                .thenThrow(new MemberAlreadyConfirmedException("Le compte est déjà confirmé"));
 
         // When/Then
-        assertThatThrownBy(() -> memberConfirmationDelegate.confirmMember(memberId, requestPayload))
-                .isInstanceOf(MemberNotFoundException.class)
-                .hasMessage("Membre non trouvé");
+        assertThatThrownBy(() -> memberConfirmationDelegate.confirmMemberByToken(token))
+                .isInstanceOf(MemberAlreadyConfirmedException.class)
+                .hasMessage("Le compte est déjà confirmé");
 
-        verify(confirmationService).confirmMember(any(MembershipConfirmation.class));
+        verify(confirmationService).confirmMemberByToken(token);
         verifyNoInteractions(openApiModelMapper);
     }
 
-    // --- Tests for resendConfirmationCode ---
+    // --- Tests for resendConfirmationLink ---
     @Test
-    void resendConfirmationCode_shouldReturnOkResponse() {
+    void resendConfirmationLink_shouldReturnOkResponse() {
         // Given
-        UUID memberId = UUID.randomUUID();
-        doNothing().when(confirmationService).sendConfirmationCode(memberId);
+        String email = "john@test.com";
+        doNothing().when(confirmationService).sendConfirmationLink(email);
 
         // When
-        ResponseEntity<Void> response = memberConfirmationDelegate.resendConfirmationCode(memberId);
+        ResponseEntity<ResendConfirmationLink200Response> response = memberConfirmationDelegate.resendConfirmationLink(email);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNull();
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getMessage()).contains("Si cette adresse email");
+        assertThat(response.getBody().getExpiresIn()).isEqualTo(86400L);
 
-        verify(confirmationService).sendConfirmationCode(memberId);
+        verify(confirmationService).sendConfirmationLink(email);
     }
 
     @Test
-    void resendConfirmationCode_shouldPropagateMemberNotFoundException() {
-        // Given
-        UUID memberId = UUID.randomUUID();
-        doThrow(new MemberNotFoundException("Membre non trouvé"))
-                .when(confirmationService).sendConfirmationCode(memberId);
+    void resendConfirmationLink_shouldReturnOkEvenIfEmailNotFound() {
+        // Given - Anti-enumeration: même comportement si l'email n'existe pas
+        String email = "nonexistent@test.com";
+        doNothing().when(confirmationService).sendConfirmationLink(email);
 
-        // When/Then
-        assertThatThrownBy(() -> memberConfirmationDelegate.resendConfirmationCode(memberId))
-                .isInstanceOf(MemberNotFoundException.class)
-                .hasMessage("Membre non trouvé");
+        // When
+        ResponseEntity<ResendConfirmationLink200Response> response = memberConfirmationDelegate.resendConfirmationLink(email);
 
-        verify(confirmationService).sendConfirmationCode(memberId);
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+
+        verify(confirmationService).sendConfirmationLink(email);
     }
 
     @Test
-    void resendConfirmationCode_shouldPropagateMemberAlreadyConfirmedException() {
+    void resendConfirmationLink_shouldPropagateMemberAlreadyConfirmedException() {
         // Given
-        UUID memberId = UUID.randomUUID();
-        doThrow(new MemberAlreadyConfirmedException("Le compte est déjà confirmé. Aucun nouveau code n'est requis."))
-                .when(confirmationService).sendConfirmationCode(memberId);
+        String email = "confirmed@test.com";
+        doThrow(new MemberAlreadyConfirmedException("Votre compte est déjà confirmé. Vous pouvez vous connecter directement."))
+                .when(confirmationService).sendConfirmationLink(email);
 
         // When/Then
-        assertThatThrownBy(() -> memberConfirmationDelegate.resendConfirmationCode(memberId))
+        assertThatThrownBy(() -> memberConfirmationDelegate.resendConfirmationLink(email))
                 .isInstanceOf(MemberAlreadyConfirmedException.class)
-                .hasMessage("Le compte est déjà confirmé. Aucun nouveau code n'est requis.");
+                .hasMessage("Votre compte est déjà confirmé. Vous pouvez vous connecter directement.");
 
-        verify(confirmationService).sendConfirmationCode(memberId);
+        verify(confirmationService).sendConfirmationLink(email);
     }
 }
