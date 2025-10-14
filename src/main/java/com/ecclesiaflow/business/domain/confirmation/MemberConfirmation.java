@@ -11,29 +11,29 @@ import java.util.UUID;
  * <p>
  * Cette classe encapsule toute la logique métier liée aux confirmations de comptes membres.
  * Elle contient les règles de validation, d'expiration et de gestion du cycle de vie
- * des codes de confirmation sans aucune dépendance vers la couche de persistance.
+ * des tokens de confirmation sans aucune dépendance vers la couche de persistance.
  * </p>
  * 
  * <p><strong>Rôle architectural :</strong> Objet du domaine métier - Logique de confirmation</p>
  * 
  * <p><strong>Responsabilités principales :</strong></p>
  * <ul>
- *   <li>Validation de l'expiration des codes de confirmation</li>
- *   <li>Vérification de la validité des codes</li>
+ *   <li>Validation de l'expiration des tokens de confirmation</li>
+ *   <li>Vérification de la validité des tokens</li>
  *   <li>Encapsulation des règles métier de confirmation</li>
  *   <li>Gestion immutable des données de confirmation</li>
  * </ul>
  * 
  * <p><strong>Règles métier :</strong></p>
  * <ul>
- *   <li>Un code de confirmation expire après 24 heures</li>
- *   <li>Un code ne peut être utilisé qu'une seule fois</li>
- *   <li>La validation doit être case-sensitive</li>
+ *   <li>Un token de confirmation expire après 24 heures</li>
+ *   <li>Un token ne peut être utilisé qu'une seule fois</li>
+ *   <li>Le token est un UUID sécurisé (128 bits d'entropie)</li>
  * </ul>
  * 
  * <p><strong>Cycle de vie :</strong></p>
  * <ol>
- *   <li>Création avec code généré et expiration définie</li>
+ *   <li>Création avec token UUID généré et expiration définie</li>
  *   <li>Validation lors de la tentative de confirmation</li>
  *   <li>Suppression après utilisation ou expiration</li>
  * </ol>
@@ -58,9 +58,9 @@ public class MemberConfirmation {
     private final UUID memberId;
 
     /**
-     * Code de confirmation à 6 chiffres.
+     * Token de confirmation sécurisé (UUID).
      */
-    private final String code;
+    private final UUID token;
 
     /**
      * Date et heure de création de la confirmation.
@@ -73,55 +73,55 @@ public class MemberConfirmation {
     private final LocalDateTime expiresAt;
 
     /**
-     * Vérifie si le code de confirmation a expiré.
+     * Vérifie si le token de confirmation a expiré.
      * <p>
      * Compare la date d'expiration avec l'heure actuelle pour déterminer
-     * si le code est encore valide temporellement.
+     * si le token est encore valide temporellement.
      * </p>
      * 
-     * @return true si le code a expiré, false sinon
+     * @return true si le token a expiré, false sinon
      */
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(expiresAt);
     }
 
     /**
-     * Vérifie si le code fourni correspond au code de confirmation.
+     * Vérifie si le token fourni correspond au token de confirmation.
      * <p>
-     * Effectue une comparaison case-sensitive du code fourni avec
-     * le code stocké dans cette confirmation.
+     * Effectue une comparaison du token fourni avec
+     * le token stocké dans cette confirmation.
      * </p>
      * 
-     * @param providedCode le code à vérifier, non null
-     * @return true si le code correspond, false sinon
-     * @throws IllegalArgumentException si providedCode est null
+     * @param providedToken le token à vérifier, non null
+     * @return true si le token correspond, false sinon
+     * @throws IllegalArgumentException si providedToken est null
      */
-    public boolean isValidCode(String providedCode) {
-        if (providedCode == null) {
-            throw new IllegalArgumentException("Le code fourni ne peut pas être null");
+    public boolean isValidToken(UUID providedToken) {
+        if (providedToken == null) {
+            throw new IllegalArgumentException("Le token fourni ne peut pas être null");
         }
-        return code.equals(providedCode);
+        return token.equals(providedToken);
     }
 
     /**
      * Vérifie si cette confirmation est valide pour utilisation.
      * <p>
-     * Une confirmation est valide si elle n'a pas expiré et si le code
-     * fourni correspond au code stocké.
+     * Une confirmation est valide si elle n'a pas expiré et si le token
+     * fourni correspond au token stocké.
      * </p>
      * 
-     * @param providedCode le code à vérifier, non null
+     * @param providedToken le token à vérifier, non null
      * @return true si la confirmation est valide, false sinon
      */
-    public boolean isValid(String providedCode) {
-        return !isExpired() && isValidCode(providedCode);
+    public boolean isValid(UUID providedToken) {
+        return !isExpired() && isValidToken(providedToken);
     }
 
     /**
      * Calcule le temps restant avant expiration en minutes.
      * <p>
      * Utile pour afficher à l'utilisateur combien de temps il lui reste
-     * pour utiliser son code de confirmation.
+     * pour utiliser son token de confirmation.
      * </p>
      * 
      * @return le nombre de minutes restantes, 0 si expiré

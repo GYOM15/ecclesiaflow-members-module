@@ -25,7 +25,7 @@ import java.util.UUID;
  * <p><strong>Opérations supportées :</strong></p>
  * <ul>
  *   <li>Recherche de confirmations par membre</li>
- *   <li>Recherche de confirmations par code</li>
+ *   <li>Recherche de confirmations par token</li>
  *   <li>Gestion du cycle de vie des confirmations</li>
  *   <li>Nettoyage des confirmations expirées</li>
  * </ul>
@@ -39,45 +39,45 @@ import java.util.UUID;
 public interface MemberConfirmationRepository {
 
     /**
-     * Recherche le code de confirmation actif pour un membre donné.
+     * Recherche le token de confirmation actif pour un membre donné.
      * <p>
-     * Cette méthode retourne le code de confirmation le plus récent
+     * Cette méthode retourne le token de confirmation le plus récent
      * associé à un membre, qu'il soit expiré ou non. Utilisée pour
      * vérifier l'existence d'un processus de confirmation en cours.
      * </p>
      *
      * @param memberId l'identifiant du membre, non null
-     * @return un {@link Optional} contenant le code de confirmation si trouvé, vide sinon
+     * @return un {@link Optional} contenant la confirmation si trouvée, vide sinon
      * @throws IllegalArgumentException si memberId est null
      */
     Optional<MemberConfirmation> getByMemberId(UUID memberId);
 
     /**
-     * Recherche un code de confirmation spécifique pour un membre donné.
+     * Recherche un token de confirmation spécifique pour un membre donné.
      * <p>
-     * Cette méthode valide qu'un code appartient bien au membre spécifié.
+     * Cette méthode valide qu'un token appartient bien au membre spécifié.
      * Utilisée lors de la validation des tentatives de confirmation pour
-     * éviter les attaques par force brute inter-comptes.
+     * éviter les attaques inter-comptes.
      * </p>
      *
      * @param memberId l'identifiant du membre, non null
-     * @param code le code de confirmation à 6 chiffres, non null
-     * @return un {@link Optional} contenant le code si trouvé et valide, vide sinon
+     * @param token le token de confirmation UUID, non null
+     * @return un {@link Optional} contenant la confirmation si trouvée et valide, vide sinon
      * @throws IllegalArgumentException si un paramètre est null
      */
-    Optional<MemberConfirmation> getMemberIdAndCode(UUID memberId, String code);
+    Optional<MemberConfirmation> getMemberIdAndToken(UUID memberId, UUID token);
 
     /**
-     * Recherche une confirmation par son code.
+     * Recherche une confirmation par son token.
      * <p>
-     * Permet de retrouver une confirmation à partir du code saisi par l'utilisateur.
-     * Utilisé lors du processus de validation du code de confirmation.
+     * Permet de retrouver une confirmation à partir du token reçu par email.
+     * Utilisé lors du processus de validation par lien de confirmation.
      * </p>
      *
-     * @param code le code de confirmation, non null
-     * @return un Optional contenant la confirmation si le code existe
+     * @param token le token de confirmation UUID, non null
+     * @return un Optional contenant la confirmation si le token existe
      */
-    Optional<MemberConfirmation> getByCode(String code);
+    Optional<MemberConfirmation> getByToken(UUID token);
 
     /**
      * Vérifie l'existence d'une confirmation pour un membre.
