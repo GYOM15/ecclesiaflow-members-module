@@ -9,11 +9,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MemberConfirmationTest {
 
-    private MemberConfirmation createConfirmation(LocalDateTime expiresAt, String code) {
+    private MemberConfirmation createConfirmation(LocalDateTime expiresAt, UUID token) {
         return MemberConfirmation.builder()
                 .id(UUID.randomUUID())
                 .memberId(UUID.randomUUID())
-                .code(code)
+                .token(token)
                 .createdAt(LocalDateTime.now())
                 .expiresAt(expiresAt)
                 .build();
@@ -21,62 +21,74 @@ class MemberConfirmationTest {
 
     @Test
     void testIsExpired_WhenNotExpired_ShouldReturnFalse() {
-        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().plusHours(1), "ABC123");
+        UUID token = UUID.randomUUID();
+        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().plusHours(1), token);
         assertFalse(confirmation.isExpired());
     }
 
     @Test
     void testIsExpired_WhenExpired_ShouldReturnTrue() {
-        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().minusMinutes(1), "ABC123");
+        UUID token = UUID.randomUUID();
+        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().minusMinutes(1), token);
         assertTrue(confirmation.isExpired());
     }
 
     @Test
-    void testIsValidCode_WhenCorrect_ShouldReturnTrue() {
-        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().plusHours(1), "ABC123");
-        assertTrue(confirmation.isValidCode("ABC123"));
+    void testIsValidToken_WhenCorrect_ShouldReturnTrue() {
+        UUID token = UUID.randomUUID();
+        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().plusHours(1), token);
+        assertTrue(confirmation.isValidToken(token));
     }
 
     @Test
-    void testIsValidCode_WhenIncorrect_ShouldReturnFalse() {
-        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().plusHours(1), "ABC123");
-        assertFalse(confirmation.isValidCode("WRONG"));
+    void testIsValidToken_WhenIncorrect_ShouldReturnFalse() {
+        UUID token = UUID.randomUUID();
+        UUID wrongToken = UUID.randomUUID();
+        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().plusHours(1), token);
+        assertFalse(confirmation.isValidToken(wrongToken));
     }
 
     @Test
-    void testIsValidCode_WhenNull_ShouldThrowException() {
-        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().plusHours(1), "ABC123");
-        assertThrows(IllegalArgumentException.class, () -> confirmation.isValidCode(null));
+    void testIsValidToken_WhenNull_ShouldThrowException() {
+        UUID token = UUID.randomUUID();
+        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().plusHours(1), token);
+        assertThrows(IllegalArgumentException.class, () -> confirmation.isValidToken(null));
     }
 
     @Test
-    void testIsValid_WhenValidCodeAndNotExpired_ShouldReturnTrue() {
-        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().plusHours(1), "ABC123");
-        assertTrue(confirmation.isValid("ABC123"));
+    void testIsValid_WhenValidTokenAndNotExpired_ShouldReturnTrue() {
+        UUID token = UUID.randomUUID();
+        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().plusHours(1), token);
+        assertTrue(confirmation.isValid(token));
     }
 
     @Test
     void testIsValid_WhenExpired_ShouldReturnFalse() {
-        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().minusHours(1), "ABC123");
-        assertFalse(confirmation.isValid("ABC123"));
+        UUID token = UUID.randomUUID();
+        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().minusHours(1), token);
+        assertFalse(confirmation.isValid(token));
     }
 
     @Test
-    void testIsValid_WhenWrongCode_ShouldReturnFalse() {
-        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().plusHours(1), "ABC123");
-        assertFalse(confirmation.isValid("WRONG"));
+    void testIsValid_WhenWrongToken_ShouldReturnFalse() {
+        UUID token = UUID.randomUUID();
+        UUID wrongToken = UUID.randomUUID();
+        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().plusHours(1), token);
+        assertFalse(confirmation.isValid(wrongToken));
     }
 
     @Test
     void testGetMinutesUntilExpiration_WhenNotExpired_ShouldReturnPositive() {
-        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().plusMinutes(10), "ABC123");
+        UUID token = UUID.randomUUID();
+        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().plusMinutes(10), token);
         long minutes = confirmation.getMinutesUntilExpiration();
         assertTrue(minutes > 0 && minutes <= 10);
     }
 
     @Test
     void testGetMinutesUntilExpiration_WhenExpired_ShouldReturnZero() {
-        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().minusMinutes(5), "ABC123");
+        UUID token = UUID.randomUUID();
+        MemberConfirmation confirmation = createConfirmation(LocalDateTime.now().minusMinutes(5), token);
         assertEquals(0, confirmation.getMinutesUntilExpiration());
     }
 }
