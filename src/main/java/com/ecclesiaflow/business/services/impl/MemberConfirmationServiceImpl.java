@@ -1,10 +1,10 @@
 package com.ecclesiaflow.business.services.impl;
 
-import com.ecclesiaflow.business.domain.communication.ConfirmationNotifier;
 import com.ecclesiaflow.business.domain.confirmation.ConfirmationTokenGenerator;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmation;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
+import com.ecclesiaflow.business.domain.events.MemberRegisteredEvent;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
@@ -14,6 +14,7 @@ import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import com.ecclesiaflow.business.domain.token.AuthenticationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +28,7 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
     private final MemberRepository memberRepository;
     private final MemberConfirmationRepository confirmationRepository;
     private final AuthenticationService authenticationService;
-    private final ConfirmationNotifier confirmationNotifier;
+    private final ApplicationEventPublisher eventPublisher;
     private final ConfirmationTokenGenerator tokenGenerator;
 
     @Override
@@ -93,7 +94,12 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
                 .expiresAt(LocalDateTime.now().plusHours(24))
                 .build();
         confirmationRepository.save(confirmation);
-        confirmationNotifier.sendConfirmationLink(member.getEmail(), newToken, member.getFirstName());
+        
+        // Publier événement au lieu d'appeler directement le notifier
+        // L'email sera envoyé APRÈS le commit via @TransactionalEventListener
+        eventPublisher.publishEvent(
+            new MemberRegisteredEvent(member.getEmail(), newToken, member.getFirstName())
+        );
     }
 
 

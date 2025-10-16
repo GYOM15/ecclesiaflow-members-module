@@ -1,7 +1,7 @@
 package com.ecclesiaflow.business.services.impl;
 
-import com.ecclesiaflow.business.domain.communication.ConfirmationNotifier;
 import com.ecclesiaflow.business.domain.confirmation.*;
+import com.ecclesiaflow.business.domain.events.MemberRegisteredEvent;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.business.domain.token.AuthenticationService;
@@ -11,6 +11,8 @@ import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -24,7 +26,7 @@ class MemberConfirmationServiceImplTest {
     private MemberRepository memberRepository;
     private MemberConfirmationRepository confirmationRepository;
     private AuthenticationService authenticationService;
-    private ConfirmationNotifier confirmationNotifier;
+    private ApplicationEventPublisher eventPublisher;
     private ConfirmationTokenGenerator tokenGenerator;
 
     private MemberConfirmationServiceImpl service;
@@ -38,11 +40,11 @@ class MemberConfirmationServiceImplTest {
         memberRepository = mock(MemberRepository.class);
         confirmationRepository = mock(MemberConfirmationRepository.class);
         authenticationService = mock(AuthenticationService.class);
-        confirmationNotifier = mock(ConfirmationNotifier.class);
+        eventPublisher = mock(ApplicationEventPublisher.class);
         tokenGenerator = mock(ConfirmationTokenGenerator.class);
 
         service = new MemberConfirmationServiceImpl(
-                memberRepository, confirmationRepository, authenticationService, confirmationNotifier, tokenGenerator);
+                memberRepository, confirmationRepository, authenticationService, eventPublisher, tokenGenerator);
 
         memberId = UUID.randomUUID();
         token = UUID.randomUUID();
@@ -186,7 +188,7 @@ class MemberConfirmationServiceImplTest {
     }
 
     @Test
-    void sendConfirmationLink_ByEmail_ShouldGenerateAndSend() {
+    void sendConfirmationLink_ByEmail_ShouldGenerateAndPublishEvent() {
         // given
         String email = "john@test.com";
         UUID newToken = UUID.randomUUID();
@@ -209,7 +211,15 @@ class MemberConfirmationServiceImplTest {
             confirmation.getExpiresAt() != null &&
             confirmation.getExpiresAt().isAfter(confirmation.getCreatedAt())
         ));
-        verify(confirmationNotifier).sendConfirmationLink(eq("john@test.com"), eq(newToken), eq("John"));
+        
+        // Verify event is published instead of direct notifier call
+        ArgumentCaptor<MemberRegisteredEvent> eventCaptor = ArgumentCaptor.forClass(MemberRegisteredEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        
+        MemberRegisteredEvent publishedEvent = eventCaptor.getValue();
+        assertEquals("john@test.com", publishedEvent.getEmail());
+        assertEquals(newToken, publishedEvent.getConfirmationToken());
+        assertEquals("John", publishedEvent.getFirstName());
     }
 
     @Test
@@ -229,7 +239,7 @@ class MemberConfirmationServiceImplTest {
         verify(confirmationRepository, never()).getByMemberId(any());
         verify(confirmationRepository, never()).save(any());
         verify(tokenGenerator, never()).generateToken();
-        verify(confirmationNotifier, never()).sendConfirmationLink(any(), any(), any());
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -247,11 +257,11 @@ class MemberConfirmationServiceImplTest {
         verify(confirmationRepository, never()).getByMemberId(any());
         verify(confirmationRepository, never()).save(any());
         verify(tokenGenerator, never()).generateToken();
-        verify(confirmationNotifier, never()).sendConfirmationLink(any(), any(), any());
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
-    void sendConfirmationLink_ByMember_ShouldGenerateAndSend() {
+    void sendConfirmationLink_ByMember_ShouldGenerateAndPublishEvent() {
         // given
         UUID newToken = UUID.randomUUID();
         
@@ -270,7 +280,15 @@ class MemberConfirmationServiceImplTest {
             confirmation.getCreatedAt() != null &&
             confirmation.getExpiresAt() != null
         ));
-        verify(confirmationNotifier).sendConfirmationLink(eq("john@test.com"), eq(newToken), eq("John"));
+        
+        // Verify event is published instead of direct notifier call
+        ArgumentCaptor<MemberRegisteredEvent> eventCaptor = ArgumentCaptor.forClass(MemberRegisteredEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        
+        MemberRegisteredEvent publishedEvent = eventCaptor.getValue();
+        assertEquals("john@test.com", publishedEvent.getEmail());
+        assertEquals(newToken, publishedEvent.getConfirmationToken());
+        assertEquals("John", publishedEvent.getFirstName());
     }
 
     @Test
@@ -302,7 +320,15 @@ class MemberConfirmationServiceImplTest {
             confirmation.getToken().equals(newToken) && 
             confirmation.getMemberId().equals(memberId)
         ));
-        verify(confirmationNotifier).sendConfirmationLink(eq(email), eq(newToken), eq("John"));
+        
+        // Verify event is published with new token
+        ArgumentCaptor<MemberRegisteredEvent> eventCaptor = ArgumentCaptor.forClass(MemberRegisteredEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        
+        MemberRegisteredEvent publishedEvent = eventCaptor.getValue();
+        assertEquals(email, publishedEvent.getEmail());
+        assertEquals(newToken, publishedEvent.getConfirmationToken());
+        assertEquals("John", publishedEvent.getFirstName());
     }
 
     @Test
@@ -332,6 +358,14 @@ class MemberConfirmationServiceImplTest {
             confirmation.getToken().equals(newToken) && 
             confirmation.getMemberId().equals(memberId)
         ));
-        verify(confirmationNotifier).sendConfirmationLink(eq("john@test.com"), eq(newToken), eq("John"));
+        
+        // Verify event is published with new token
+        ArgumentCaptor<MemberRegisteredEvent> eventCaptor = ArgumentCaptor.forClass(MemberRegisteredEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        
+        MemberRegisteredEvent publishedEvent = eventCaptor.getValue();
+        assertEquals("john@test.com", publishedEvent.getEmail());
+        assertEquals(newToken, publishedEvent.getConfirmationToken());
+        assertEquals("John", publishedEvent.getFirstName());
     }
 }
