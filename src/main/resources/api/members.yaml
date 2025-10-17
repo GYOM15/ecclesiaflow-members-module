@@ -671,6 +671,24 @@ components:
           maxLength: 100
           example: "jean.dupont@example.com"
 
+    TemporaryTokenRequest:
+      type: object
+      description: "Requête pour générer un token temporaire (communication avec Auth module)"
+      required:
+        - email
+        - memberId
+      properties:
+        email:
+          type: string
+          format: email
+          description: "Email du membre pour lequel générer le token temporaire"
+          example: "nouveau.membre@ecclesiaflow.com"
+        memberId:
+          type: string
+          format: uuid
+          description: "UUID du membre (identifiant partagé entre modules)"
+          example: "550e8400-e29b-41d4-a716-446655440000"
+
     # Response Schemas
     SignUpResponse:
       type: object
