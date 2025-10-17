@@ -67,7 +67,7 @@ class MemberConfirmationServiceImplTest {
 
         when(confirmationRepository.getByToken(token)).thenReturn(Optional.of(confirmation));
         when(memberRepository.getById(memberId)).thenReturn(Optional.of(member));
-        when(authenticationService.retrievePostActivationToken(member.getEmail())).thenReturn("TEMP_TOKEN");
+        when(authenticationService.retrievePostActivationToken(member.getEmail(), member.getMemberId())).thenReturn("TEMP_TOKEN");
 
         // when
         MembershipConfirmationResult result = service.confirmMemberByToken(token);
@@ -85,7 +85,7 @@ class MemberConfirmationServiceImplTest {
             savedMember.getMemberId().equals(member.getMemberId())
         ));
         verify(confirmationRepository).delete(confirmation);
-        verify(authenticationService).retrievePostActivationToken(member.getEmail());
+        verify(authenticationService).retrievePostActivationToken(member.getEmail(), member.getMemberId());
     }
 
     @Test
@@ -159,7 +159,7 @@ class MemberConfirmationServiceImplTest {
         verify(memberRepository).getById(memberId);
         verify(memberRepository, never()).save(any());
         verify(confirmationRepository, never()).delete(any());
-        verify(authenticationService, never()).retrievePostActivationToken(any());
+        verify(authenticationService, never()).retrievePostActivationToken(any(), any());
     }
 
     @Test
@@ -184,7 +184,7 @@ class MemberConfirmationServiceImplTest {
         verify(memberRepository).getById(memberId);
         verify(memberRepository, never()).save(any());
         verify(confirmationRepository, never()).delete(any());
-        verify(authenticationService, never()).retrievePostActivationToken(any());
+        verify(authenticationService, never()).retrievePostActivationToken(any(), any());
     }
 
     @Test

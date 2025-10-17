@@ -1,5 +1,7 @@
 package com.ecclesiaflow.business.domain.token;
 
+import java.util.UUID;
+
 /**
  * Interface pour la génération de tokens temporaires dans le contexte EcclesiaFlow.
  * <p>
@@ -59,5 +61,5 @@ public interface AuthenticationService {
      *           <li>Gestion d'erreurs déléguée au service sous-jacent</li>
      *           </ul>
      */
-    String retrievePostActivationToken(String email);
+    String retrievePostActivationToken(String email, UUID memberId);
 }
