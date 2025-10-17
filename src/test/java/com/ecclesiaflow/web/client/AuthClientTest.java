@@ -14,11 +14,11 @@ import reactor.core.publisher.Mono;
 
 import java.net.ConnectException;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.when;
 
 class AuthClientTest {
@@ -39,6 +39,7 @@ class AuthClientTest {
     private AuthClient authClient;
 
     private static final String EMAIL = "test@example.com";
+    private static final UUID MEMBER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
     private static final String TEMPORARY_TOKEN_MOCK = "temporary-token-mock-for-dev";
     private static final String GENERATED_TOKEN = "actual-generated-token";
 
@@ -48,7 +49,7 @@ class AuthClientTest {
 
         when(authWebClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(any(String.class))).thenReturn(requestBodySpec);
-        when(requestBodySpec.bodyValue(anyMap())).thenReturn(requestHeadersSpec);
+        when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
 
         when(responseSpec.onStatus(any(java.util.function.Predicate.class), any(java.util.function.Function.class))).thenReturn(responseSpec);
@@ -62,7 +63,7 @@ class AuthClientTest {
         when(responseSpec.bodyToMono(any(Class.class))).thenReturn(Mono.just(successResponse));
 
         // Act
-        String result = authClient.retrievePostActivationToken(EMAIL);
+        String result = authClient.retrievePostActivationToken(EMAIL, MEMBER_ID);
 
         // Assert
         assertThat(result).isEqualTo(GENERATED_TOKEN);
@@ -82,7 +83,7 @@ class AuthClientTest {
         when(responseSpec.bodyToMono(any(Class.class))).thenReturn(Mono.error(new RuntimeException("Simulated 400 error")));
 
         // Act
-        String result = authClient.retrievePostActivationToken(EMAIL);
+        String result = authClient.retrievePostActivationToken(EMAIL, MEMBER_ID);
 
         // Assert
         assertThat(result).isEqualTo(TEMPORARY_TOKEN_MOCK);
@@ -102,7 +103,7 @@ class AuthClientTest {
         when(responseSpec.bodyToMono(any(Class.class))).thenReturn(Mono.error(new RuntimeException("Simulated 500 error")));
 
         // Act
-        String result = authClient.retrievePostActivationToken(EMAIL);
+        String result = authClient.retrievePostActivationToken(EMAIL, MEMBER_ID);
 
         // Assert
         assertThat(result).isEqualTo(TEMPORARY_TOKEN_MOCK);
@@ -121,7 +122,7 @@ class AuthClientTest {
                 )));
 
         // Act
-        String result = authClient.retrievePostActivationToken(EMAIL);
+        String result = authClient.retrievePostActivationToken(EMAIL, MEMBER_ID);
 
         // Assert
         assertThat(result).isEqualTo(TEMPORARY_TOKEN_MOCK);
@@ -135,7 +136,7 @@ class AuthClientTest {
         when(responseSpec.bodyToMono(any(Class.class))).thenReturn(Mono.just(malformedResponse));
 
         // Act
-        String result = authClient.retrievePostActivationToken(EMAIL);
+        String result = authClient.retrievePostActivationToken(EMAIL, MEMBER_ID);
 
         // Assert
         assertThat(result).isEqualTo(TEMPORARY_TOKEN_MOCK);

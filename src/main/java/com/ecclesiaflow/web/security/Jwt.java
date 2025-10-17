@@ -5,6 +5,8 @@ import com.ecclesiaflow.web.client.AuthClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 /**
  * Implémentation JWT du générateur de tokens temporaires EcclesiaFlow.
  * <p>
@@ -52,7 +54,7 @@ public class Jwt implements AuthenticationService {
     private final AuthClient authClient;
 
     @Override
-    public String retrievePostActivationToken(String email) {
-        return authClient.retrievePostActivationToken(email);
+    public String retrievePostActivationToken(String email, UUID memberId) {
+        return authClient.retrievePostActivationToken(email, memberId);
     }
 }
