@@ -82,25 +82,25 @@ class MemberRepositoryImplTest {
 
     @Test
     void getById_shouldReturnMappedDomainObject() {
-        when(springDataRepo.findById(testId)).thenReturn(Optional.of(testEntity));
+        when(springDataRepo.findByMemberId(testId)).thenReturn(Optional.of(testEntity));
         when(mapper.toDomain(testEntity)).thenReturn(testDomain);
 
-        Optional<Member> result = memberRepository.getById(testId);
+        Optional<Member> result = memberRepository.getByMemberId(testId);
 
         assertThat(result).isPresent();
         assertThat(result.get()).isEqualTo(testDomain);
-        verify(springDataRepo, times(1)).findById(testId);
+        verify(springDataRepo, times(1)).findByMemberId(testId);
         verify(mapper, times(1)).toDomain(testEntity);
     }
 
     @Test
     void getById_shouldReturnEmptyOptionalWhenNotFound() {
-        when(springDataRepo.findById(testId)).thenReturn(Optional.empty());
+        when(springDataRepo.findByMemberId(testId)).thenReturn(Optional.empty());
 
-        Optional<Member> result = memberRepository.getById(testId);
+        Optional<Member> result = memberRepository.getByMemberId(testId);
 
         assertThat(result).isEmpty();
-        verify(springDataRepo, times(1)).findById(testId);
+        verify(springDataRepo, times(1)).findByMemberId(testId);
         verifyNoInteractions(mapper);
     }
 

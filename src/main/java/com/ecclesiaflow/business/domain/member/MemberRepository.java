@@ -48,19 +48,21 @@ import java.util.UUID;
  * 
  * @author EcclesiaFlow Team
  * @since 1.0.0
- * @see Member
- * @see com.ecclesiaflow.io.persistence.repositories.impl.MemberRepositoryImpl
  */
 public interface MemberRepository {
-
+    
     /**
-     * Recherche un membre par son identifiant unique.
+     * Récupère un membre par son memberId (UUID partagé entre modules).
+     * <p>
+     * Le memberId est l'identifiant partagé entre le module auth et le module members.
+     * C'est le claim 'cid' du JWT.
+     * </p>
      * 
-     * @param id l'identifiant unique du membre, non null
+     * @param memberId l'UUID partagé du membre, non null
      * @return un Optional contenant le membre si trouvé, vide sinon
-     * @throws IllegalArgumentException si id est null
+     * @throws IllegalArgumentException si memberId est null
      */
-    Optional<Member> getById(UUID id);
+    Optional<Member> getByMemberId(UUID memberId);
     
     /**
      * Recherche un membre par son adresse email.

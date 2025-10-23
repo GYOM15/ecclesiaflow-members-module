@@ -50,6 +50,18 @@ import java.util.UUID;
 public interface SpringDataMemberRepository extends JpaRepository<MemberEntity, UUID> {
     
     /**
+     * Recherche une entité membre par son memberId (UUID du module auth).
+     * <p>
+     * Requête dérivée Spring Data : SELECT * FROM member WHERE member_id = ?
+     * Utilise l'index unique sur la colonne member_id pour des performances optimales.
+     * </p>
+     * 
+     * @param memberId l'UUID du membre (claim 'cid' du JWT), non null
+     * @return un Optional contenant l'entité si trouvée, vide sinon
+     */
+    Optional<MemberEntity> findByMemberId(UUID memberId);
+
+    /**
      * Recherche une entité membre par son adresse email.
      * <p>
      * Requête dérivée Spring Data : SELECT * FROM member WHERE email = ?

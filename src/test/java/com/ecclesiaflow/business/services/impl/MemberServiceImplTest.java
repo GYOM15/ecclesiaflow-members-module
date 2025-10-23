@@ -104,9 +104,9 @@ class MemberServiceImplTest {
         UUID id = UUID.randomUUID();
         Member member = Member.builder().memberId(id).firstName("Jane").email("jane@mail.com").build();
 
-        when(memberRepository.getById(id)).thenReturn(Optional.of(member));
+        when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(member));
 
-        Member result = memberService.findById(id);
+        Member result = memberService.findByMemberId(id);
 
         assertEquals("Jane", result.getFirstName());
     }
@@ -114,9 +114,9 @@ class MemberServiceImplTest {
     @Test
     void findById_shouldThrowIfNotFound() {
         UUID id = UUID.randomUUID();
-        when(memberRepository.getById(id)).thenReturn(Optional.empty());
+        when(memberRepository.getByMemberId(id)).thenReturn(Optional.empty());
 
-        assertThrows(MemberNotFoundException.class, () -> memberService.findById(id));
+        assertThrows(MemberNotFoundException.class, () -> memberService.findByMemberId(id));
     }
 
     @Test
@@ -135,7 +135,7 @@ class MemberServiceImplTest {
                 .build();
 
         when(memberRepository.existsByEmail("new@mail.com")).thenReturn(false);
-        when(memberRepository.getById(id)).thenReturn(Optional.of(existing));
+        when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
         when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Member result = memberService.updateMember(update);
@@ -163,7 +163,7 @@ class MemberServiceImplTest {
 
         assertThrows(IllegalArgumentException.class, () -> memberService.updateMember(update));
 
-        verify(memberRepository, never()).getById(any());
+        verify(memberRepository, never()).getByMemberId(any());
         verify(memberRepository, never()).save(any());
     }
 
@@ -177,7 +177,7 @@ class MemberServiceImplTest {
                 .build();
 
         when(memberRepository.existsByEmail("new@mail.com")).thenReturn(false);
-        when(memberRepository.getById(id)).thenReturn(Optional.empty());
+        when(memberRepository.getByMemberId(id)).thenReturn(Optional.empty());
 
         assertThrows(MemberNotFoundException.class, () -> memberService.updateMember(update));
 
@@ -189,7 +189,7 @@ class MemberServiceImplTest {
         UUID id = UUID.randomUUID();
         Member existing = Member.builder().memberId(id).firstName("ToDelete").email("del@mail.com").build();
 
-        when(memberRepository.getById(id)).thenReturn(Optional.of(existing));
+        when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
 
         memberService.deleteMember(id);
 

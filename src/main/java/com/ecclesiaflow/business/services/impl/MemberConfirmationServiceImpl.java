@@ -85,10 +85,10 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
     }
 
     private void generateAndSaveToken(Member member) {
-        deleteExistingConfirmationToken(member.getId());
+        deleteExistingConfirmationToken(member.getMemberId());
         UUID newToken = tokenGenerator.generateToken();
         MemberConfirmation confirmation = MemberConfirmation.builder()
-                .memberId(member.getId())
+                .memberId(member.getMemberId())
                 .token(newToken)
                 .createdAt(LocalDateTime.now())
                 .expiresAt(LocalDateTime.now().plusHours(24))
@@ -104,7 +104,7 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
 
 
     private Member getMemberOrThrow(UUID memberId) throws MemberNotFoundException, MemberAlreadyConfirmedException {
-        return memberRepository.getById(memberId)
+        return memberRepository.getByMemberId(memberId)
                 .orElseThrow(() -> new MemberNotFoundException("Membre non trouvé"));
     }
 
