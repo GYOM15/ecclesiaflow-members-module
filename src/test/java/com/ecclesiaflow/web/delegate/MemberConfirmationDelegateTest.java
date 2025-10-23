@@ -7,7 +7,7 @@ import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.web.mappers.OpenApiModelMapper;
 import com.ecclesiaflow.web.model.ConfirmationResponse;
-import com.ecclesiaflow.web.model.ResendConfirmationLink200Response;
+import com.ecclesiaflow.web.model.MembersResendConfirmationLink200Response;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -157,7 +157,7 @@ class MemberConfirmationDelegateTest {
         doNothing().when(confirmationService).sendConfirmationLink(email);
 
         // When
-        ResponseEntity<ResendConfirmationLink200Response> response = memberConfirmationDelegate.resendConfirmationLink(email);
+        ResponseEntity<MembersResendConfirmationLink200Response> response = memberConfirmationDelegate.resendConfirmationLink(email);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -175,7 +175,7 @@ class MemberConfirmationDelegateTest {
         doNothing().when(confirmationService).sendConfirmationLink(email);
 
         // When
-        ResponseEntity<ResendConfirmationLink200Response> response = memberConfirmationDelegate.resendConfirmationLink(email);
+        ResponseEntity<MembersResendConfirmationLink200Response> response = memberConfirmationDelegate.resendConfirmationLink(email);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);

@@ -2,7 +2,7 @@ package com.ecclesiaflow.web.delegate;
 
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import com.ecclesiaflow.business.services.MemberService;
-import com.ecclesiaflow.web.model.GetMemberConfirmationStatus200Response;
+import com.ecclesiaflow.web.model.MembersGetConfirmationStatus200Response;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -44,7 +44,7 @@ class MembersTemporaryDelegateTest {
         when(memberService.isEmailConfirmed(email)).thenReturn(true);
 
         // When
-        ResponseEntity<GetMemberConfirmationStatus200Response> response = 
+        ResponseEntity<MembersGetConfirmationStatus200Response> response = 
                 membersTemporaryDelegate.getMemberConfirmationStatus(email);
 
         // Then
@@ -62,7 +62,7 @@ class MembersTemporaryDelegateTest {
         when(memberService.isEmailConfirmed(email)).thenReturn(false);
 
         // When
-        ResponseEntity<GetMemberConfirmationStatus200Response> response = 
+        ResponseEntity<MembersGetConfirmationStatus200Response> response = 
                 membersTemporaryDelegate.getMemberConfirmationStatus(email);
 
         // Then

@@ -5,7 +5,7 @@ import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.web.delegate.MemberConfirmationDelegate;
 import com.ecclesiaflow.web.model.ConfirmationResponse;
-import com.ecclesiaflow.web.model.ResendConfirmationLink200Response;
+import com.ecclesiaflow.web.model.MembersResendConfirmationLink200Response;
 import com.ecclesiaflow.web.model.ResendConfirmationLinkRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -19,9 +19,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -126,7 +123,7 @@ class MembersConfirmationControllerTest {
         ResendConfirmationLinkRequest request = new ResendConfirmationLinkRequest();
         request.setEmail(email);
 
-        ResendConfirmationLink200Response response = new ResendConfirmationLink200Response()
+        MembersResendConfirmationLink200Response response = new MembersResendConfirmationLink200Response()
                 .message("Si cette adresse email est associée à un compte non confirmé, un nouveau lien de confirmation a été envoyé.")
                 .expiresIn(86400L);
 
@@ -168,7 +165,7 @@ class MembersConfirmationControllerTest {
         ResendConfirmationLinkRequest request = new ResendConfirmationLinkRequest();
         request.setEmail(email);
 
-        ResendConfirmationLink200Response response = new ResendConfirmationLink200Response()
+        MembersResendConfirmationLink200Response response = new MembersResendConfirmationLink200Response()
                 .message("Si cette adresse email est associée à un compte non confirmé, un nouveau lien de confirmation a été envoyé.")
                 .expiresIn(86400L);
 

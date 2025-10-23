@@ -4,7 +4,7 @@ import com.ecclesiaflow.web.api.MembersManagementApi;
 import com.ecclesiaflow.web.api.MembersTemporaryApi;
 import com.ecclesiaflow.web.delegate.MembersManagementDelegate;
 import com.ecclesiaflow.web.delegate.MembersTemporaryDelegate;
-import com.ecclesiaflow.web.model.GetMemberConfirmationStatus200Response;
+import com.ecclesiaflow.web.model.MembersGetConfirmationStatus200Response;
 import com.ecclesiaflow.web.model.MemberPageResponse;
 import com.ecclesiaflow.web.model.SignUpRequestPayload;
 import com.ecclesiaflow.web.model.SignUpResponse;
@@ -72,7 +72,7 @@ public class MembersController implements MembersManagementApi, MembersTemporary
      * @see MembersTemporaryDelegate#sayHello()
      */
     @Override
-    public ResponseEntity<String> _sayHello() {
+    public ResponseEntity<String> _membersSayHello() {
         return membersTemporaryDelegate.sayHello();
     }
 
@@ -89,7 +89,7 @@ public class MembersController implements MembersManagementApi, MembersTemporary
      * @see MembersTemporaryDelegate#getMemberConfirmationStatus(String)
      */
     @Override
-    public ResponseEntity<GetMemberConfirmationStatus200Response> _getMemberConfirmationStatus(String email) {
+    public ResponseEntity<MembersGetConfirmationStatus200Response> _membersGetConfirmationStatus(String email) {
         return membersTemporaryDelegate.getMemberConfirmationStatus(email);
     }
 
@@ -117,7 +117,7 @@ public class MembersController implements MembersManagementApi, MembersTemporary
      * @see MembersManagementDelegate#createMember(SignUpRequestPayload)
      */
     @Override
-    public ResponseEntity<SignUpResponse> _createMember(SignUpRequestPayload signUpRequestPayload) {
+    public ResponseEntity<SignUpResponse> _membersCreate(SignUpRequestPayload signUpRequestPayload) {
         return membersManagementDelegate.createMember(signUpRequestPayload);
     }
 
@@ -139,7 +139,7 @@ public class MembersController implements MembersManagementApi, MembersTemporary
      * @see MembersManagementDelegate#getAllMembers(Integer, Integer, String, Boolean, String, String)
      */
     @Override
-    public ResponseEntity<MemberPageResponse> _getAllMembers(
+    public ResponseEntity<MemberPageResponse> _membersGetAll(
             Integer page, Integer size, @Nullable String search, 
             @Nullable Boolean confirmed, String sort, String direction) {
         return membersManagementDelegate.getAllMembers(page, size, search, confirmed, sort, direction);
@@ -160,7 +160,7 @@ public class MembersController implements MembersManagementApi, MembersTemporary
      * @see MembersManagementDelegate#getMemberById(UUID)
      */
     @Override
-    public ResponseEntity<SignUpResponse> _getMemberById(UUID memberId) {
+    public ResponseEntity<SignUpResponse> _membersGetById(UUID memberId) {
         return membersManagementDelegate.getMemberById(memberId);
     }
 
@@ -180,7 +180,7 @@ public class MembersController implements MembersManagementApi, MembersTemporary
      * @see MembersManagementDelegate#updateMemberPartially(UUID, UpdateMemberRequestPayload)
      */
     @Override
-    public ResponseEntity<SignUpResponse> _updateMemberPartially(UUID memberId, UpdateMemberRequestPayload updateMemberRequestPayload) {
+    public ResponseEntity<SignUpResponse> _membersUpdatePartially(UUID memberId, UpdateMemberRequestPayload updateMemberRequestPayload) {
         return membersManagementDelegate.updateMemberPartially(memberId, updateMemberRequestPayload);
     }
 
@@ -199,8 +199,43 @@ public class MembersController implements MembersManagementApi, MembersTemporary
      * @see MembersManagementDelegate#deleteMember(UUID)
      */
     @Override
-    public ResponseEntity<Void> _deleteMember(UUID memberId) {
+    public ResponseEntity<Void> _membersDelete(UUID memberId) {
         return membersManagementDelegate.deleteMember(memberId);
+    }
+
+    // ========================================
+    // Implémentation des routes /me
+    // ========================================
+
+    /**
+     * Récupère les informations du membre authentifié.
+     * 
+     * @return {@link ResponseEntity} avec les informations du membre connecté
+     */
+    @Override
+    public ResponseEntity<SignUpResponse> _membersGetMyProfile() {
+        return membersManagementDelegate.getMyProfile();
+    }
+
+    /**
+     * Met à jour les informations du membre authentifié.
+     * 
+     * @param updateMemberRequestPayload les informations à mettre à jour
+     * @return {@link ResponseEntity} avec les informations mises à jour
+     */
+    @Override
+    public ResponseEntity<SignUpResponse> _membersUpdateMyProfile(UpdateMemberRequestPayload updateMemberRequestPayload) {
+        return membersManagementDelegate.updateMyProfile(updateMemberRequestPayload);
+    }
+
+    /**
+     * Supprime le compte du membre authentifié.
+     * 
+     * @return {@link ResponseEntity} vide avec statut 204 (No Content)
+     */
+    @Override
+    public ResponseEntity<Void> _membersDeleteMyAccount() {
+        return membersManagementDelegate.deleteMyAccount();
     }
 
 }

@@ -3,7 +3,7 @@ package com.ecclesiaflow.web.controller;
 import com.ecclesiaflow.web.api.MemberConfirmationApi;
 import com.ecclesiaflow.web.delegate.MemberConfirmationDelegate;
 import com.ecclesiaflow.web.model.ConfirmationResponse;
-import com.ecclesiaflow.web.model.ResendConfirmationLink200Response;
+import com.ecclesiaflow.web.model.MembersResendConfirmationLink200Response;
 import com.ecclesiaflow.web.model.ResendConfirmationLinkRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -68,7 +68,7 @@ public class MembersConfirmationController implements MemberConfirmationApi {
      * @see MemberConfirmationDelegate#confirmMemberByToken(UUID)
      */
     @Override
-    public ResponseEntity<ConfirmationResponse> _confirmMemberByToken(UUID token) {
+    public ResponseEntity<ConfirmationResponse> _membersConfirmByToken(UUID token) {
         return memberConfirmationDelegate.confirmMemberByToken(token);
     }
 
@@ -95,7 +95,7 @@ public class MembersConfirmationController implements MemberConfirmationApi {
      * @see MemberConfirmationDelegate#resendConfirmationLink(String)
      */
     @Override
-    public ResponseEntity<ResendConfirmationLink200Response> _resendConfirmationLink(ResendConfirmationLinkRequest resendConfirmationLinkRequest) {
+    public ResponseEntity<MembersResendConfirmationLink200Response> _membersResendConfirmationLink(ResendConfirmationLinkRequest resendConfirmationLinkRequest) {
         return memberConfirmationDelegate.resendConfirmationLink(resendConfirmationLinkRequest.getEmail());
     }
 
