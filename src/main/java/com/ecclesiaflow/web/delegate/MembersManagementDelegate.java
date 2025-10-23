@@ -142,6 +142,56 @@ public class MembersManagementDelegate {
     }
 
     // ========================================
+    // Routes /me (membre authentifié)
+    // ========================================
+
+    /**
+     * Récupère les informations du membre authentifié.
+     * 
+     * @return Informations du membre connecté
+     */
+    public ResponseEntity<SignUpResponse> getMyProfile() {
+        // TODO: Extraire memberId du JWT via AuthenticatedUserContextProvider
+        UUID authenticatedMemberId = UUID.randomUUID(); // Placeholder
+        
+        Member member = memberService.findById(authenticatedMemberId);
+        SignUpResponse response = openApiModelMapper.createSignUpResponse(member, "Profil récupéré");
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Met à jour les informations du membre authentifié.
+     * 
+     * @param updateMemberRequestPayload Données de mise à jour
+     * @return Membre mis à jour
+     */
+    public ResponseEntity<SignUpResponse> updateMyProfile(UpdateMemberRequestPayload updateMemberRequestPayload) {
+        // TODO: Extraire memberId du JWT via AuthenticatedUserContextProvider
+        UUID authenticatedMemberId = UUID.randomUUID(); // Placeholder
+        
+        MembershipUpdate businessRequest = updateRequestMapper.fromUpdateMemberRequest(authenticatedMemberId, updateMemberRequestPayload);
+        Member updatedMember = memberService.updateMember(businessRequest);
+        SignUpResponse response = openApiModelMapper.createSignUpResponse(updatedMember, "Profil mis à jour");
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Supprime le compte du membre authentifié.
+     * 
+     * @return Réponse vide avec statut 204
+     */
+    public ResponseEntity<Void> deleteMyAccount() {
+        // TODO: Extraire memberId du JWT via AuthenticatedUserContextProvider
+        UUID authenticatedMemberId = UUID.randomUUID(); // Placeholder
+        
+        memberService.deleteMember(authenticatedMemberId);
+        
+        return ResponseEntity.noContent().build();
+    }
+
+    // ========================================
     // Méthodes utilitaires privées
     // ========================================
 

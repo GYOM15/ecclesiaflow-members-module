@@ -5,7 +5,7 @@ import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.web.mappers.OpenApiModelMapper;
 import com.ecclesiaflow.web.model.ConfirmationResponse;
-import com.ecclesiaflow.web.model.ResendConfirmationLink200Response;
+import com.ecclesiaflow.web.model.MembersResendConfirmationLink200Response;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -99,10 +99,10 @@ public class MemberConfirmationDelegate {
      * @return Réponse avec message de confirmation et durée de validité (24h)
      * @throws MemberAlreadyConfirmedException si le compte est déjà confirmé (409 Conflict)
      */
-    public ResponseEntity<ResendConfirmationLink200Response> resendConfirmationLink(String email) {
+    public ResponseEntity<MembersResendConfirmationLink200Response> resendConfirmationLink(String email) {
         confirmationService.sendConfirmationLink(email);
         
-        ResendConfirmationLink200Response response = new ResendConfirmationLink200Response()
+        MembersResendConfirmationLink200Response response = new MembersResendConfirmationLink200Response()
                 .message("Si cette adresse email est associée à un compte non confirmé, un nouveau lien de confirmation a été envoyé.")
                 .expiresIn(86400L);
         
