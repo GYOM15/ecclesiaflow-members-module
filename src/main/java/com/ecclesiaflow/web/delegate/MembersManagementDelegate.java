@@ -3,6 +3,8 @@ package com.ecclesiaflow.web.delegate;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
+import com.ecclesiaflow.business.security.AuthenticatedUserContextProvider;
+import com.ecclesiaflow.business.security.RequireScopes;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.web.mappers.OpenApiModelMapper;
 import com.ecclesiaflow.web.mappers.SignUpRequestMapper;
@@ -50,6 +52,7 @@ public class MembersManagementDelegate {
     private final MemberService memberService;
     private final UpdateRequestMapper updateRequestMapper;
     private final OpenApiModelMapper openApiModelMapper;
+    private final AuthenticatedUserContextProvider contextProvider;
 
     /**
      * Crée un nouveau membre dans le système.
@@ -81,6 +84,7 @@ public class MembersManagementDelegate {
      * @param direction Direction du tri
      * @return Page de membres
      */
+    @RequireScopes("ef:members:read:all")
     public ResponseEntity<MemberPageResponse> getAllMembers(
             Integer page, Integer size, String search, Boolean confirmed, String sort, String direction) {
 
@@ -102,8 +106,9 @@ public class MembersManagementDelegate {
      * @param memberId Identifiant unique du membre
      * @return Détails du membre
      */
+    @RequireScopes({"ef:members:read:own", "ef:members:read:all"})
     public ResponseEntity<SignUpResponse> getMemberById(UUID memberId) {
-        Member member = memberService.findById(memberId);
+        Member member = memberService.findByMemberId(memberId);
         SignUpResponse response = openApiModelMapper.createSignUpResponse(member, "Membre trouvé");
         
         return ResponseEntity.ok(response);
@@ -116,6 +121,7 @@ public class MembersManagementDelegate {
      * @param updateMemberRequestPayload Données de mise à jour (modèle OpenAPI)
      * @return Membre mis à jour
      */
+    @RequireScopes({"ef:members:write:own", "ef:members:write:all"})
     public ResponseEntity<SignUpResponse> updateMemberPartially(UUID memberId, UpdateMemberRequestPayload updateMemberRequestPayload) {
         // Transformation vers l'objet métier
         MembershipUpdate businessRequest = updateRequestMapper.fromUpdateMemberRequest(memberId, updateMemberRequestPayload);
@@ -135,6 +141,7 @@ public class MembersManagementDelegate {
      * @param memberId Identifiant du membre
      * @return Réponse vide avec statut 204
      */
+    @RequireScopes({"ef:members:delete:own", "ef:members:delete:all"})
     public ResponseEntity<Void> deleteMember(UUID memberId) {
         memberService.deleteMember(memberId);
         
@@ -150,11 +157,11 @@ public class MembersManagementDelegate {
      * 
      * @return Informations du membre connecté
      */
+    @RequireScopes("ef:members:read:own")
     public ResponseEntity<SignUpResponse> getMyProfile() {
-        // TODO: Extraire memberId du JWT via AuthenticatedUserContextProvider
-        UUID authenticatedMemberId = UUID.randomUUID(); // Placeholder
+        UUID authenticatedMemberId = contextProvider.getAuthenticatedMemberId();
         
-        Member member = memberService.findById(authenticatedMemberId);
+        Member member = memberService.findByMemberId(authenticatedMemberId);
         SignUpResponse response = openApiModelMapper.createSignUpResponse(member, "Profil récupéré");
         
         return ResponseEntity.ok(response);
@@ -166,9 +173,9 @@ public class MembersManagementDelegate {
      * @param updateMemberRequestPayload Données de mise à jour
      * @return Membre mis à jour
      */
+    @RequireScopes("ef:members:write:own")
     public ResponseEntity<SignUpResponse> updateMyProfile(UpdateMemberRequestPayload updateMemberRequestPayload) {
-        // TODO: Extraire memberId du JWT via AuthenticatedUserContextProvider
-        UUID authenticatedMemberId = UUID.randomUUID(); // Placeholder
+        UUID authenticatedMemberId = contextProvider.getAuthenticatedMemberId();
         
         MembershipUpdate businessRequest = updateRequestMapper.fromUpdateMemberRequest(authenticatedMemberId, updateMemberRequestPayload);
         Member updatedMember = memberService.updateMember(businessRequest);
@@ -182,9 +189,9 @@ public class MembersManagementDelegate {
      * 
      * @return Réponse vide avec statut 204
      */
+    @RequireScopes("ef:members:delete:own")
     public ResponseEntity<Void> deleteMyAccount() {
-        // TODO: Extraire memberId du JWT via AuthenticatedUserContextProvider
-        UUID authenticatedMemberId = UUID.randomUUID(); // Placeholder
+        UUID authenticatedMemberId = contextProvider.getAuthenticatedMemberId();
         
         memberService.deleteMember(authenticatedMemberId);
         

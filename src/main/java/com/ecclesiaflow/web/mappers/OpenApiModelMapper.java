@@ -60,6 +60,7 @@ public class OpenApiModelMapper {
         response.setLastName(member.getLastName());
         response.setAddress(member.getAddress());
         response.setConfirmed(member.isConfirmed());
+        response.setRole(member.getRole().name());
 
         if (member.getCreatedAt() != null) {
             response.setCreatedAt(member.getCreatedAt().toString());

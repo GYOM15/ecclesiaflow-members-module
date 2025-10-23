@@ -526,4 +526,66 @@ class MembersControllerTest {
         verify(membersManagementDelegate).deleteMember(id);
     }
 
+    // --- Tests for GET /ecclesiaflow/members/me (getMyProfile) ---
+    @Test
+    void getMyProfile_shouldReturnAuthenticatedMemberProfile() throws Exception {
+        SignUpResponse response = new SignUpResponse();
+        response.setEmail("test@example.com");
+        response.setFirstName("Test");
+        response.setLastName("User");
+        response.setMessage("Profil récupéré");
+
+        when(membersManagementDelegate.getMyProfile())
+                .thenReturn(ResponseEntity.ok(response));
+
+        mockMvc.perform(get("/ecclesiaflow/members/me")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("test@example.com"))
+                .andExpect(jsonPath("$.firstName").value("Test"))
+                .andExpect(jsonPath("$.lastName").value("User"));
+
+        verify(membersManagementDelegate).getMyProfile();
+    }
+
+    // --- Tests for PATCH /ecclesiaflow/members/me (updateMyProfile) ---
+    @Test
+    void updateMyProfile_shouldReturnUpdatedProfile() throws Exception {
+        UpdateMemberRequestPayload updateRequest = new UpdateMemberRequestPayload();
+        updateRequest.setFirstName("Updated");
+        updateRequest.setLastName("Name");
+
+        SignUpResponse response = new SignUpResponse();
+        response.setEmail("test@example.com");
+        response.setFirstName("Updated");
+        response.setLastName("Name");
+        response.setMessage("Profil mis à jour");
+
+        when(membersManagementDelegate.updateMyProfile(any(UpdateMemberRequestPayload.class)))
+                .thenReturn(ResponseEntity.ok(response));
+
+        mockMvc.perform(patch("/ecclesiaflow/members/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("Updated"))
+                .andExpect(jsonPath("$.lastName").value("Name"));
+
+        verify(membersManagementDelegate).updateMyProfile(any(UpdateMemberRequestPayload.class));
+    }
+
+    // --- Tests for DELETE /ecclesiaflow/members/me (deleteMyAccount) ---
+    @Test
+    void deleteMyAccount_shouldReturnNoContent() throws Exception {
+        when(membersManagementDelegate.deleteMyAccount())
+                .thenReturn(ResponseEntity.noContent().build());
+
+        mockMvc.perform(delete("/ecclesiaflow/members/me")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+        verify(membersManagementDelegate).deleteMyAccount();
+    }
+
 }

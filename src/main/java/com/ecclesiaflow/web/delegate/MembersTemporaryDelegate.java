@@ -1,5 +1,6 @@
 package com.ecclesiaflow.web.delegate;
 
+import com.ecclesiaflow.business.security.RequireScopes;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.web.model.MembersGetConfirmationStatus200Response;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class MembersTemporaryDelegate {
      * 
      * @return Message de bienvenue "Hi Member"
      */
+    @RequireScopes("ef:members:read:own")
     public ResponseEntity<String> sayHello() {
         return ResponseEntity.ok("Hi Member");
     }
