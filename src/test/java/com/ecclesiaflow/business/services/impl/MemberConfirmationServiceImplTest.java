@@ -66,7 +66,7 @@ class MemberConfirmationServiceImplTest {
                 .build();
 
         when(confirmationRepository.getByToken(token)).thenReturn(Optional.of(confirmation));
-        when(memberRepository.getById(memberId)).thenReturn(Optional.of(member));
+        when(memberRepository.getByMemberId(memberId)).thenReturn(Optional.of(member));
         when(authenticationService.retrievePostActivationToken(member.getEmail(), member.getMemberId())).thenReturn("TEMP_TOKEN");
 
         // when
@@ -79,7 +79,7 @@ class MemberConfirmationServiceImplTest {
         assertEquals(900, result.getExpiresInSeconds());
         
         verify(confirmationRepository).getByToken(token);
-        verify(memberRepository).getById(memberId);
+        verify(memberRepository).getByMemberId(memberId);
         verify(memberRepository).save(argThat(savedMember -> 
             savedMember.isConfirmed() && 
             savedMember.getMemberId().equals(member.getMemberId())
@@ -98,7 +98,7 @@ class MemberConfirmationServiceImplTest {
         
         // Verify no repository interactions
         verify(confirmationRepository, never()).getByToken(any());
-        verify(memberRepository, never()).getById(any());
+        verify(memberRepository, never()).getByMemberId(any());
     }
 
     @Test
@@ -113,7 +113,7 @@ class MemberConfirmationServiceImplTest {
         
         assertEquals("Token de confirmation invalide ou déjà utilisé", exception.getMessage());
         verify(confirmationRepository).getByToken(invalidToken);
-        verify(memberRepository, never()).getById(any());
+        verify(memberRepository, never()).getByMemberId(any());
     }
 
     @Test
@@ -133,7 +133,7 @@ class MemberConfirmationServiceImplTest {
         
         assertEquals("Token de confirmation expiré", exception.getMessage());
         verify(confirmationRepository).getByToken(token);
-        verify(memberRepository, never()).getById(any());
+        verify(memberRepository, never()).getByMemberId(any());
         verify(memberRepository, never()).save(any());
         verify(confirmationRepository, never()).delete(any());
     }
@@ -148,7 +148,7 @@ class MemberConfirmationServiceImplTest {
                 .build();
 
         when(confirmationRepository.getByToken(token)).thenReturn(Optional.of(confirmation));
-        when(memberRepository.getById(memberId)).thenReturn(Optional.empty());
+        when(memberRepository.getByMemberId(memberId)).thenReturn(Optional.empty());
 
         // when/then
         MemberNotFoundException exception = assertThrows(MemberNotFoundException.class,
@@ -156,7 +156,7 @@ class MemberConfirmationServiceImplTest {
         
         assertEquals("Membre non trouvé", exception.getMessage());
         verify(confirmationRepository).getByToken(token);
-        verify(memberRepository).getById(memberId);
+        verify(memberRepository).getByMemberId(memberId);
         verify(memberRepository, never()).save(any());
         verify(confirmationRepository, never()).delete(any());
         verify(authenticationService, never()).retrievePostActivationToken(any(), any());
@@ -173,7 +173,7 @@ class MemberConfirmationServiceImplTest {
                 .build();
 
         when(confirmationRepository.getByToken(token)).thenReturn(Optional.of(confirmation));
-        when(memberRepository.getById(memberId)).thenReturn(Optional.of(confirmedMember));
+        when(memberRepository.getByMemberId(memberId)).thenReturn(Optional.of(confirmedMember));
 
         // when/then
         MemberAlreadyConfirmedException exception = assertThrows(MemberAlreadyConfirmedException.class,
@@ -181,7 +181,7 @@ class MemberConfirmationServiceImplTest {
         
         assertEquals("Le compte est déjà confirmé", exception.getMessage());
         verify(confirmationRepository).getByToken(token);
-        verify(memberRepository).getById(memberId);
+        verify(memberRepository).getByMemberId(memberId);
         verify(memberRepository, never()).save(any());
         verify(confirmationRepository, never()).delete(any());
         verify(authenticationService, never()).retrievePostActivationToken(any(), any());

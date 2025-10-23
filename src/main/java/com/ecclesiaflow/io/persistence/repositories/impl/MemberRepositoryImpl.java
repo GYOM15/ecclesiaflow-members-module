@@ -65,8 +65,9 @@ public class MemberRepositoryImpl implements MemberRepository {
     private final MemberPersistenceMapper mapper;
 
     @Override
-    public Optional<Member> getById(UUID id) {
-        return springDataRepo.findById(id).map(mapper::toDomain);
+    public Optional<Member> getByMemberId(UUID memberId) {
+        // Chercher par memberId (UUID partagé entre modules), pas par la clé primaire 'id'
+        return springDataRepo.findByMemberId(memberId).map(mapper::toDomain);
     }
 
     @Override

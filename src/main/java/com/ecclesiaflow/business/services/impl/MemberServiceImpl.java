@@ -106,9 +106,9 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     @Transactional(readOnly = true)
-    public Member findById(UUID id) {
-        return memberRepository.getById(id)
-                .orElseThrow(() -> new MemberNotFoundException("Membre non trouvé avec l'ID"));
+    public Member findByMemberId(UUID memberId) {
+        return memberRepository.getByMemberId(memberId)
+                .orElseThrow(() -> new MemberNotFoundException("Membre non trouvé avec le memberId"));
     }
 
     @Override
@@ -117,15 +117,15 @@ public class MemberServiceImpl implements MemberService {
         if (isEmailAlreadyUsed(update.getEmail())) {
             throw new IllegalArgumentException("Un compte avec cet email existe déjà.");
         }
-        Member member = findById(update.getMemberId());
+        Member member = findByMemberId(update.getMemberId());
         Member updatedMember = member.withUpdatedFields(update);
         return memberRepository.save(updatedMember);
     }
 
     @Override
     @Transactional
-    public void deleteMember(UUID id) {
-        Member member = findById(id);
+    public void deleteMember(UUID memberId) {
+        Member member = findByMemberId(memberId);
         memberRepository.delete(member);
     }
 

@@ -93,26 +93,25 @@ public interface MemberService {
      * @param email l'email du membre à vérifier, non null
      * @return true si le membre existe et est confirmé, false sinon
      * @throws IllegalArgumentException si email est null ou vide
-     * 
      * @implNote Opération de lecture avec jointure sur statut de confirmation.
      */
     boolean isEmailConfirmed(String email);
     
     /**
-     * Recherche un membre par son identifiant unique.
+     * Recherche un membre par son memberId (UUID partagé entre modules).
      * <p>
-     * Cette méthode récupère les informations complètes d'un membre
-     * à partir de son UUID. Utilisée pour les opérations de consultation
-     * et de mise à jour des profils.
+     * Le memberId est l'identifiant partagé entre le module auth et le module members.
+     * C'est le claim 'cid' du JWT. Cette méthode est utilisée pour récupérer
+     * un membre spécifique, que ce soit pour soi-même (scope:own) ou pour un autre (scope:all).
      * </p>
-     *
-     * @param id l'identifiant unique du membre, non null
-     * @return le membre correspondant avec toutes ses informations
-     * @throws MemberNotFoundException si aucun membre avec cet ID n'existe
-     * @throws IllegalArgumentException                               si id est null
-     * @implNote Opération de lecture par clé primaire (optimisée).
+     * 
+     * @param memberId l'UUID partagé du membre, non null
+     * @return le membre correspondant, jamais null
+     * @throws MemberNotFoundException si aucun membre n'existe avec ce memberId
+     * @throws IllegalArgumentException si memberId est null
+     * @implNote Opération de lecture par memberId (optimisée avec index unique).
      */
-    Member findById(UUID id);
+    Member findByMemberId(UUID memberId);
     
     /**
      * Met à jour les informations d'un membre existant.
