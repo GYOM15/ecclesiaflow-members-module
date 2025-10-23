@@ -36,9 +36,6 @@ servers:
   - url: https://api.ecclesiaflow.com
     description: Serveur de production
 
-security:
-  - BearerAuth: []
-
 x-module: members
 x-service: member-management
 
