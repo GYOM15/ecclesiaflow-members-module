@@ -18,6 +18,7 @@ info:
 
     **Version supportée:**
     - v1: `application/vnd.ecclesiaflow.members.v1+json`
+    - Fallback: `application/json`
   version: 1.0.0
   contact:
     name: EcclesiaFlow Team
@@ -38,6 +39,9 @@ servers:
 security:
   - BearerAuth: []
 
+x-module: members
+x-service: member-management
+
 paths:
   /ecclesiaflow/hello:
     get:
@@ -45,7 +49,11 @@ paths:
         - Members (Temporary)
       summary: Message de bienvenue pour les membres
       description: Endpoint de test pour les membres authentifiés
-      operationId: sayHello
+      operationId: Members.SayHello
+      security:
+        - BearerAuth: []
+      x-required-scopes:
+        - ef:members:read:own
       responses:
         '200':
           description: Message de bienvenue
@@ -65,8 +73,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalServerError'
-      security:
-        - BearerAuth: []
 
   /ecclesiaflow/members:
     get:
@@ -81,7 +87,11 @@ paths:
         - Filtrage par statut de confirmation
         - Recherche par nom ou email
         - Tri par différents critères
-      operationId: getAllMembers
+      operationId: Members.GetAll
+      security:
+        - BearerAuth: []
+      x-required-scopes:
+        - ef:members:read:all
       parameters:
         - name: page
           in: query
@@ -181,7 +191,7 @@ paths:
         5. Envoi d'un email avec lien de confirmation cliquable
 
         **Note:** Le membre devra confirmer son compte en cliquant sur le lien reçu par email avant de pouvoir se connecter.
-      operationId: createMember
+      operationId: Members.Create
       security: []  # Pas d'authentification requise - endpoint d'inscription publique
       requestBody:
         required: true
@@ -244,7 +254,12 @@ paths:
         - Statut de confirmation
         - Dates de création et mise à jour
         - Historique des confirmations
-      operationId: getMemberById
+      operationId: Members.GetById
+      security:
+        - BearerAuth: []
+      x-required-scopes:
+        - ef:members:read:own
+        - ef:members:read:all
       parameters:
         - name: memberId
           in: path
@@ -290,7 +305,12 @@ paths:
         - L'email ne peut pas être modifié via cette API
         - Le statut de confirmation ne peut pas être changé
         - Seuls les champs fournis sont mis à jour (mise à jour partielle)
-      operationId: updateMemberPartially
+      operationId: Members.UpdatePartially
+      security:
+        - BearerAuth: []
+      x-required-scopes:
+        - ef:members:write:own
+        - ef:members:write:all
       parameters:
         - name: memberId
           in: path
@@ -348,7 +368,12 @@ paths:
         
         **Recommandation :** 
         Envisagez plutôt une désactivation/archivage du compte si vous souhaitez conserver l'historique.
-      operationId: deleteMember
+      operationId: Members.Delete
+      security:
+        - BearerAuth: []
+      x-required-scopes:
+        - ef:members:delete:own
+        - ef:members:delete:all
       parameters:
         - name: memberId
           in: path
@@ -402,8 +427,12 @@ paths:
         - Usage unique (token supprimé après utilisation)
         - Expiration 24h
         - Protection contre les attaques par force brute
-      operationId: confirmMemberByToken
+      operationId: Members.ConfirmByToken
       security: []  # Pas d'authentification requise pour la confirmation
+      x-depends-on:
+        - service: auth
+          endpoint: /ecclesiaflow/auth/password
+          description: "Après confirmation, le membre doit définir son mot de passe via le module auth"
       parameters:
         - name: token
           in: query
@@ -473,7 +502,7 @@ paths:
         - Nouveau token avec nouvelle expiration (24h)
         - Protection contre les abus via rate limiting Envoy
         - Réponse identique même si l'email n'existe pas (anti-énumération)
-      operationId: resendConfirmationLink
+      operationId: Members.ResendConfirmationLink
       security: []  # Pas d'authentification requise - l'utilisateur n'est pas encore connecté
       requestBody:
         required: true
@@ -536,7 +565,11 @@ paths:
         
         **Usage interne :** Utilisé par le module d'authentification pour valider
         qu'un membre peut setter son mot de passe (compte confirmé).
-      operationId: getMemberConfirmationStatus
+      operationId: Members.GetConfirmationStatus
+      x-depends-on:
+        - service: auth
+          endpoint: /ecclesiaflow/auth/temporary-token
+          description: "Utilisé par le module auth pour vérifier qu'un membre peut définir son mot de passe"
       parameters:
         - name: email
           in: path
@@ -573,6 +606,77 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalServerError'
 
+  /ecclesiaflow/members/me:
+    get:
+      tags:
+        - Members Management
+      summary: Récupérer mes informations
+      description: Récupère les informations du membre authentifié
+      operationId: Members.GetMyProfile
+      security:
+        - BearerAuth: []
+      x-required-scopes:
+        - ef:members:read:own
+      responses:
+        '200':
+          description: Informations du membre
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignUpResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    patch:
+      tags:
+        - Members Management
+      summary: Mettre à jour mes informations
+      description: Met à jour les informations du membre authentifié
+      operationId: Members.UpdateMyProfile
+      security:
+        - BearerAuth: []
+      x-required-scopes:
+        - ef:members:write:own
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMemberRequestPayload'
+      responses:
+        '200':
+          description: Informations mises à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignUpResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    delete:
+      tags:
+        - Members Management
+      summary: Supprimer mon compte
+      description: Supprime le compte du membre authentifié
+      operationId: Members.DeleteMyAccount
+      security:
+        - BearerAuth: []
+      x-required-scopes:
+        - ef:members:delete:own
+      responses:
+        '204':
+          description: Compte supprimé
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
 components:
   securitySchemes:
     BearerAuth:
@@ -585,6 +689,109 @@ components:
         **Format:** `Authorization: Bearer <token>`
 
         **Obtention:** Utilisez l'API d'authentification EcclesiaFlow
+
+  responses:
+    BadRequestError:
+      description: Données invalides ou malformées
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BadRequestError'
+          examples:
+            validation_error:
+              summary: Erreur de validation
+              value:
+                timestamp: "2024-01-15T10:30:00Z"
+                status: 400
+                error: "Bad Request"
+                errorCode: "VALIDATION_ERROR"
+                message: "Les données fournies sont invalides"
+                path: "/ecclesiaflow/members"
+                errors:
+                  - message: "L'email est requis"
+                    path: "email"
+                    type: "NotBlank"
+                    code: "MISSING_REQUIRED_FIELD"
+    UnauthorizedError:
+      description: Token d'authentification invalide ou manquant
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnauthorizedError'
+          examples:
+            missing_token:
+              summary: Token manquant
+              value:
+                timestamp: "2024-01-15T10:30:00Z"
+                status: 401
+                error: "Unauthorized"
+                errorCode: "UNAUTHORIZED_ACCESS"
+                message: "Token d'authentification requis"
+                path: "/ecclesiaflow/members/me"
+    ForbiddenError:
+      description: Permissions insuffisantes pour effectuer cette action
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ForbiddenError'
+          examples:
+            insufficient_permissions:
+              summary: Permissions insuffisantes
+              value:
+                timestamp: "2024-01-15T10:30:00Z"
+                status: 403
+                error: "Forbidden"
+                errorCode: "INSUFFICIENT_PERMISSIONS"
+                message: "Vous n'avez pas les permissions nécessaires"
+                path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000"
+    NotFoundError:
+      description: Ressource demandée non trouvée
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NotFoundError'
+          examples:
+            member_not_found:
+              summary: Membre non trouvé
+              value:
+                timestamp: "2024-01-15T10:30:00Z"
+                status: 404
+                error: "Not Found"
+                errorCode: "MEMBER_NOT_FOUND"
+                message: "Le membre demandé n'existe pas"
+                path: "/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000"
+    ConflictError:
+      description: Conflit avec l'état actuel de la ressource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ConflictError'
+          examples:
+            duplicate_email:
+              summary: Email déjà utilisé
+              value:
+                timestamp: "2024-01-15T10:30:00Z"
+                status: 409
+                error: "Conflict"
+                errorCode: "DUPLICATE_EMAIL"
+                message: "Un membre avec cet email existe déjà"
+                path: "/ecclesiaflow/members"
+    InternalServerError:
+      description: Erreur interne du serveur
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InternalServerError'
+          examples:
+            server_error:
+              summary: Erreur serveur
+              value:
+                timestamp: "2024-01-15T10:30:00Z"
+                status: 500
+                error: "Internal Server Error"
+                errorCode: "INTERNAL_SERVER_ERROR"
+                message: "Une erreur interne s'est produite"
+                path: "/ecclesiaflow/members"
 
   schemas:
     # Request Schemas
@@ -736,13 +943,11 @@ components:
           description: "Date de confirmation du compte (format ISO)"
           example: "2024-01-15T10:45:00Z"
 
-    MemberPageResponse:
+    PageMetadata:
       type: object
-      description: "Réponse paginée contenant une liste de membres avec métadonnées de pagination"
+      description: "Métadonnées de pagination réutilisables"
       required:
-        - content
         - page
-        - number
         - size
         - totalElements
         - totalPages
@@ -751,11 +956,6 @@ components:
         - numberOfElements
         - empty
       properties:
-        content:
-          type: array
-          description: "Liste des membres pour la page courante"
-          items:
-            $ref: '#/components/schemas/SignUpResponse'
         page:
           type: integer
           description: "Numéro de la page courante (commence à 0)"
@@ -801,6 +1001,20 @@ components:
           description: "Indique si la page est vide"
           example: false
 
+    MemberPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          description: "Réponse paginée contenant une liste de membres"
+          required:
+            - content
+          properties:
+            content:
+              type: array
+              description: "Liste des membres pour la page courante"
+              items:
+                $ref: '#/components/schemas/SignUpResponse'
+
     ConfirmationResponse:
       type: object
       description: "Réponse après confirmation réussie d'un compte membre"
@@ -838,6 +1052,7 @@ components:
         - error
         - message
         - path
+        - errorCode
       properties:
         timestamp:
           type: string
@@ -852,6 +1067,26 @@ components:
           type: string
           description: Type d'erreur HTTP
           example: "Bad Request"
+        errorCode:
+          type: string
+          description: Code d'erreur standardisé pour traçabilité
+          enum:
+            - MEMBER_NOT_FOUND
+            - MEMBER_ALREADY_EXISTS
+            - MEMBER_NOT_CONFIRMED
+            - MEMBER_ALREADY_CONFIRMED
+            - INVALID_EMAIL_FORMAT
+            - DUPLICATE_EMAIL
+            - INVALID_TOKEN
+            - TOKEN_EXPIRED
+            - TOKEN_ALREADY_USED
+            - VALIDATION_ERROR
+            - MISSING_REQUIRED_FIELD
+            - INVALID_FIELD_VALUE
+            - UNAUTHORIZED_ACCESS
+            - INSUFFICIENT_PERMISSIONS
+            - INTERNAL_SERVER_ERROR
+          example: "VALIDATION_ERROR"
         message:
           type: string
           description: Message d'erreur détaillé
@@ -897,8 +1132,10 @@ components:
             message:
               example: "Authentification requise pour accéder à cette ressource"
             errors:
-              description: Not applicable to this error type.
-              type: "null"
+              type: array
+              nullable: true
+              items:
+                $ref: '#/components/schemas/ValidationError'
 
     ForbiddenError:
       allOf:
@@ -912,8 +1149,10 @@ components:
             message:
               example: "Permissions insuffisantes pour effectuer cette action"
             errors:
-              description: Not applicable to this error type.
-              type: "null"
+              type: array
+              nullable: true
+              items:
+                $ref: '#/components/schemas/ValidationError'
 
     NotFoundError:
       allOf:
@@ -927,8 +1166,10 @@ components:
             message:
               example: "La ressource demandée n'existe pas"
             errors:
-              description: Not applicable to this error type.
-              type: "null"
+              type: array
+              nullable: true
+              items:
+                $ref: '#/components/schemas/ValidationError'
 
     ConflictError:
       allOf:
@@ -942,8 +1183,10 @@ components:
             message:
               example: "Conflit avec l'état actuel de la ressource"
             errors:
-              description: Not applicable to this error type.
-              type: "null"
+              type: array
+              nullable: true
+              items:
+                $ref: '#/components/schemas/ValidationError'
 
     GoneError:
       allOf:
@@ -957,8 +1200,10 @@ components:
             message:
               example: "La ressource n'est plus disponible (token expiré)"
             errors:
-              description: Not applicable to this error type.
-              type: "null"
+              type: array
+              nullable: true
+              items:
+                $ref: '#/components/schemas/ValidationError'
 
     InternalServerError:
       allOf:
@@ -972,8 +1217,10 @@ components:
             message:
               example: "Une erreur interne du serveur s'est produite"
             errors:
-              description: Not applicable to this error type.
-              type: "null"
+              type: array
+              nullable: true
+              items:
+                $ref: '#/components/schemas/ValidationError'
 
     ValidationError:
       type: object
