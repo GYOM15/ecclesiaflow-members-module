@@ -5,6 +5,7 @@ import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import com.ecclesiaflow.business.domain.member.Role;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
+import com.ecclesiaflow.business.security.AuthenticatedUserContextProvider;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.web.mappers.OpenApiModelMapper;
 import com.ecclesiaflow.web.mappers.UpdateRequestMapper;
@@ -46,6 +47,9 @@ class MembersManagementDelegateTest {
 
     @Mock
     private OpenApiModelMapper openApiModelMapper;
+
+    @Mock
+    private AuthenticatedUserContextProvider contextProvider;
 
     @InjectMocks
     private MembersManagementDelegate membersManagementDelegate;
@@ -253,7 +257,7 @@ class MembersManagementDelegateTest {
                 .confirmed(true)
                 .message("Membre trouvé");
 
-        when(memberService.findById(memberId)).thenReturn(member);
+        when(memberService.findByMemberId(memberId)).thenReturn(member);
         when(openApiModelMapper.createSignUpResponse(member, "Membre trouvé"))
                 .thenReturn(expectedResponse);
 
@@ -266,7 +270,7 @@ class MembersManagementDelegateTest {
         assertThat(response.getBody().getEmail()).isEqualTo("jane.doe@example.com");
         assertThat(response.getBody().getConfirmed()).isTrue();
 
-        verify(memberService).findById(memberId);
+        verify(memberService).findByMemberId(memberId);
         verify(openApiModelMapper).createSignUpResponse(member, "Membre trouvé");
     }
 
@@ -274,7 +278,7 @@ class MembersManagementDelegateTest {
     void getMemberById_shouldPropagateMemberNotFoundException() {
         // Given
         UUID memberId = UUID.randomUUID();
-        when(memberService.findById(memberId))
+        when(memberService.findByMemberId(memberId))
                 .thenThrow(new MemberNotFoundException("Membre non trouvé"));
 
         // When/Then
@@ -282,7 +286,7 @@ class MembersManagementDelegateTest {
                 .isInstanceOf(MemberNotFoundException.class)
                 .hasMessage("Membre non trouvé");
 
-        verify(memberService).findById(memberId);
+        verify(memberService).findByMemberId(memberId);
         verifyNoInteractions(openApiModelMapper);
     }
 
@@ -396,6 +400,108 @@ class MembersManagementDelegateTest {
                 .isInstanceOf(MemberNotFoundException.class)
                 .hasMessage("Membre non trouvé");
 
+        verify(memberService).deleteMember(memberId);
+    }
+
+    @Test
+    void getMyProfile_shouldReturnAuthenticatedMemberProfile() {
+        // Given
+        UUID memberId = UUID.randomUUID();
+        Member member = Member.builder()
+                .memberId(memberId)
+                .email("test@example.com")
+                .firstName("Test")
+                .lastName("User")
+                .address("123 Test St")
+                .role(Role.MEMBER)
+                .confirmed(true)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        SignUpResponse response = new SignUpResponse();
+        response.setEmail("test@example.com");
+        response.setFirstName("Test");
+        response.setLastName("User");
+
+        when(contextProvider.getAuthenticatedMemberId()).thenReturn(memberId);
+        when(memberService.findByMemberId(memberId)).thenReturn(member);
+        when(openApiModelMapper.createSignUpResponse(member, "Profil récupéré")).thenReturn(response);
+
+        // When
+        ResponseEntity<SignUpResponse> result = membersManagementDelegate.getMyProfile();
+
+        // Then
+        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(result.getBody()).isNotNull();
+        assertThat(result.getBody().getEmail()).isEqualTo("test@example.com");
+
+        verify(contextProvider).getAuthenticatedMemberId();
+        verify(memberService).findByMemberId(memberId);
+        verify(openApiModelMapper).createSignUpResponse(member, "Profil récupéré");
+    }
+
+    @Test
+    void updateMyProfile_shouldUpdateAuthenticatedMemberProfile() {
+        // Given
+        UUID memberId = UUID.randomUUID();
+        UpdateMemberRequestPayload updatePayload = new UpdateMemberRequestPayload();
+        updatePayload.setFirstName("Updated");
+        updatePayload.setLastName("Name");
+
+        MembershipUpdate membershipUpdate = MembershipUpdate.builder()
+                .memberId(memberId)
+                .firstName("Updated")
+                .lastName("Name")
+                .email("updated@example.com")
+                .address("New Address")
+                .phoneNumber("+1234567890")
+                .build();
+
+        Member updatedMember = Member.builder()
+                .memberId(memberId)
+                .email("updated@example.com")
+                .firstName("Updated")
+                .lastName("Name")
+                .address("New Address")
+                .role(Role.MEMBER)
+                .confirmed(true)
+                .build();
+
+        SignUpResponse response = new SignUpResponse();
+        response.setEmail("updated@example.com");
+
+        when(contextProvider.getAuthenticatedMemberId()).thenReturn(memberId);
+        when(updateRequestMapper.fromUpdateMemberRequest(memberId, updatePayload)).thenReturn(membershipUpdate);
+        when(memberService.updateMember(membershipUpdate)).thenReturn(updatedMember);
+        when(openApiModelMapper.createSignUpResponse(updatedMember, "Profil mis à jour")).thenReturn(response);
+
+        // When
+        ResponseEntity<SignUpResponse> result = membersManagementDelegate.updateMyProfile(updatePayload);
+
+        // Then
+        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(result.getBody()).isNotNull();
+
+        verify(contextProvider).getAuthenticatedMemberId();
+        verify(updateRequestMapper).fromUpdateMemberRequest(memberId, updatePayload);
+        verify(memberService).updateMember(membershipUpdate);
+    }
+
+    @Test
+    void deleteMyAccount_shouldDeleteAuthenticatedMemberAccount() {
+        // Given
+        UUID memberId = UUID.randomUUID();
+        when(contextProvider.getAuthenticatedMemberId()).thenReturn(memberId);
+        doNothing().when(memberService).deleteMember(memberId);
+
+        // When
+        ResponseEntity<Void> result = membersManagementDelegate.deleteMyAccount();
+
+        // Then
+        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(result.getBody()).isNull();
+
+        verify(contextProvider).getAuthenticatedMemberId();
         verify(memberService).deleteMember(memberId);
     }
 }
