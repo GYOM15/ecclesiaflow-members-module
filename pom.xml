@@ -161,6 +161,50 @@
 			<artifactId>commons-lang3</artifactId>
 		</dependency>
 
+		<!-- Spring Boot Starter AOP -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+		</dependency>
+
+		<!-- 
+			⚠️ DÉPENDANCES TEMPORAIRES - À RETIRER AVEC ENVOY PROXY
+			
+			Ces dépendances JJWT sont utilisées pour parser et valider le JWT directement 
+			dans le microservice (AuthenticatedUserContextProvider).
+			
+			MIGRATION FUTURE AVEC ENVOY :
+			- Envoy validera le JWT en amont (External Authorization Filter)
+			- Envoy injectera les claims dans des headers HTTP (X-User-Id, X-User-Scopes)
+			- Le microservice lira simplement les headers (pas de parsing JWT)
+			- Ces dépendances JJWT pourront être retirées
+			
+			Voir: AuthenticatedUserContextProvider.java pour plus de détails
+		-->
+		
+		<!-- JJWT API -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-api</artifactId>
+			<version>0.12.6</version>
+		</dependency>
+
+		<!-- JJWT Implementation -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>0.12.6</version>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- JJWT Jackson -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-jackson</artifactId>
+			<version>0.12.6</version>
+			<scope>runtime</scope>
+		</dependency>
+
 		<!-- Testing -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
