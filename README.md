@@ -76,10 +76,11 @@ sequenceDiagram
 * ✉️ **Email Confirmation** – Secure process with temporary codes (6 digits) and safe token handling
 * 🔗 **Auth Module Integration** – WebClient communication for temporary tokens with secure URL generation
 * 📧 **Email Notifications** – **Asynchronous SMTP service** with Gmail integration and customizable templates
-* 🏗️ **Clean Architecture** – 4 layers: Web, Business, IO, Shared
+* 🏗️ **Clean Architecture** – 4 layers: Web, Business, IO, Application
 * 📚 **API-First Design** – Complete OpenAPI documentation with detailed schemas
-* 🧪 **Comprehensive Testing** – JaCoCo coverage with unit and integration tests
+* 🧪 **Comprehensive Testing** – JaCoCo coverage with unit and integration tests (309+ tests)
 * 🔄 **AOP Logging** – **Centralized aspect-based logging** with complete delegation from services
+* 🔐 **JWT Security Context** – Authenticated user context extraction with scope validation
 * 🛡️ **Error Handling** – GlobalExceptionHandler with standardized responses
 
 ---
@@ -201,8 +202,10 @@ The module follows **Clean Architecture** principles with clear separation of re
   - `WebClientConfig`: WebClient configuration for inter-module communication
 - **Logging**: Centralized AOP aspects for comprehensive logging
   - `BusinessOperationLoggingAspect`: **Centralized logging** for all business operations
+  - `SecurityContextLoggingAspect`: **JWT security context logging** for authentication operations
+  - `AsyncEmailLoggingAspect`: **Asynchronous email logging** for email operations
   - **Architecture principle**: All manual logging has been removed from services and delegated to aspects
-  - **Coverage**: Member registration, confirmation, authentication module calls, error handling
+  - **Coverage**: Member registration, confirmation, authentication module calls, JWT extraction, error handling
 
 ## 📦 EcclesiaFlow Ecosystem
 
@@ -227,7 +230,57 @@ The module follows **Clean Architecture** principles with clear separation of re
 * **Build**: Maven 3.14.0 with optimized plugins
 * **Testing**: JUnit 5, Mockito 5.14.2, JaCoCo 0.8.11
 * **Logging**: AOP with AspectJ, SLF4J
+* **Security**: JWT parsing with JJWT 0.11.5
 * **Architecture**: Clean Architecture, Microservices, SOLID
+
+---
+
+## 🔐 Security & Authentication
+
+### **JWT Security Context Provider**
+
+The module implements **authenticated user context extraction** from JWT tokens for secure operations:
+
+**Key Features:**
+- **Member ID Extraction**: Extracts authenticated member UUID from JWT claim `cid`
+- **Scope Extraction**: Retrieves user permissions from JWT claim `scope`
+- **Centralized Logging**: All security operations logged via `SecurityContextLoggingAspect`
+
+**Implementation:**
+```java
+@Component
+public class AuthenticatedUserContextProvider {
+    // Extracts member ID from JWT
+    public UUID getAuthenticatedMemberId();
+    
+    // Extracts user scopes/permissions from JWT
+    public List<String> getAuthenticatedUserScopes();
+}
+```
+
+**JWT Token Structure:**
+```json
+{
+  "sub": "user@example.com",
+  "cid": "550e8400-e29b-41d4-a716-446655440000",
+  "scope": "ef:members:read:own ef:members:write:own",
+  "iat": 1234567890,
+  "exp": 1234571490
+}
+```
+
+**⚠️ Temporary Implementation:**
+This implementation directly parses JWT in the microservice. With **Envoy Proxy** introduction, JWT validation will move upstream:
+- **Envoy** will validate JWT and extract claims
+- **Envoy** will inject enriched headers (`X-User-Id`, `X-User-Scopes`)
+- **Microservice** will simply read headers (no JWT parsing)
+
+**Logging Architecture:**
+All security context operations are logged via AOP without polluting business code:
+- ✅ Member ID extraction attempts and results
+- ✅ Scope extraction with validation
+- ✅ JWT parsing errors with detailed messages
+- ✅ HTTP context errors
 
 ---
 
@@ -275,6 +328,9 @@ spring.datasource.url=jdbc:mysql://localhost:3306/ecclesiaflow_members
 spring.datasource.username=ecclesiaflow
 spring.datasource.password=your_secure_password
 
+# JWT Configuration (must match Auth Module)
+jwt.secret=your-super-secret-jwt-key-minimum-256-bits-base64-encoded
+
 # Email SMTP (Gmail)
 spring.mail.username=your-email@gmail.com
 spring.mail.password=your_gmail_app_password
@@ -283,7 +339,24 @@ spring.mail.password=your_gmail_app_password
 ecclesiaflow.auth.module.base-url=http://localhost:8081
 ```
 
-### 5. Start Module
+### 5. Generate APIs from OpenAPI Specification
+
+```bash
+# The OpenAPI Generator plugin runs automatically during build
+mvn clean generate-sources
+```
+
+### 6. Mark Generated Sources as Source Root (IntelliJ IDEA)
+
+```
+- Right-click on target/generated-sources/openapi/src/main/java
+- Select "Mark Directory as" > "Generated Sources Root"
+
+OR via Maven:
+- The maven-build-helper-plugin automatically adds it as source directory
+```
+
+### 7. Start Module
 
 ```bash
 # Compile and test
@@ -296,7 +369,7 @@ mvn spring-boot:run
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-### 6. Verify Startup
+### 8. Verify Startup
 
 ```bash
 # Health check
@@ -426,6 +499,21 @@ spring.jpa.show-sql=false
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
 ```
 
+### 🔐 **JWT Configuration**
+
+```properties
+# JWT Secret (must match Auth Module configuration)
+# Generate a secure base64-encoded key (minimum 256 bits)
+jwt.secret=your-super-secret-jwt-key-minimum-256-bits-base64-encoded
+```
+
+**Important Notes:**
+- ⚠️ **JWT secret must be identical** to the one configured in the Auth Module
+- ⚠️ Use a **strong, randomly generated secret** in production
+- ⚠️ Secret must be **base64-encoded** and at least **256 bits** (32 bytes)
+- ⚠️ Never commit the actual secret to version control
+
+
 ### 📧 **SMTP Email Configuration**
 
 ```properties
@@ -468,7 +556,7 @@ The module implements **asynchronous email sending** for optimal performance:
 
 ```properties
 # Authentication module URL
-ecclesiaflow.auth.module.base-url=http://localhost:8081
+ecclesiaflow.auth.module.base-url=${AUTH_MODULE_BASE_URL}
 ```
 
 ### 📚 **OpenAPI Documentation**
@@ -490,6 +578,9 @@ DB_PORT=3306
 DB_NAME=ecclesiaflow_members
 DB_USERNAME=ecclesiaflow
 DB_PASSWORD=your_secure_password
+
+# JWT Configuration (must match Auth Module)
+JWT_SECRET=your-super-secret-jwt-key-minimum-256-bits-base64-encoded
 
 # Email
 MAIL_USERNAME=your-email@gmail.com
@@ -606,29 +697,55 @@ mvn verify -P integration-tests
 
 ### **Test Results**
 
-- **✅ 287 tests executed**
+- **✅ 407+ tests executed**
 - **✅ 0 failures**
 - **✅ 0 errors**
 - **✅ 0 skipped**
-- **📊 JaCoCo coverage**: 42 classes analyzed
+- **📊 JaCoCo coverage**: 47+ classes analyzed
 - **🏗️ Architecture validation**: All layers properly tested
+- **🎯 New test coverage**: SecurityContextLoggingAspect (22 tests, 100% coverage)
 
 ### **Test Structure**
 
 ```
 src/test/java/com/ecclesiaflow/
 ├── application/
-│   ├── config/                 # Application config tests
+│   ├── config/                           # Application config tests
+│   ├── events/                           # Event handling tests
 │   └── logging/
-│       └── aspect/             # AOP aspect tests (application logging)
+│       └── aspect/                       # AOP aspect tests
+│           ├── BusinessOperationLoggingAspectTest
+│           ├── SecurityContextLoggingAspectTest (NEW - 22 tests)
+│           └── AsyncEmailLoggingAspectTest
 ├── business/
-│   ├── services/impl/          # Business service tests
-│   └── aspect/                 # AOP aspect tests
-├── web/
-│   ├── controller/             # REST controller tests
-│   └── exception/              # Error handling tests
-└── io/
-    └── persistence/            # Repository tests
+│   ├── domain/                           # Domain model tests
+│   │   ├── communication/
+│   │   ├── confirmation/
+│   │   └── member/
+│   ├── security/                         # Security context tests (NEW)
+│   └── services/
+│       └── impl/                         # Business service tests
+├── io/
+│   ├── communication/
+│   │   └── email/                        # Email service tests
+│   ├── notification/
+│   │   ├── email/                        # Email notifier tests
+│   │   └── sms/                          # SMS notifier tests
+│   └── persistence/
+│       ├── jpa/                          # JPA entity tests
+│       ├── mappers/                      # Entity mapper tests
+│       └── repositories/
+│           └── impl/                     # Repository implementation tests
+└── web/
+    ├── client/                           # External client tests
+    ├── config/                           # Web config tests
+    ├── controller/                       # REST controller tests
+    ├── delegate/                         # Delegate tests
+    ├── exception/
+    │   ├── advices/                      # Exception handler tests
+    │   └── model/                        # Exception model tests
+    ├── mappers/                          # DTO mapper tests
+    └── security/                         # Web security tests
 ```
 
 ### **Quality Metrics**
@@ -659,7 +776,7 @@ git checkout members-module-dev
 git checkout -b new-feature
 
 # 3. Develop with atomic commits
-git commit -m "feat(members): Add email validation"
+git commit -m "Feat(members): Add email validation"
 
 # 4. Tests and quality
 mvn clean test jacoco:report
