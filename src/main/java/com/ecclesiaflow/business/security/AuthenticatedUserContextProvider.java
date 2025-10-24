@@ -5,7 +5,6 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -71,7 +70,6 @@ import java.util.UUID;
  */
 @Deprecated
 @Component
-@Slf4j
 public class AuthenticatedUserContextProvider {
     @Value("${jwt.secret}")
     private String jwtSecret;
@@ -91,14 +89,12 @@ public class AuthenticatedUserContextProvider {
         String memberIdStr = claims.get("cid", String.class);
         
         if (memberIdStr == null || memberIdStr.isBlank()) {
-            log.error("JWT claim 'cid' (memberId) is missing");
             throw new IllegalStateException("Invalid JWT: missing 'cid' claim");
         }
         
         try {
             return UUID.fromString(memberIdStr);
         } catch (IllegalArgumentException e) {
-            log.error("Invalid JWT 'cid' format: {}", memberIdStr);
             throw new IllegalStateException("Invalid JWT: 'cid' is not a valid UUID", e);
         }
     }
@@ -114,7 +110,6 @@ public class AuthenticatedUserContextProvider {
         String scopesClaim = claims.get("scope", String.class);
         
         if (scopesClaim == null || scopesClaim.isBlank()) {
-            log.warn("JWT scope claim is missing or empty");
             return Collections.emptyList();
         }
         
@@ -142,7 +137,6 @@ public class AuthenticatedUserContextProvider {
                     .parseSignedClaims(token)
                     .getPayload();
         } catch (Exception e) {
-            log.error("Failed to parse JWT token", e);
             throw new IllegalStateException("Invalid JWT token", e);
         }
     }
@@ -157,7 +151,6 @@ public class AuthenticatedUserContextProvider {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         
         if (attributes == null) {
-            log.error("No request context available");
             throw new IllegalStateException("No HTTP request context available");
         }
         
@@ -165,7 +158,6 @@ public class AuthenticatedUserContextProvider {
         String authHeader = request.getHeader("Authorization");
         
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.error("Missing or invalid Authorization header");
             throw new IllegalStateException("Missing or invalid Authorization header");
         }
         
