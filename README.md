@@ -400,29 +400,33 @@ curl -X POST "http://localhost:8080/ecclesiaflow/members" \
   }' | jq .
 ```
 
-### ✅ **Account Confirmation**
+### ✅ **Account Confirmation (NEW: GET with token UUID)**
 
 ```bash
-# 2. Confirmation with code received by email
-curl -X PATCH "http://localhost:8080/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "code": "123456"
-  }' | jq .
+# 2. Confirmation via link clicked in email (GET with token UUID)
+curl -X GET "http://localhost:8080/ecclesiaflow/members/confirmation?token=550e8400-e29b-41d4-a716-446655440000" \
+  -H "Accept: application/json" | jq .
 
- Response: 200 OK
+# Response: 200 OK
 {
-  "message": "Compte confirmé avec succès.",
+  "message": "Compte confirmé avec succès. Vous pouvez maintenant définir votre mot de passe.",
   "temporaryToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "expiresIn": 3600,
+  "expiresIn": 900,
   "passwordEndpoint": "http://localhost:8081/ecclesiaflow/auth/password"
 }
 ```
 
-### 🔐 **Exemple of Password Setup (Direct API Flow)**
+**Key Changes:**
+- ✅ **GET method** instead of PATCH
+- ✅ **Token UUID in query parameter** instead of code in body
+- ✅ **No memberId required** - token contains all necessary information
+- ✅ **One-time use** - token deleted after successful confirmation
+- ✅ **24h expiration** - secure and user-friendly
+
+### 🔐 **Password Setup (Auth Module)**
 
 ```bash
-# 3. Set password using temporary token (secure flow)
+# 3. Set password using temporary token
 curl -X POST "http://localhost:8081/ecclesiaflow/auth/password" \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
   -H "Content-Type: application/json" \
@@ -430,7 +434,7 @@ curl -X POST "http://localhost:8081/ecclesiaflow/auth/password" \
     "password": "MonMotDePasse123!"
   }' | jq .
 
- Response: 200 OK
+# Response: 200 OK
 {
   "message": "Mot de passe défini avec succès",
   "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
@@ -438,47 +442,202 @@ curl -X POST "http://localhost:8081/ecclesiaflow/auth/password" \
 }
 ```
 
-### 🔒 **Secure Token Handling Example - JavaScript (Direct Flow)**
-
-1. **Token in JSON Response**: The temporary token is returned in the response body, not in the URL
-2. **Direct API Call**: No client-side storage needed - token used immediately
-3. **Immediate Usage**: Token exists only for the duration of the password setup request
-
-**Client-side implementation (Direct Flow):**
-```javascript
-// Direct flow without client-side storage
-const confirmationResponse = await fetch('/ecclesiaflow/members/123/confirmation', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code: '123456' })
-});
-
-const { temporaryToken, redirectUrl } = await confirmationResponse.json();
-
-// Use token immediately for password setup
-const passwordResponse = await fetch(redirectUrl, {
-    method: 'POST',
-    headers: {
-        'Authorization': `Bearer ${temporaryToken}`,
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ 
-        email: 'user@example.com',
-        password: 'nouveauMotDePasse123' 
-    })
-});
-
-const result = await passwordResponse.json();
-console.log('Password set successfully:', result);
-```
-
-### 🔄 **Resend Confirmation Code**
+### 🔄 **Resend Confirmation Link (NEW: Email-based)**
 
 ```bash
-# 3. Resend new confirmation code
-curl -X POST "http://localhost:8080/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000/confirmation-code" \
-  -H "Content-Type: application/vnd.ecclesiaflow.members.v1+json" | jq .
+# 4. Resend new confirmation link via email
+curl -X POST "http://localhost:8080/ecclesiaflow/members/new-confirmation" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john.doe@example.com"
+  }' | jq .
+
+# Response: 200 OK (même si l'email n'existe pas - anti-énumération)
+{
+  "message": "Si cette adresse email est associée à un compte non confirmé, un nouveau lien de confirmation a été envoyé.",
+  "expiresIn": 86400
+}
+
+# Response: 409 Conflict (si compte déjà confirmé)
+{
+  "status": 409,
+  "error": "Conflict",
+  "message": "Votre compte est déjà confirmé. Vous pouvez vous connecter directement."
+}
 ```
+
+### 👤 **Routes /me (Authenticated Member)**
+
+```bash
+# Get my profile (requires JWT token)
+curl -X GET "http://localhost:8080/ecclesiaflow/members/me" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
+  -H "Accept: application/json" | jq .
+
+# Response: 200 OK
+{
+  "memberId": "550e8400-e29b-41d4-a716-446655440000",
+  "email": "john.doe@example.com",
+  "firstName": "John",
+  "lastName": "Doe",
+  "address": "123 Peace Street, Paris",
+  "confirmed": true,
+  "role": "MEMBER",
+  "createdAt": "2024-01-15T10:30:00Z"
+}
+
+# Update my profile
+curl -X PATCH "http://localhost:8080/ecclesiaflow/members/me" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "Jean",
+    "lastName": "Dupont",
+    "address": "456 New Address, Lyon"
+  }' | jq .
+
+# Delete my account
+curl -X DELETE "http://localhost:8080/ecclesiaflow/members/me" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..."
+
+# Response: 204 No Content
+```
+
+**Scopes Required:**
+- `GET /me` → `ef:members:read:own`
+- `PATCH /me` → `ef:members:write:own`
+- `DELETE /me` → `ef:members:delete:own`
+
+### 👥 **Admin Routes (Requires Admin Scopes)**
+
+```bash
+# Get all members (admin only)
+curl -X GET "http://localhost:8080/ecclesiaflow/members?page=0&size=20" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
+  -H "Accept: application/json" | jq .
+
+# Get specific member by ID (admin or owner)
+curl -X GET "http://localhost:8080/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
+  -H "Accept: application/json" | jq .
+
+# Update member (admin or owner)
+curl -X PATCH "http://localhost:8080/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "Updated",
+    "lastName": "Name"
+  }' | jq .
+
+# Delete member (admin or owner)
+curl -X DELETE "http://localhost:8080/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..."
+```
+
+**Scopes Required:**
+- `GET /members` → `ef:members:read:all`
+- `GET /members/{id}` → `ef:members:read:own` OR `ef:members:read:all`
+- `PATCH /members/{id}` → `ef:members:write:own` OR `ef:members:write:all`
+- `DELETE /members/{id}` → `ef:members:delete:own` OR `ef:members:delete:all`
+
+---
+
+## 📋 Complete API Routes Reference
+
+### **Public Routes (No Authentication Required)**
+
+| Method | Endpoint | Description | Request Body | Response | Rate Limit |
+|--------|----------|-------------|--------------|----------|------------|
+| `POST` | `/ecclesiaflow/members` | Register new member | `SignUpRequestPayload` | `201 Created` + `SignUpResponse` | ✅ Envoy |
+| `GET` | `/ecclesiaflow/members/confirmation` | Confirm account via email link | Query: `?token={uuid}` | `200 OK` + `ConfirmationResponse` | ❌ |
+| `POST` | `/ecclesiaflow/members/new-confirmation` | Resend confirmation link | `ResendConfirmationLinkRequest` | `200 OK` + message | ✅ Envoy |
+
+### **Authenticated Routes - Member Self-Service (/me)**
+
+| Method | Endpoint | Description | Required Scope | Response |
+|--------|----------|-------------|----------------|----------|
+| `GET` | `/ecclesiaflow/members/me` | Get my profile | `ef:members:read:own` | `200 OK` + `SignUpResponse` |
+| `PATCH` | `/ecclesiaflow/members/me` | Update my profile | `ef:members:write:own` | `200 OK` + `SignUpResponse` |
+| `DELETE` | `/ecclesiaflow/members/me` | Delete my account | `ef:members:delete:own` | `204 No Content` |
+
+### **Authenticated Routes - Member Management (Admin/Owner)**
+
+| Method | Endpoint | Description | Required Scopes (OR logic) | Response |
+|--------|----------|-------------|----------------------------|----------|
+| `GET` | `/ecclesiaflow/members` | List all members (paginated) | `ef:members:read:all` | `200 OK` + `MemberPageResponse` |
+| `GET` | `/ecclesiaflow/members/{memberId}` | Get member by ID | `ef:members:read:own` OR `ef:members:read:all` | `200 OK` + `SignUpResponse` |
+| `PATCH` | `/ecclesiaflow/members/{memberId}` | Update member | `ef:members:write:own` OR `ef:members:write:all` | `200 OK` + `SignUpResponse` |
+| `DELETE` | `/ecclesiaflow/members/{memberId}` | Delete member | `ef:members:delete:own` OR `ef:members:delete:all` | `204 No Content` |
+
+### **Temporary/Development Routes**
+
+| Method | Endpoint | Description | Required Scope | Response | Status |
+|--------|----------|-------------|----------------|----------|--------|
+| `GET` | `/ecclesiaflow/hello` | Test endpoint for authenticated members | `ef:members:read:own` | `200 OK` + `"Hi Member"` | 🧪 Dev only |
+| `GET` | `/ecclesiaflow/members/confirmation-status/{email}` | Check if email is confirmed | None (internal use) | `200 OK` + `{ confirmed: boolean }` | 🔒 Internal |
+
+### **Query Parameters for GET /members**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `page` | `integer` | ❌ | `0` | Page number (0-indexed) |
+| `size` | `integer` | ❌ | `20` | Items per page (max: 100) |
+| `search` | `string` | ❌ | - | Search by name or email |
+| `confirmed` | `boolean` | ❌ | - | Filter by confirmation status |
+| `sort` | `string` | ❌ | `createdAt` | Sort field: `firstName`, `lastName`, `email`, `createdAt` |
+| `direction` | `string` | ❌ | `DESC` | Sort direction: `ASC` or `DESC` |
+
+### **Common HTTP Status Codes**
+
+| Status Code | Description | When It Occurs |
+|-------------|-------------|----------------|
+| `200 OK` | Success | Successful GET, PATCH, POST operations |
+| `201 Created` | Resource created | Member registration successful |
+| `204 No Content` | Success with no body | Successful DELETE operation |
+| `400 Bad Request` | Invalid input | Validation errors, malformed data |
+| `401 Unauthorized` | Authentication required | Missing or invalid JWT token |
+| `403 Forbidden` | Insufficient permissions | User lacks required scopes |
+| `404 Not Found` | Resource not found | Member or token doesn't exist |
+| `409 Conflict` | Resource conflict | Email already exists, account already confirmed |
+| `410 Gone` | Resource expired | Confirmation token expired (24h) |
+| `500 Internal Server Error` | Server error | Unexpected server-side error |
+
+### **EcclesiaFlow Scopes Hierarchy**
+
+```
+ef:members:read:own      → Read own member data
+ef:members:read:all      → Read all members data (includes :own)
+
+ef:members:write:own     → Update own member data
+ef:members:write:all     → Update all members data (includes :own)
+
+ef:members:delete:own    → Delete own account
+ef:members:delete:all    → Delete any member account (includes :own)
+```
+
+**Scope Logic:**
+- **OR Logic**: Routes with multiple scopes accept ANY of the listed scopes
+- **Example**: `GET /members/{id}` accepts `read:own` OR `read:all`
+- **Admin Scopes**: `:all` scopes grant full access to all members
+- **Member Scopes**: `:own` scopes restrict access to authenticated user's data
+
+### **Content-Type Headers**
+
+| Header | Value | Usage |
+|--------|-------|-------|
+| `Content-Type` | `application/vnd.ecclesiaflow.members.v1+json` | Versioned API requests (recommended) |
+| `Content-Type` | `application/json` | Standard JSON (fallback) |
+| `Accept` | `application/vnd.ecclesiaflow.members.v1+json` | Versioned API responses (recommended) |
+| `Accept` | `application/json` | Standard JSON responses (fallback) |
+| `Authorization` | `Bearer {jwt_token}` | JWT authentication (required for protected routes) |
+
+### **API Versioning**
+
+- **Current Version**: `v1`
+- **Versioning Strategy**: Media type versioning via `Accept` header
+- **Backward Compatibility**: Maintained for at least 2 major versions
+- **Deprecation Notice**: 6 months minimum before breaking changes
 
 ---
 
