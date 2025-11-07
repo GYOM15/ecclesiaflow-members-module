@@ -3,6 +3,7 @@ package com.ecclesiaflow.web.client;
 import com.ecclesiaflow.application.config.WebClientConfig;
 import com.ecclesiaflow.business.domain.auth.AuthClient;
 import com.ecclesiaflow.web.model.TemporaryTokenRequest;
+import com.ecclesiaflow.web.model.TemporaryTokenResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatusCode;
@@ -10,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -100,8 +100,8 @@ public class AuthClientImpl implements AuthClient {
     public String retrievePostActivationToken(String email, UUID memberId) {
         try {
             TemporaryTokenRequest request = new TemporaryTokenRequest(email, memberId);
-            return post("/ecclesiaflow/auth/temporary-token", request)
-                    .map(response -> (String) response.get("temporaryToken"))
+            return post(request)
+                    .map(TemporaryTokenResponse::getTemporaryToken)
                     .block();
         } catch (Exception e) {
             return "temporary-token-mock-for-dev"; // Valeur de test en développement
@@ -111,20 +111,19 @@ public class AuthClientImpl implements AuthClient {
     // === Méthodes utilitaires ===
 
     /**
-     * Effectue un appel POST vers le module d'authentification avec réponse.
+     * Effectue un appel POST vers le module d'authentification avec réponse type-safe.
      * <p>
      * Méthode utilitaire pour les appels HTTP POST qui attendent une réponse
      * du module d'authentification. Gère les erreurs 4xx et 5xx automatiquement.
      * </p>
      *
-     * @param path le chemin de l'endpoint (ex: "/ecclesiaflow/auth/temporary-token")
-     * @param body le corps de la requête (DTO ou Map)
-     * @return un Mono contenant la réponse sous forme de Map
+     * @param body le corps de la requête (DTO)
+     * @return un Mono contenant la réponse sous forme de DTO type-safe
      */
-    private Mono<Map> post(String path, Object body) {
+    private Mono<TemporaryTokenResponse> post(Object body) {
         return authWebClient
                 .post()
-                .uri(path)
+                .uri("/ecclesiaflow/auth/temporary-token")
                 .bodyValue(body)
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, response ->
@@ -133,6 +132,6 @@ public class AuthClientImpl implements AuthClient {
                 .onStatus(HttpStatusCode::is5xxServerError, response ->
                         response.createException().flatMap(Mono::error)
                 )
-                .bodyToMono(Map.class);
+                .bodyToMono(TemporaryTokenResponse.class);
     }
 }
