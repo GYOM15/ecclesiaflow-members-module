@@ -12,7 +12,7 @@ import com.ecclesiaflow.business.exceptions.ExpiredConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
-import com.ecclesiaflow.business.domain.token.AuthenticationService;
+import com.ecclesiaflow.business.domain.auth.AuthClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -27,7 +27,7 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
 
     private final MemberRepository memberRepository;
     private final MemberConfirmationRepository confirmationRepository;
-    private final AuthenticationService authenticationService;
+    private final AuthClient authClient;
     private final ApplicationEventPublisher eventPublisher;
     private final ConfirmationTokenGenerator tokenGenerator;
 
@@ -53,7 +53,7 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
 
         confirmationRepository.delete(confirmation);
 
-        String temporaryToken = authenticationService.retrievePostActivationToken(member.getEmail(), member.getMemberId());
+        String temporaryToken = authClient.retrievePostActivationToken(member.getEmail(), member.getMemberId());
 
         return MembershipConfirmationResult.builder()
                 .message("Compte confirmé avec succès. Vous pouvez maintenant définir votre mot de passe.")
