@@ -127,14 +127,27 @@ springdoc.show-actuator=true
 springdoc.default-produces-media-type=application/json
 springdoc.default-consumes-media-type=application/json
 
-# Disable cache for development
-springdoc.cache.disabled=true
+# =============================================================================
+# gRPC SERVER CONFIGURATION
+# =============================================================================
+# Enable/disable gRPC server (default: false for safety)
+grpc.enabled=true
 
-# Configure paths to include in documentation
-springdoc.paths-to-match=/ecclesiaflow/**
+# gRPC server port (separate from HTTP REST port 8080)
+grpc.server.port=9091
 
-# Configure packages to scan for documentation
-springdoc.packages-to-scan=com.ecclesiaflow.web.controller,com.ecclesiaflow.web.exception
+# Graceful shutdown timeout in seconds
+grpc.server.shutdown-timeout-seconds=30
+
+# =============================================================================
+# gRPC CLIENT CONFIGURATION (Members â Auth)
+# =============================================================================
+# Auth service gRPC endpoint
+grpc.auth.host=localhost
+grpc.auth.port=9090
+
+# Client shutdown timeout in seconds
+grpc.client.shutdown-timeout-seconds=5
 
 # ============================================================================
 # OPTIONAL CONFIGURATIONS
