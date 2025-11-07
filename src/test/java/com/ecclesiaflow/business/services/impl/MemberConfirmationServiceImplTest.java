@@ -4,7 +4,7 @@ import com.ecclesiaflow.business.domain.confirmation.*;
 import com.ecclesiaflow.business.domain.events.MemberRegisteredEvent;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
-import com.ecclesiaflow.business.domain.token.AuthenticationService;
+import com.ecclesiaflow.business.domain.auth.AuthClient;
 import com.ecclesiaflow.business.exceptions.ExpiredConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
@@ -25,7 +25,7 @@ class MemberConfirmationServiceImplTest {
 
     private MemberRepository memberRepository;
     private MemberConfirmationRepository confirmationRepository;
-    private AuthenticationService authenticationService;
+    private AuthClient authClient;
     private ApplicationEventPublisher eventPublisher;
     private ConfirmationTokenGenerator tokenGenerator;
 
@@ -39,12 +39,12 @@ class MemberConfirmationServiceImplTest {
     void setUp() {
         memberRepository = mock(MemberRepository.class);
         confirmationRepository = mock(MemberConfirmationRepository.class);
-        authenticationService = mock(AuthenticationService.class);
+        authClient = mock(AuthClient.class);
         eventPublisher = mock(ApplicationEventPublisher.class);
         tokenGenerator = mock(ConfirmationTokenGenerator.class);
 
         service = new MemberConfirmationServiceImpl(
-                memberRepository, confirmationRepository, authenticationService, eventPublisher, tokenGenerator);
+                memberRepository, confirmationRepository, authClient, eventPublisher, tokenGenerator);
 
         memberId = UUID.randomUUID();
         token = UUID.randomUUID();
@@ -67,7 +67,7 @@ class MemberConfirmationServiceImplTest {
 
         when(confirmationRepository.getByToken(token)).thenReturn(Optional.of(confirmation));
         when(memberRepository.getByMemberId(memberId)).thenReturn(Optional.of(member));
-        when(authenticationService.retrievePostActivationToken(member.getEmail(), member.getMemberId())).thenReturn("TEMP_TOKEN");
+        when(authClient.retrievePostActivationToken(member.getEmail(), member.getMemberId())).thenReturn("TEMP_TOKEN");
 
         // when
         MembershipConfirmationResult result = service.confirmMemberByToken(token);
@@ -85,7 +85,7 @@ class MemberConfirmationServiceImplTest {
             savedMember.getMemberId().equals(member.getMemberId())
         ));
         verify(confirmationRepository).delete(confirmation);
-        verify(authenticationService).retrievePostActivationToken(member.getEmail(), member.getMemberId());
+        verify(authClient).retrievePostActivationToken(member.getEmail(), member.getMemberId());
     }
 
     @Test
@@ -159,7 +159,7 @@ class MemberConfirmationServiceImplTest {
         verify(memberRepository).getByMemberId(memberId);
         verify(memberRepository, never()).save(any());
         verify(confirmationRepository, never()).delete(any());
-        verify(authenticationService, never()).retrievePostActivationToken(any(), any());
+        verify(authClient, never()).retrievePostActivationToken(any(), any());
     }
 
     @Test
@@ -184,7 +184,7 @@ class MemberConfirmationServiceImplTest {
         verify(memberRepository).getByMemberId(memberId);
         verify(memberRepository, never()).save(any());
         verify(confirmationRepository, never()).delete(any());
-        verify(authenticationService, never()).retrievePostActivationToken(any(), any());
+        verify(authClient, never()).retrievePostActivationToken(any(), any());
     }
 
     @Test
