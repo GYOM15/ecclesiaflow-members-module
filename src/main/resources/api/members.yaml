@@ -582,14 +582,7 @@ paths:
           content:
             application/vnd.ecclesiaflow.members.v1+json:
               schema:
-                type: object
-                properties:
-                  confirmed:
-                    type: boolean
-                    description: Indique si le membre est confirmé
-                    example: true
-                required:
-                  - confirmed
+                $ref: '#/components/schemas/MemberConfirmationStatusResponse'
         '404':
           description: Membre non trouvé
           content:
@@ -894,6 +887,28 @@ components:
           example: "550e8400-e29b-41d4-a716-446655440000"
 
     # Response Schemas
+    MemberConfirmationStatusResponse:
+      type: object
+      description: "Réponse du statut de confirmation d'un membre (utilisé par Auth module)"
+      required:
+        - confirmed
+      properties:
+        confirmed:
+          type: boolean
+          description: "Indique si le membre a confirmé son compte par email"
+          example: true
+
+    TemporaryTokenResponse:
+      type: object
+      description: "Réponse contenant un token temporaire du module Auth (utilisé par AuthClientImpl)"
+      required:
+        - temporaryToken
+      properties:
+        temporaryToken:
+          type: string
+          description: "Token JWT temporaire (validité: 15 minutes)"
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
     SignUpResponse:
       type: object
       description: "Réponse contenant les informations d'un membre EcclesiaFlow"
