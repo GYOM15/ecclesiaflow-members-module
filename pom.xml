@@ -54,6 +54,12 @@
 		<commons-lang3.version>3.15.0</commons-lang3.version>
 		<testcontainers.version>1.20.1</testcontainers.version>
 		<mockito.version>5.14.2</mockito.version>
+		
+		<!-- gRPC & Protobuf versions -->
+		<grpc.version>1.65.1</grpc.version>
+		<protobuf.version>4.28.2</protobuf.version>
+		<protoc.version>4.28.2</protoc.version>
+		<netty.version>4.1.114.Final</netty.version>
 	</properties>
 
 	<dependencyManagement>
@@ -105,11 +111,11 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
-		<!-- Netty HTTP/2 Codec - Updated version -->
+		<!-- Netty HTTP/2 Codec - Security patched version -->
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-codec-http2</artifactId>
-			<version>4.2.4.Final</version>
+			<version>${netty.version}</version>
 		</dependency>
 
 		<!-- SpringDoc OpenAPI UI - Updated version -->
@@ -247,6 +253,69 @@
 			<artifactId>javax.annotation-api</artifactId>
 			<version>1.2</version>
 		</dependency>
+		
+		<!-- ============================================ -->
+		<!-- gRPC Dependencies for inter-module communication -->
+		<!-- ============================================ -->
+		
+		<!-- gRPC Netty Client -->
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-netty-shaded</artifactId>
+			<version>${grpc.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+		
+		<!-- gRPC Protocol Buffers -->
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-protobuf</artifactId>
+			<version>${grpc.version}</version>
+		</dependency>
+		
+		<!-- gRPC Stub (generated code) -->
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-stub</artifactId>
+			<version>${grpc.version}</version>
+		</dependency>
+		
+		<!-- gRPC Services (health checks, reflection) -->
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-services</artifactId>
+			<version>${grpc.version}</version>
+		</dependency>
+		
+		<!-- Protocol Buffers Java -->
+		<dependency>
+			<groupId>com.google.protobuf</groupId>
+			<artifactId>protobuf-java</artifactId>
+			<version>${protobuf.version}</version>
+		</dependency>
+		
+		<!-- Protocol Buffers Java Util (JSON support) -->
+		<dependency>
+			<groupId>com.google.protobuf</groupId>
+			<artifactId>protobuf-java-util</artifactId>
+			<version>${protobuf.version}</version>
+		</dependency>
+		
+		<!-- Annotations for generated code (compile-time only) -->
+		<dependency>
+			<groupId>org.apache.tomcat</groupId>
+			<artifactId>annotations-api</artifactId>
+			<version>6.0.53</version>
+			<scope>provided</scope>
+		</dependency>
+		
+		<!-- gRPC Testing (for unit tests) -->
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-testing</artifactId>
+			<version>${grpc.version}</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -269,6 +338,44 @@
 				</configuration>
 			</plugin>
 
+			<!-- ================================================== -->
+			<!-- Protobuf & gRPC Code Generation Plugin -->
+			<!-- ================================================== -->
+			<plugin>
+				<groupId>org.xolstice.maven.plugins</groupId>
+				<artifactId>protobuf-maven-plugin</artifactId>
+				<version>0.6.1</version>
+				<configuration>
+					<protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}</protocArtifact>
+					<pluginId>grpc-java</pluginId>
+					<pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+					<protoSourceRoot>${project.basedir}/src/main/proto</protoSourceRoot>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>compile</goal>
+							<goal>compile-custom</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			
+			<!-- OS Maven Plugin (required for protobuf) -->
+			<plugin>
+				<groupId>kr.motd.maven</groupId>
+				<artifactId>os-maven-plugin</artifactId>
+				<version>1.7.1</version>
+				<executions>
+					<execution>
+						<phase>initialize</phase>
+						<goals>
+							<goal>detect</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			
 			<!-- Spring Boot Maven Plugin -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
@@ -356,6 +463,20 @@
 						<exclude>**/exceptions/InvalidConfirmationCodeException.class</exclude>
 						<exclude>**/exceptions/MemberAlreadyConfirmedException.class</exclude>
 						<exclude>**/exception/InvalidRequestException.class</exclude>
+						<!-- Classes générées par Protobuf (stubs, builders, messages) -->
+						<exclude>**/com/ecclesiaflow/grpc/**/*</exclude>
+						<!-- Pointcuts AOP (méthodes vides, juste annotations) -->
+						<exclude>**/aspect/*Aspect.grpcClientCalls()</exclude>
+						<exclude>**/aspect/*Aspect.grpcChannelShutdown()</exclude>
+						<exclude>**/aspect/*Aspect.grpcServiceCalls()</exclude>
+						<exclude>**/aspect/*Aspect.grpcServerStart()</exclude>
+						<exclude>**/aspect/*Aspect.grpcServerStop()</exclude>
+						<exclude>**/aspect/*Aspect.memberRegisteredEventHandling()</exclude>
+						<exclude>**/aspect/*Aspect.emailOperations()</exclude>
+						<exclude>**/aspect/*Aspect.authModuleCalls()</exclude>
+						<exclude>**/aspect/*Aspect.memberRegistration()</exclude>
+						<!-- WebClient fallback (DEPRECATED - préférer gRPC) -->
+						<exclude>**/web/client/AuthClientImpl.class</exclude>
 					</excludes>
 				</configuration>
 				<executions>
