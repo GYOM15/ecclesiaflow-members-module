@@ -2,9 +2,11 @@
 
 [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.java.net/projects/jdk/21/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.5-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![gRPC](https://img.shields.io/badge/gRPC-1.60.0-blue.svg)](https://grpc.io/)
 [![MySQL](https://img.shields.io/badge/MySQL-9.0.0-blue.svg)](https://dev.mysql.com/downloads/mysql/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenAPI](https://img.shields.io/badge/OpenAPI-3.1.1-green.svg)](https://swagger.io/specification/)
+[![Tests](https://img.shields.io/badge/Tests-497%20passing-success.svg)]()
 
 > **Member management module for the EcclesiaFlow platform**
 
@@ -39,32 +41,35 @@ The **EcclesiaFlow Members Module** is a specialized microservice for comprehens
 
 - **Member Management**: Registration, profiles, information updates
 - **Confirmation Process**: Email validation with temporary codes  
-- **Auth Integration**: Communication with authentication module for tokens
+- **Auth Integration**: **Bi-directional gRPC communication** with authentication module
 - **Notifications**: Automatic confirmation email sending
-- **Clean Architecture**: Clear separation of layers (Web, Business, IO, Shared)
+- **gRPC Services**: High-performance inter-service communication
+- **Clean Architecture**: Clear separation of layers (Web, Business, IO, Application)
 
 ```mermaid
 sequenceDiagram
     participant Client
-    participant Members as Members Module (8080)
-    participant Auth as Auth Module (8081)
+    participant Members as Members Module<br/>(REST: 8080, gRPC: 9091)
+    participant Auth as Auth Module<br/>(REST: 8081, gRPC: 9090)
     participant Email as Email Service
 
-    Note over Client,Email: Registration → confirmation → password → final token
+    Note over Client,Auth: Registration → confirmation → password → final token
 
-    Client->>Members: POST /ecclesiaflow/members
-    Members->>Email: Send confirmation code
+    Client->>Members: POST /ecclesiaflow/members (REST)
+    Members->>Email: Send confirmation code (Async)
     Members-->>Client: 201 Created
 
-    Client->>Members: PATCH /ecclesiaflow/members/:memberId/confirmation { code }
-    Members->>Auth: Request temporary token
-    Auth-->>Members: Temporary token
-    Members-->>Client: 200 OK + temporaryToken + passWordEnpoint
+    Client->>Members: GET /confirmation?token=uuid (REST)
+    Members->>Auth: GenerateTemporaryToken (gRPC)
+    Auth-->>Members: Temporary token (gRPC)
+    Members-->>Client: 200 OK + temporaryToken + passwordEndpoint
     
     Note over Client: Store token securely (sessionStorage)<br/>Redirect to clean URL (no token)
 
-    Client->>Auth: POST /password
+    Client->>Auth: POST /password (REST)
     Note right of Client: Authorization: Bearer temporaryToken<br/>Body: { newPassword }
+    Auth->>Members: GetMemberConfirmationStatus (gRPC)
+    Members-->>Auth: Confirmation status (gRPC)
     Auth-->>Client: 200 OK { accessToken, refreshToken }
 ```
 
@@ -74,12 +79,15 @@ sequenceDiagram
 
 * 👥 **Member Management** – Complete member profile CRUD with business validation
 * ✉️ **Email Confirmation** – Secure process with temporary codes (6 digits) and safe token handling
-* 🔗 **Auth Module Integration** – WebClient communication for temporary tokens with secure URL generation
+* 🔗 **Auth Module Integration** – **Bi-directional gRPC** + WebClient fallback for inter-service communication
+* ⚡ **gRPC Services** – High-performance Protocol Buffers with Health checks and Reflection
+* 🔄 **gRPC Client** – AuthGrpcClient for temporary token generation with error handling
+* 🖥️ **gRPC Server** – MembersGrpcServiceImpl for confirmation status queries
 * 📧 **Email Notifications** – **Asynchronous SMTP service** with Gmail integration and customizable templates
 * 🏗️ **Clean Architecture** – 4 layers: Web, Business, IO, Application
 * 📚 **API-First Design** – Complete OpenAPI documentation with detailed schemas
-* 🧪 **Comprehensive Testing** – JaCoCo coverage with unit and integration tests (309+ tests)
-* 🔄 **AOP Logging** – **Centralized aspect-based logging** with complete delegation from services
+* 🧪 **Comprehensive Testing** – JaCoCo coverage with unit and integration tests (**497 tests**)
+* 🔄 **AOP Logging** – **Centralized aspect-based logging** for REST, gRPC, and business operations
 * 🔐 **JWT Security Context** – Authenticated user context extraction with scope validation
 * 🛡️ **Error Handling** – GlobalExceptionHandler with standardized responses
 
@@ -96,17 +104,25 @@ ecclesiaflow-members-module/
 │   │   │   ├── application/                 # Application Layer
 │   │   │   │   ├── config/
 │   │   │   │   └── logging/
+│   │   │   │       └── aspect/              # AOP logging aspects
 │   │   │   ├── business/                    # Business Layer
 │   │   │   │   ├── domain/
+│   │   │   │   │   ├── auth/                # Auth port
 │   │   │   │   │   ├── communication/
 │   │   │   │   │   ├── confirmation/
-│   │   │   │   │   ├── member/
-│   │   │   │   │   └── token/
+│   │   │   │   │   └── member/
 │   │   │   │   ├── exceptions/
 │   │   │   │   └── services/
 │   │   │   ├── io/                          # IO Layer
 │   │   │   │   ├── communication/
 │   │   │   │   ├── exception/
+│   │   │   │   ├── grpc/                    # ⭐ gRPC Layer
+│   │   │   │   │   ├── client/              # gRPC clients
+│   │   │   │   │   │   ├── AuthGrpcClient
+│   │   │   │   │   │   └── GrpcClientConfig
+│   │   │   │   │   └── server/              # gRPC servers
+│   │   │   │   │       ├── MembersGrpcServiceImpl
+│   │   │   │   │       └── GrpcServerConfig
 │   │   │   │   ├── notification/
 │   │   │   │   └── persistence/
 │   │   │   └── web/                         # Web Layer
@@ -117,18 +133,30 @@ ecclesiaflow-members-module/
 │   │   │       ├── mappers/
 │   │   │       ├── payloads/
 │   │   │       └── security/
+│   │   ├── proto/                           # ⭐ Protobuf definitions
+│   │   │   ├── auth_service.proto           # Auth service (JWT)
+│   │   │   └── members_service.proto        # Members service
 │   │   └── resources/
 │   │       ├── api/
 │   │       │   └── members.yaml             # API-First OpenAPI
 │   │       └── application.properties.example
-│   └── test/java/com/ecclesiaflow/          # Tests
+│   └── test/java/com/ecclesiaflow/          # Tests (497 tests)
 │       ├── application/
+│       │   └── logging/aspect/              # AOP tests (27 tests)
 │       ├── business/
 │       ├── io/
+│       │   └── grpc/                        # ⭐ gRPC tests (75 tests)
+│       │       ├── client/
+│       │       └── server/
 │       └── web/
 ├── target/
+│   └── generated-sources/
+│       └── protobuf/                        # Generated gRPC stubs
 ├── pom.xml
 ├── README.md
+├── COMMITS_ATOMIQUES.md                     # ⭐ Atomic commits guide
+├── GRPC_SUMMARY.md                          # ⭐ gRPC implementation summary
+├── execute_commits.sh                       # ⭐ Script to execute commits
 ├── LICENSE
 ├── .env.example
 ├── .gitignore
@@ -204,19 +232,44 @@ The module follows **Clean Architecture** principles with clear separation of re
   - `BusinessOperationLoggingAspect`: **Centralized logging** for all business operations
   - `SecurityContextLoggingAspect`: **JWT security context logging** for authentication operations
   - `AsyncEmailLoggingAspect`: **Asynchronous email logging** for email operations
+  - `GrpcClientLoggingAspect`: **gRPC client logging** with call duration and error handling (14 tests)
+  - `GrpcServerLoggingAspect`: **gRPC server logging** for inbound RPC calls (13 tests)
   - **Architecture principle**: All manual logging has been removed from services and delegated to aspects
-  - **Coverage**: Member registration, confirmation, authentication module calls, JWT extraction, error handling
+  - **Coverage**: Member registration, confirmation, gRPC calls, JWT extraction, error handling
 
 ## 📦 EcclesiaFlow Ecosystem
 
 * **Members Module** (This module)
-  **Port**: 8080
-  **Role**: Member management
+  **REST API**: Port 8080
+  **gRPC Server**: Port 9091 (Auth → Members)
+  **Role**: Member management and confirmation status
 
 * **Authentication Module**
   🔗 [GitHub Repo](https://github.com/GYOM15/ecclesiaflow-auth-module)
-  **Port**: 8081
+  **REST API**: Port 8081
+  **gRPC Server**: Port 9090 (Members → Auth)
   **Role**: JWT authentication and password management
+
+### **Communication Architecture**
+
+```
+┌─────────────────────────────────────────────────┐
+│                  Client (HTTP)                  │
+└──────────────┬──────────────────┬───────────────┘
+               │ REST (8080)      │ REST (8081)
+               ▼                  ▼
+     ┌─────────────────┐    ┌─────────────────┐
+     │  Members Module │◄──►│   Auth Module   │
+     │   REST: 8080    │gRPC│   REST: 8081    │
+     │   gRPC: 9091    │    │   gRPC: 9090    │
+     └─────────────────┘    └─────────────────┘
+              │                      │
+              │ GenerateTemporaryToken (gRPC)
+              └─────────────────────►│
+              │                      │
+              │◄─────────────────────┘
+              │ GetMemberConfirmationStatus (gRPC)
+```
 
 ---
 
@@ -224,12 +277,14 @@ The module follows **Clean Architecture** principles with clear separation of re
 
 * **Backend**: Java 21, Spring Boot 3.5.5
 * **Database**: MySQL 9.0.0 with Spring Data JPA
-* **Communication**: Spring WebFlux, WebClient (Auth Module)
+* **Communication**: 
+  - **gRPC**: grpc-netty-shaded 1.60.0, Protocol Buffers 3.25.1 (primary)
+  - **REST**: Spring WebFlux, WebClient (fallback)
 * **Email**: Spring Boot Mail with Gmail SMTP
 * **Documentation**: OpenAPI 3.1.1, SpringDoc, Swagger UI
-* **Build**: Maven 3.14.0 with optimized plugins
-* **Testing**: JUnit 5, Mockito 5.14.2, JaCoCo 0.8.11
-* **Logging**: AOP with AspectJ, SLF4J
+* **Build**: Maven 3.14.0 with protobuf-maven-plugin
+* **Testing**: JUnit 5, Mockito 5.14.2, JaCoCo 0.8.11 (497 tests)
+* **Logging**: AOP with AspectJ, SLF4J (gRPC + REST + Business)
 * **Security**: JWT parsing with JJWT 0.11.5
 * **Architecture**: Clean Architecture, Microservices, SOLID
 
@@ -711,11 +766,34 @@ The module implements **asynchronous email sending** for optimal performance:
 # Keep-alive: 60 seconds, Graceful shutdown: 30 seconds
 ```
 
-### 🔗 **Auth Module Integration**
+### ⚡ **gRPC Configuration**
 
 ```properties
-# Authentication module URL
+# Enable/Disable gRPC (default: true)
+grpc.enabled=true
+
+# gRPC Client (Members → Auth)
+grpc.auth.host=localhost
+grpc.auth.port=9090
+grpc.client.shutdown-timeout-seconds=5
+
+# gRPC Server (Auth → Members)
+grpc.server.port=9091
+grpc.server.shutdown-timeout-seconds=30
+```
+
+**Key Points:**
+- **grpc.enabled=true**: Primary communication via gRPC (high performance)
+- **grpc.enabled=false**: Falls back to WebClient (REST)
+- **Ports**: 9090 (Auth gRPC), 9091 (Members gRPC), 8080 (Members REST), 8081 (Auth REST)
+- **Graceful shutdown**: Configurable timeouts for clean service stops
+
+### 🔗 **Auth Module Integration (Fallback)**
+
+```properties
+# Authentication module URL (WebClient fallback if gRPC disabled)
 ecclesiaflow.auth.module.base-url=${AUTH_MODULE_BASE_URL}
+ecclesiaflow.auth.module.enabled=true
 ```
 
 ### 📚 **OpenAPI Documentation**
@@ -746,7 +824,15 @@ MAIL_USERNAME=your-email@gmail.com
 MAIL_PASSWORD=your_gmail_app_password
 MAIL_FROM=your-email@gmail.com
 
-# External services
+# gRPC Configuration
+GRPC_ENABLED=true
+GRPC_AUTH_HOST=localhost
+GRPC_AUTH_PORT=9090
+GRPC_SERVER_PORT=9091
+GRPC_CLIENT_SHUTDOWN_TIMEOUT=5
+GRPC_SERVER_SHUTDOWN_TIMEOUT=30
+
+# External services (WebClient fallback)
 AUTH_MODULE_BASE_URL=http://localhost:8081
 
 # Server
@@ -756,85 +842,6 @@ SPRING_PROFILES_ACTIVE=dev
 
 ---
 
-## 🐳 Docker Deployment
-
-### **Dockerfile**
-
-```dockerfile
-FROM openjdk:21-jdk-slim
-
-WORKDIR /app
-
-# Copy Maven files
-COPY pom.xml .
-COPY mvnw .
-COPY .mvn .mvn
-
-# Download dependencies
-RUN ./mvnw dependency:go-offline -B
-
-# Copy source code
-COPY src src
-
-# Build application
-RUN ./mvnw clean package -DskipTests
-
-# Expose port
-EXPOSE 8080
-
-# Start application
-CMD ["java", "-jar", "target/ecclesiaflow-members-module-1.0.0-SNAPSHOT.jar"]
-```
-
-### **Docker Compose**
-
-```yaml
-version: '3.8'
-services:
-  members-module:
-    build: .
-    ports:
-      - "8080:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - DB_HOST=mysql
-      - DB_NAME=ecclesiaflow_members
-      - DB_USERNAME=ecclesiaflow
-      - DB_PASSWORD=${DB_PASSWORD}
-      - AUTH_MODULE_BASE_URL=http://auth-module:8081
-      - MAIL_USERNAME=${MAIL_USERNAME}
-      - MAIL_PASSWORD=${MAIL_PASSWORD}
-    depends_on:
-      mysql:
-        condition: service_healthy
-    networks:
-      - ecclesiaflow-network
-
-  mysql:
-    image: mysql:9.0
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ecclesiaflow_members
-      MYSQL_USER: ecclesiaflow
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
-    networks:
-      - ecclesiaflow-network
-
-volumes:
-  mysql_data:
-
-networks:
-  ecclesiaflow-network:
-    external: true
-```
-
----
 
 ## 🧪 Testing and Quality
 
@@ -856,13 +863,20 @@ mvn verify -P integration-tests
 
 ### **Test Results**
 
-- **✅ 407+ tests executed**
+- **✅ 497 tests executed** (+75 gRPC tests)
 - **✅ 0 failures**
 - **✅ 0 errors**
 - **✅ 0 skipped**
-- **📊 JaCoCo coverage**: 47+ classes analyzed
+- **📊 JaCoCo coverage**: 60+ classes analyzed
 - **🏗️ Architecture validation**: All layers properly tested
-- **🎯 New test coverage**: SecurityContextLoggingAspect (22 tests, 100% coverage)
+- **⚡ gRPC Infrastructure**: 75 tests (client, server, config, logging)
+- **🎯 Test breakdown**:
+  - GrpcClientLoggingAspect: 14 tests (100% coverage)
+  - GrpcServerLoggingAspect: 13 tests (100% coverage)
+  - AuthGrpcClient: 16 unit + 13 integration tests
+  - MembersGrpcServiceImpl: 12 tests
+  - GrpcClientConfig: 8 tests (100% coverage)
+  - GrpcServerConfig: 12 tests (100% coverage)
 
 ### **Test Structure**
 
@@ -872,21 +886,33 @@ src/test/java/com/ecclesiaflow/
 │   ├── config/                           # Application config tests
 │   ├── events/                           # Event handling tests
 │   └── logging/
-│       └── aspect/                       # AOP aspect tests
+│       └── aspect/                       # AOP aspect tests (27 tests)
 │           ├── BusinessOperationLoggingAspectTest
-│           ├── SecurityContextLoggingAspectTest (NEW - 22 tests)
-│           └── AsyncEmailLoggingAspectTest
+│           ├── SecurityContextLoggingAspectTest
+│           ├── AsyncEmailLoggingAspectTest
+│           ├── GrpcClientLoggingAspectTest (⭐ NEW - 14 tests)
+│           └── GrpcServerLoggingAspectTest (⭐ NEW - 13 tests)
 ├── business/
 │   ├── domain/                           # Domain model tests
+│   │   ├── auth/                         # Auth port tests
 │   │   ├── communication/
 │   │   ├── confirmation/
 │   │   └── member/
-│   ├── security/                         # Security context tests (NEW)
+│   ├── security/                         # Security context tests
 │   └── services/
 │       └── impl/                         # Business service tests
 ├── io/
 │   ├── communication/
 │   │   └── email/                        # Email service tests
+│   ├── grpc/                             # ⭐ gRPC tests (75 tests)
+│   │   ├── client/
+│   │   │   ├── AuthGrpcClientTest (16 tests)
+│   │   │   ├── AuthGrpcClientIntegrationTest (13 tests)
+│   │   │   └── GrpcClientConfigTest (8 tests)
+│   │   └── server/
+│   │       ├── MembersGrpcServiceImplTest (12 tests)
+│   │       ├── MembersServiceImplIntegrationTest
+│   │       └── GrpcServerConfigTest (12 tests)
 │   ├── notification/
 │   │   ├── email/                        # Email notifier tests
 │   │   └── sms/                          # SMS notifier tests
@@ -913,6 +939,66 @@ src/test/java/com/ecclesiaflow/
 - **Unit Tests**: Mockito with LENIENT strictness
 - **Integration Tests**: TestContainers for MySQL
 - **Architecture**: ArchUnit for layer validation
+
+---
+
+## ⚡ gRPC Implementation Guide
+
+### **Quick Start with gRPC**
+
+The module uses **gRPC as the primary** inter-service communication protocol. To get started:
+
+1. **Enable gRPC** (enabled by default):
+```properties
+grpc.enabled=true
+```
+
+2. **Configure ports** in `application.properties`:
+```properties
+grpc.auth.host=localhost
+grpc.auth.port=9090
+grpc.server.port=9091
+```
+
+3. **Run both modules**:
+```bash
+# Terminal 1 - Auth Module
+cd ../ecclesiaflow-auth-module
+mvn spring-boot:run
+
+# Terminal 2 - Members Module
+cd ecclesiaflow-members-module
+mvn spring-boot:run
+```
+
+### **gRPC Services Available**
+
+#### **Members → Auth (Client)**
+- **Service**: `AuthService` 
+- **RPC**: `GenerateTemporaryToken(email, memberId) → temporaryToken`
+- **Port**: 9090
+- **Implementation**: `AuthGrpcClient`
+
+#### **Auth → Members (Server)**
+- **Service**: `MembersService`
+- **RPC**: `GetMemberConfirmationStatus(email) → confirmed`
+- **Port**: 9091
+- **Implementation**: `MembersGrpcServiceImpl`
+
+### **Protobuf Files**
+
+Located in `src/main/proto/`:
+- `auth_service.proto` - AuthService definition
+- `members_service.proto` - MembersService definition
+
+### **WebClient Fallback**
+
+If gRPC is disabled or unavailable:
+```properties
+grpc.enabled=false
+```
+
+The module automatically falls back to `AuthClientImpl` (WebClient/REST).
 
 ---
 
