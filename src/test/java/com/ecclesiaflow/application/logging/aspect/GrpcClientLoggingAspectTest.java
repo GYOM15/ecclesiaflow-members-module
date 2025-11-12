@@ -73,7 +73,7 @@ class GrpcClientLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .containsExactly(Level.INFO);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-CLIENT", "Initiating graceful shutdown");
     }
 
@@ -89,7 +89,7 @@ class GrpcClientLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .containsExactly(Level.INFO);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-CLIENT", "closed successfully");
     }
 
@@ -108,7 +108,7 @@ class GrpcClientLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .containsExactly(Level.ERROR);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-CLIENT", "Error while closing", "RuntimeException");
     }
 
@@ -132,7 +132,7 @@ class GrpcClientLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .containsExactly(Level.INFO);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-CLIENT", "Calling Auth.generateTemporaryToken");
     }
 
@@ -153,7 +153,7 @@ class GrpcClientLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .containsExactly(Level.INFO);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-CLIENT", "Auth.generateTemporaryToken completed successfully");
     }
 
@@ -177,7 +177,7 @@ class GrpcClientLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .containsExactly(Level.DEBUG);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-CLIENT", "Calling Auth.validateToken");
     }
 
@@ -198,7 +198,7 @@ class GrpcClientLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .containsExactly(Level.DEBUG);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-CLIENT", "Auth.validateToken completed successfully");
     }
 
@@ -230,7 +230,7 @@ class GrpcClientLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .contains(Level.ERROR);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-CLIENT", "UNAVAILABLE", "generateTemporaryToken");
     }
 
@@ -258,7 +258,7 @@ class GrpcClientLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .contains(Level.ERROR);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-CLIENT", "UNAVAILABLE", "validateToken");
     }
 
@@ -286,7 +286,7 @@ class GrpcClientLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .contains(Level.WARN);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-CLIENT", "Timeout", "validateToken");
     }
 
@@ -314,7 +314,7 @@ class GrpcClientLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .contains(Level.WARN);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-CLIENT", "Timeout", "generateTemporaryToken");
     }
 
@@ -337,7 +337,7 @@ class GrpcClientLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .contains(Level.WARN);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-CLIENT", "Invalid argument", "generateTemporaryToken");
     }
 
@@ -360,7 +360,7 @@ class GrpcClientLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .contains(Level.ERROR);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-CLIENT", "Security error", "validateToken");
     }
 
@@ -383,7 +383,7 @@ class GrpcClientLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .contains(Level.ERROR);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-CLIENT", "Error during", "RuntimeException");
     }
 }

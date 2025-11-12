@@ -64,6 +64,7 @@ class AsyncEmailConfigTest {
 
         // when/then
         assertThrows(AsyncEmailConfig.AsyncEmailException.class, () -> {
+            assert handler != null;
             handler.handleUncaughtException(originalException, method, params);
         });
     }

@@ -69,8 +69,8 @@ class BusinessOperationLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.INFO);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.INFO);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("BUSINESS: Tentative d'enregistrement d'un nouveau membre");
     }
 
@@ -83,8 +83,8 @@ class BusinessOperationLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.INFO);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.INFO);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("BUSINESS: Nouveau membre enregistré avec succès");
     }
 
@@ -100,8 +100,8 @@ class BusinessOperationLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.WARN);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.WARN);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("BUSINESS: Échec de l'enregistrement du membre")
                 .contains("Erreur d'enregistrement");
     }
@@ -121,8 +121,8 @@ class BusinessOperationLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("AUTH MODULE: Appel à login avec arguments: [user, password]");
     }
 
@@ -139,8 +139,8 @@ class BusinessOperationLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("AUTH MODULE: getToken a réussi avec résultat: token_123");
     }
 
@@ -156,8 +156,8 @@ class BusinessOperationLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("AUTH MODULE: logout exécuté avec succès");
     }
 
@@ -174,8 +174,8 @@ class BusinessOperationLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.WARN);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.WARN);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("AUTH MODULE: Échec de l'appel à refreshToken")
                 .contains("Token expiré");
     }
@@ -195,8 +195,8 @@ class BusinessOperationLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.INFO);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.INFO);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("EMAIL: Début d'envoi asynchrone - sendConfirmationEmail vers test@example.com");
     }
 
@@ -213,7 +213,7 @@ class BusinessOperationLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("vers unknown");
     }
 
@@ -230,8 +230,8 @@ class BusinessOperationLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.INFO);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.INFO);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("EMAIL: Envoi asynchrone réussi - sendWelcomeEmail vers user@example.com");
     }
 
@@ -249,8 +249,8 @@ class BusinessOperationLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.WARN);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.WARN);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("EMAIL: Échec d'envoi asynchrone - sendConfirmationEmail vers fail@example.com")
                 .contains("SMTP error");
     }
@@ -269,7 +269,7 @@ class BusinessOperationLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("vers unknown");
     }
 
@@ -286,7 +286,7 @@ class BusinessOperationLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("vers unknown");
     }
 
@@ -303,7 +303,7 @@ class BusinessOperationLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("AUTH MODULE: Appel à logout avec arguments: []");
     }
 }
