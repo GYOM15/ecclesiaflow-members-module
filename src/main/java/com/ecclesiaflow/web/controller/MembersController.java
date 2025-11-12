@@ -4,7 +4,7 @@ import com.ecclesiaflow.web.api.MembersManagementApi;
 import com.ecclesiaflow.web.api.MembersTemporaryApi;
 import com.ecclesiaflow.web.delegate.MembersManagementDelegate;
 import com.ecclesiaflow.web.delegate.MembersTemporaryDelegate;
-import com.ecclesiaflow.web.model.MembersGetConfirmationStatus200Response;
+import com.ecclesiaflow.web.model.MemberConfirmationStatusResponse;
 import com.ecclesiaflow.web.model.MemberPageResponse;
 import com.ecclesiaflow.web.model.SignUpRequestPayload;
 import com.ecclesiaflow.web.model.SignUpResponse;
@@ -89,7 +89,7 @@ public class MembersController implements MembersManagementApi, MembersTemporary
      * @see MembersTemporaryDelegate#getMemberConfirmationStatus(String)
      */
     @Override
-    public ResponseEntity<MembersGetConfirmationStatus200Response> _membersGetConfirmationStatus(String email) {
+public ResponseEntity<MemberConfirmationStatusResponse> _membersGetConfirmationStatus(String email) {
         return membersTemporaryDelegate.getMemberConfirmationStatus(email);
     }
 

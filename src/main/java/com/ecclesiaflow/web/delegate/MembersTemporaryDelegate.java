@@ -2,7 +2,7 @@ package com.ecclesiaflow.web.delegate;
 
 import com.ecclesiaflow.business.security.RequireScopes;
 import com.ecclesiaflow.business.services.MemberService;
-import com.ecclesiaflow.web.model.MembersGetConfirmationStatus200Response;
+import com.ecclesiaflow.web.model.MemberConfirmationStatusResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -45,11 +45,11 @@ public class MembersTemporaryDelegate {
      * @param email Adresse email du membre
      * @return Objet contenant le statut de confirmation
      */
-    public ResponseEntity<MembersGetConfirmationStatus200Response> getMemberConfirmationStatus(String email) {
+public ResponseEntity<MemberConfirmationStatusResponse> getMemberConfirmationStatus(String email) {
 
         boolean isConfirmed = memberService.isEmailConfirmed(email);
         
-        MembersGetConfirmationStatus200Response response = new MembersGetConfirmationStatus200Response();
+        MemberConfirmationStatusResponse response = new MemberConfirmationStatusResponse();
         response.setConfirmed(isConfirmed);
         
         return ResponseEntity.ok(response);

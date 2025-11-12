@@ -466,7 +466,7 @@ class MembersControllerTest {
     @Test
     void getMemberConfirmationStatus_shouldReturnTrue() throws Exception {
         String email = "confirmed@mail.com";
-        com.ecclesiaflow.web.model.MembersGetConfirmationStatus200Response response = new com.ecclesiaflow.web.model.MembersGetConfirmationStatus200Response();
+        com.ecclesiaflow.web.model.MemberConfirmationStatusResponse response = new com.ecclesiaflow.web.model.MemberConfirmationStatusResponse();
         response.setConfirmed(true);
         when(membersTemporaryDelegate.getMemberConfirmationStatus(email))
                 .thenReturn(ResponseEntity.ok(response));
@@ -483,7 +483,7 @@ class MembersControllerTest {
     @Test
     void getMemberConfirmationStatus_shouldReturnFalse() throws Exception {
         String email = "unconfirmed@mail.com";
-        com.ecclesiaflow.web.model.MembersGetConfirmationStatus200Response response = new com.ecclesiaflow.web.model.MembersGetConfirmationStatus200Response();
+        com.ecclesiaflow.web.model.MemberConfirmationStatusResponse response = new com.ecclesiaflow.web.model.MemberConfirmationStatusResponse();
         response.setConfirmed(false);
         when(membersTemporaryDelegate.getMemberConfirmationStatus(email))
                 .thenReturn(ResponseEntity.ok(response));
