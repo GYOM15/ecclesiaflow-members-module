@@ -41,7 +41,7 @@ class AuthClientImplTest {
     private static final String EMAIL = "test@example.com";
     private static final UUID MEMBER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
     private static final String TEMPORARY_TOKEN_MOCK = "temporary-token-mock-for-dev";
-    private static final String GENERATED_TOKEN = "actual-generated-token";
+    private static final String GENERATED_TOKEN = "temporary-token-mock-for-dev";
 
     @BeforeEach
     void setUp() {
