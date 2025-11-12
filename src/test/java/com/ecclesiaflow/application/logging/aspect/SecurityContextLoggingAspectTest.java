@@ -38,7 +38,6 @@ class SecurityContextLoggingAspectTest {
     private ListAppender<ILoggingEvent> listAppender;
     private Logger logger;
     private JoinPoint joinPoint;
-    private Signature signature;
 
     @BeforeEach
     void setUp() {
@@ -53,7 +52,7 @@ class SecurityContextLoggingAspectTest {
 
         // Mock du JoinPoint
         joinPoint = mock(JoinPoint.class);
-        signature = mock(Signature.class);
+        Signature signature = mock(Signature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
     }
 
@@ -78,8 +77,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .isEqualTo("Extracting authenticated member ID from JWT");
     }
 
@@ -95,8 +94,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("Successfully extracted member ID:")
                 .contains("550e8400-e29b-41d4-a716-446655440000");
     }
@@ -113,8 +112,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.ERROR);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .isEqualTo("JWT claim 'cid' (memberId) is missing");
     }
 
@@ -131,8 +130,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.ERROR);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("Invalid JWT 'cid' format:")
                 .contains("Invalid UUID string: invalid-uuid");
     }
@@ -149,8 +148,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.ERROR);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("Invalid JWT 'cid' format:")
                 .contains("unknown");
     }
@@ -167,8 +166,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.ERROR);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("Failed to extract member ID from JWT:")
                 .contains("Some other error");
     }
@@ -185,7 +184,7 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.ERROR);
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.ERROR);
     }
 
     // === TESTS POUR L'EXTRACTION DES SCOPES ===
@@ -199,8 +198,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .isEqualTo("Extracting authenticated user scopes from JWT");
     }
 
@@ -216,8 +215,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("Successfully extracted 2 scopes:")
                 .contains("ef:members:read:own")
                 .contains("ef:members:write:own");
@@ -235,8 +234,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.WARN);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.WARN);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .isEqualTo("JWT scope claim is missing or empty");
     }
 
@@ -249,8 +248,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.WARN);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.WARN);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .isEqualTo("JWT scope claim is missing or empty");
     }
 
@@ -266,8 +265,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("Successfully extracted 1 scopes:")
                 .contains("ef:members:read:own");
     }
@@ -284,8 +283,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.ERROR);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("Failed to extract scopes from JWT:")
                 .contains("Failed to parse JWT");
     }
@@ -304,8 +303,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.ERROR);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("Failed to parse JWT token:")
                 .contains("Invalid JWT token");
     }
@@ -322,8 +321,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(logs.get(0).getThrowableProxy()).isNotNull();
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.ERROR);
+        assertThat(logs.getFirst().getThrowableProxy()).isNotNull();
     }
 
     // === TESTS POUR L'EXTRACTION DU TOKEN ===
@@ -340,8 +339,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.ERROR);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .isEqualTo("No request context available");
     }
 
@@ -357,8 +356,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.ERROR);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .isEqualTo("Missing or invalid Authorization header");
     }
 
@@ -374,8 +373,8 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.ERROR);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("Failed to extract token from request:")
                 .contains("Some other extraction error");
     }
@@ -392,7 +391,7 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.ERROR);
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.ERROR);
     }
 
     // === TESTS DE COUVERTURE SUPPLÉMENTAIRES ===
@@ -413,7 +412,7 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(2);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.DEBUG);
         assertThat(logs.get(1).getLevel()).isEqualTo(Level.DEBUG);
     }
 
@@ -431,7 +430,7 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(2);
-        assertThat(logs.get(0).getFormattedMessage()).contains(uuid1.toString());
+        assertThat(logs.getFirst().getFormattedMessage()).contains(uuid1.toString());
         assertThat(logs.get(1).getFormattedMessage()).contains(uuid2.toString());
     }
 
@@ -451,7 +450,7 @@ class SecurityContextLoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(3);
-        assertThat(logs.get(0).getFormattedMessage()).contains("1 scopes");
+        assertThat(logs.getFirst().getFormattedMessage()).contains("1 scopes");
         assertThat(logs.get(1).getFormattedMessage()).contains("3 scopes");
         assertThat(logs.get(2).getFormattedMessage()).contains("10 scopes");
     }

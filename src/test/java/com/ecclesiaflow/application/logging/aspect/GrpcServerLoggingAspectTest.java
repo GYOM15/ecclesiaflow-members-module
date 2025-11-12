@@ -73,7 +73,7 @@ class GrpcServerLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .containsExactly(Level.INFO);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC", "Initializing gRPC server");
     }
 
@@ -89,7 +89,7 @@ class GrpcServerLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .containsExactly(Level.INFO);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC", "started successfully");
     }
 
@@ -110,7 +110,7 @@ class GrpcServerLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .contains(Level.ERROR);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC", "Failed to start", "IllegalStateException");
     }
 
@@ -130,7 +130,7 @@ class GrpcServerLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .containsExactly(Level.INFO);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC", "graceful shutdown");
     }
 
@@ -146,7 +146,7 @@ class GrpcServerLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .containsExactly(Level.INFO);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC", "stopped successfully");
     }
 
@@ -170,7 +170,7 @@ class GrpcServerLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .containsExactly(Level.INFO);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-RPC", "Received", "getMemberConfirmationStatus", "Auth module");
     }
 
@@ -190,7 +190,7 @@ class GrpcServerLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .containsExactly(Level.INFO);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-RPC", "getMemberConfirmationStatus", "completed successfully");
     }
 
@@ -214,7 +214,7 @@ class GrpcServerLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .containsExactly(Level.DEBUG);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-RPC", "Received", "checkMemberExists");
     }
 
@@ -234,7 +234,7 @@ class GrpcServerLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .containsExactly(Level.DEBUG);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-RPC", "checkMemberExists", "completed successfully");
     }
 
@@ -261,7 +261,7 @@ class GrpcServerLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .contains(Level.WARN);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-RPC", "Invalid argument", "getMemberConfirmationStatus");
     }
 
@@ -284,7 +284,7 @@ class GrpcServerLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .contains(Level.ERROR);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-RPC", "Error in", "checkMemberExists", "RuntimeException");
     }
 
@@ -307,7 +307,7 @@ class GrpcServerLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .contains(Level.ERROR);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-RPC", "Error in", "NullPointerException");
     }
 
@@ -330,7 +330,7 @@ class GrpcServerLoggingAspectTest {
                 .extracting(ILoggingEvent::getLevel)
                 .contains(Level.ERROR);
         
-        assertThat(listAppender.list.get(0).getFormattedMessage())
+        assertThat(listAppender.list.getFirst().getFormattedMessage())
                 .contains("GRPC-RPC", "Error in", "SecurityException");
     }
 }

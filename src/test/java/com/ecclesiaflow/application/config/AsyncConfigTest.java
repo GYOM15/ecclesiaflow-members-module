@@ -40,6 +40,7 @@ class AsyncConfigTest {
         assertThat(executor).isInstanceOf(ThreadPoolTaskExecutor.class);
         
         ThreadPoolTaskExecutor threadPoolExecutor = (ThreadPoolTaskExecutor) executor;
+        assert threadPoolExecutor != null;
         assertThat(threadPoolExecutor.getCorePoolSize()).isEqualTo(2);
         assertThat(threadPoolExecutor.getMaxPoolSize()).isEqualTo(10);
         assertThat(threadPoolExecutor.getQueueCapacity()).isEqualTo(100);
@@ -55,6 +56,7 @@ class AsyncConfigTest {
 
         // Then
         ThreadPoolTaskExecutor threadPoolExecutor = (ThreadPoolTaskExecutor) executor;
+        assert threadPoolExecutor != null;
         RejectedExecutionHandler rejectedHandler = threadPoolExecutor.getThreadPoolExecutor().getRejectedExecutionHandler();
         assertThat(rejectedHandler).isInstanceOf(ThreadPoolExecutor.CallerRunsPolicy.class);
     }
@@ -69,6 +71,7 @@ class AsyncConfigTest {
         ThreadPoolTaskExecutor threadPoolExecutor = (ThreadPoolTaskExecutor) executor;
         // Note: Les propriétés de shutdown sont configurées mais ne sont pas exposées via des getters publics
         // On vérifie que l'exécuteur est correctement initialisé et fonctionnel
+        assert threadPoolExecutor != null;
         assertThat(threadPoolExecutor.getThreadPoolExecutor()).isNotNull();
         assertThat(threadPoolExecutor.getThreadPoolExecutor().isShutdown()).isFalse();
     }
@@ -93,7 +96,10 @@ class AsyncConfigTest {
         Object[] params = {"param1", "param2"};
 
         // When & Then - Ne devrait pas lever d'exception
-        assertThatCode(() -> handler.handleUncaughtException(testException, testMethod, params))
+        assertThatCode(() -> {
+            assert handler != null;
+            handler.handleUncaughtException(testException, testMethod, params);
+        })
                 .doesNotThrowAnyException();
     }
 
@@ -107,6 +113,7 @@ class AsyncConfigTest {
         ThreadPoolTaskExecutor threadPoolExecutor = (ThreadPoolTaskExecutor) executor;
         
         // Vérifier que l'exécuteur est initialisé
+        assert threadPoolExecutor != null;
         assertThat(threadPoolExecutor.getThreadPoolExecutor()).isNotNull();
         assertThat(threadPoolExecutor.getThreadPoolExecutor().isShutdown()).isFalse();
         assertThat(threadPoolExecutor.getThreadPoolExecutor().isTerminated()).isFalse();
@@ -121,6 +128,7 @@ class AsyncConfigTest {
 
         // Then - Vérifier que la configuration est adaptée aux opérations I/O (email)
         // Core pool size relativement petit pour économiser les ressources
+        assert threadPoolExecutor != null;
         assertThat(threadPoolExecutor.getCorePoolSize()).isLessThanOrEqualTo(5);
         
         // Max pool size suffisant pour gérer les pics de charge
@@ -141,6 +149,7 @@ class AsyncConfigTest {
         ThreadPoolTaskExecutor threadPoolExecutor = (ThreadPoolTaskExecutor) executor;
 
         // Then
+        assert threadPoolExecutor != null;
         String threadNamePrefix = threadPoolExecutor.getThreadNamePrefix();
         assertThat(threadNamePrefix)
                 .isNotNull()

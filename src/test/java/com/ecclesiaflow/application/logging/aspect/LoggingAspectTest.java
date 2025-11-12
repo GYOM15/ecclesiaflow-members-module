@@ -313,8 +313,8 @@ class LoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.DEBUG);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.DEBUG);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("API:")
                 .contains("testMethod");
     }
@@ -333,8 +333,8 @@ class LoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getLevel()).isEqualTo(Level.ERROR);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getLevel()).isEqualTo(Level.ERROR);
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("Exception non gérée")
                 .contains("testMethod")
                 .contains("RuntimeException")
@@ -353,7 +353,7 @@ class LoggingAspectTest {
         // Then
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
-        assertThat(logs.get(0).getFormattedMessage())
+        assertThat(logs.getFirst().getFormattedMessage())
                 .contains("IllegalArgumentException")
                 .contains("Invalid argument");
     }
