@@ -8,7 +8,7 @@ import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
-import com.ecclesiaflow.io.exception.ConfirmationEmailException;
+import com.ecclesiaflow.business.exceptions.EmailServiceException;
 
 import java.util.UUID;
 
@@ -84,7 +84,7 @@ public interface MemberConfirmationService {
      * @param member le membre pour lequel générer un token, non null
      * @throws MemberNotFoundException si le membre n'existe pas
      * @throws MemberAlreadyConfirmedException si le membre est déjà confirmé
-     * @throws ConfirmationEmailException si l'envoi de l'email échoue
+     * @throws EmailServiceException si l'envoi de l'email échoue
      * @throws IllegalArgumentException si member est null
      *
      * @implNote Opération transactionnelle avec génération UUID cryptographiquement sécurisée.
@@ -108,7 +108,7 @@ public interface MemberConfirmationService {
      *
      * @param email l'adresse email du membre pour lequel générer un token, non null
      * @throws MemberAlreadyConfirmedException si le membre est déjà confirmé
-     * @throws ConfirmationEmailException si l'envoi de l'email échoue
+     * @throws EmailServiceException si l'envoi de l'email échoue
      * @throws IllegalArgumentException si email est null ou invalide
      *
      * @implNote Opération transactionnelle avec génération UUID cryptographiquement sécurisée.

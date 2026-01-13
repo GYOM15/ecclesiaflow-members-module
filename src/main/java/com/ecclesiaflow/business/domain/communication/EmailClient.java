@@ -10,10 +10,9 @@ import java.util.UUID;
  * 
  * <p><strong>Rôle architectural :</strong> Port de sortie (Output Port) du domaine</p>
  * 
- * <p><strong>Implémentations disponibles :</strong></p>
+ * <p><strong>Implémentation :</strong></p>
  * <ul>
- *   <li>{@code EmailGrpcClient} - Communication gRPC avec le module Email (recommandé)</li>
- *   <li>{@code EmailServiceImpl} - SMTP direct via JavaMailSender (legacy, déprécié)</li>
+ *   <li>{@code EmailGrpcClient} - Communication gRPC avec le module Email</li>
  * </ul>
  * 
  * <p><strong>Usage typique :</strong></p>
