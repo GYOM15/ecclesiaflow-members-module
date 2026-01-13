@@ -11,18 +11,21 @@ import org.springframework.stereotype.Component;
  * <p>
  * Cette classe implémente un aspect spécialisé dans le logging des communications
  * gRPC entrantes sur le module Members. Elle capture les appels RPC depuis d'autres
- * modules (Auth), les erreurs de traitement et les métriques de performance.
+ * modules (Auth, etc.), les erreurs de traitement et les métriques de performance.
  * </p>
  *
  * <p><strong>Rôle architectural :</strong> Aspect infrastructure - Audit des communications gRPC</p>
  *
  * <p><strong>Responsabilités principales :</strong></p>
  * <ul>
- *   <li>Logging des démarrages/arrêts du serveur gRPC</li>
+ *   <li>Logging des démarrages/arrêts du serveur gRPC Members</li>
  *   <li>Audit des appels RPC entrants (GetMemberConfirmationStatus, CheckMemberExists)</li>
  *   <li>Capture des erreurs de traitement gRPC</li>
  *   <li>Traçabilité inter-modules (Auth → Members)</li>
  * </ul>
+ * 
+ * <p><strong>Note :</strong> Le module Members expose UNIQUEMENT des services Members via gRPC.
+ * L'envoi d'emails est délégué à un module Email externe via {@code EmailGrpcClient}.</p>
  *
  * @author EcclesiaFlow Team
  * @since 1.0.0
