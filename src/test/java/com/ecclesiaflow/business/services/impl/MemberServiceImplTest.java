@@ -5,6 +5,8 @@ import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
+import com.ecclesiaflow.business.exceptions.EmailAlreadyUsedException;
+import com.ecclesiaflow.business.exceptions.InvalidEmailUpdateException;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -159,11 +161,12 @@ class MemberServiceImplTest {
                 .email("existing@mail.com")
                 .build();
 
+        when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
         when(memberRepository.existsByEmail("existing@mail.com")).thenReturn(true);
 
-        assertThrows(IllegalArgumentException.class, () -> memberService.updateMember(update));
+        assertThrows(EmailAlreadyUsedException.class, () -> memberService.updateMember(update));
 
-        verify(memberRepository, never()).getByMemberId(any());
+        verify(memberRepository).getByMemberId(id);
         verify(memberRepository, never()).save(any());
     }
 
@@ -176,12 +179,58 @@ class MemberServiceImplTest {
                 .email("new@mail.com")
                 .build();
 
-        when(memberRepository.existsByEmail("new@mail.com")).thenReturn(false);
         when(memberRepository.getByMemberId(id)).thenReturn(Optional.empty());
 
         assertThrows(MemberNotFoundException.class, () -> memberService.updateMember(update));
 
         verify(memberRepository, never()).save(any());
+    }
+
+    @Test
+    void updateMember_shouldThrowIfEmailSameAsCurrent() {
+        UUID id = UUID.randomUUID();
+        Member existing = Member.builder()
+                .memberId(id)
+                .firstName("OldName")
+                .email("same@mail.com")
+                .build();
+
+        MembershipUpdate update = MembershipUpdate.builder()
+                .memberId(id)
+                .firstName("NewName")
+                .email("same@mail.com")
+                .build();
+
+        when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
+
+        assertThrows(InvalidEmailUpdateException.class, () -> memberService.updateMember(update));
+
+        verify(memberRepository, never()).save(any());
+    }
+
+    @Test
+    void updateMember_shouldSucceedWithNullEmail() {
+        UUID id = UUID.randomUUID();
+        Member existing = Member.builder()
+                .memberId(id)
+                .firstName("OldName")
+                .email("existing@mail.com")
+                .build();
+
+        MembershipUpdate update = MembershipUpdate.builder()
+                .memberId(id)
+                .firstName("NewName")
+                .email(null)
+                .build();
+
+        when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
+        when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Member result = memberService.updateMember(update);
+
+        assertEquals("NewName", result.getFirstName());
+        verify(memberRepository).save(any(Member.class));
+        verify(memberRepository, never()).existsByEmail(any());
     }
 
     @Test
@@ -235,7 +284,7 @@ class MemberServiceImplTest {
 
         // Then
         assertEquals(1, result.getContent().size());
-        assertEquals("John", result.getContent().get(0).getFirstName());
+        assertEquals("John", result.getContent().getFirst().getFirstName());
         verify(memberRepository, times(1)).getMembersBySearchTerm(searchTerm, pageable);
     }
 
@@ -256,7 +305,7 @@ class MemberServiceImplTest {
 
         // Then
         assertEquals(1, result.getContent().size());
-        assertTrue(result.getContent().get(0).isConfirmed());
+        assertTrue(result.getContent().getFirst().isConfirmed());
         verify(memberRepository, times(1)).getByConfirmedStatus(confirmed, pageable);
     }
 
@@ -279,8 +328,8 @@ class MemberServiceImplTest {
 
         // Then
         assertEquals(1, result.getContent().size());
-        assertEquals("John", result.getContent().get(0).getFirstName());
-        assertFalse(result.getContent().get(0).isConfirmed());
+        assertEquals("John", result.getContent().getFirst().getFirstName());
+        assertFalse(result.getContent().getFirst().isConfirmed());
         verify(memberRepository, times(1)).getMembersBySearchTermAndConfirmationStatus(searchTerm, confirmed, pageable);
     }
 
@@ -351,7 +400,7 @@ class MemberServiceImplTest {
 
         // Then - Should call with trimmed search term
         assertEquals(1, result.getContent().size());
-        assertEquals("John", result.getContent().get(0).getFirstName());
+        assertEquals("John", result.getContent().getFirst().getFirstName());
         verify(memberRepository, times(1)).getMembersBySearchTerm(trimmedSearchTerm, pageable);
         verify(memberRepository, never()).getMembersBySearchTerm(searchTermWithSpaces, pageable);
     }
@@ -376,7 +425,7 @@ class MemberServiceImplTest {
 
         // Then - Should call with trimmed search term
         assertEquals(1, result.getContent().size());
-        assertTrue(result.getContent().get(0).isConfirmed());
+        assertTrue(result.getContent().getFirst().isConfirmed());
         verify(memberRepository, times(1)).getMembersBySearchTermAndConfirmationStatus(trimmedSearchTerm, confirmed, pageable);
     }
 

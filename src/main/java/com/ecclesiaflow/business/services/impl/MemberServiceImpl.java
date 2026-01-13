@@ -3,9 +3,11 @@ package com.ecclesiaflow.business.services.impl;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
+import com.ecclesiaflow.business.exceptions.EmailAlreadyUsedException;
+import com.ecclesiaflow.business.exceptions.InvalidEmailUpdateException;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.business.services.MemberService;
-import com.ecclesiaflow.business.domain.communication.EmailService;
+import com.ecclesiaflow.business.domain.communication.EmailClient;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
@@ -40,7 +42,7 @@ import java.util.UUID;
  * <ul>
  *   <li>{@link MemberRepository} - Persistance et requêtes sur les membres</li>
  *   <li>{@link MemberConfirmationRepository} - Gestion des tokens de confirmation</li>
- *   <li>{@link EmailService} - Envoi des emails de confirmation</li>
+ *   <li>{@link EmailClient} - Envoi des emails de confirmation</li>
  * </ul>
  *
  * <p><strong>Flux d'inscription typique :</strong></p>
@@ -58,7 +60,7 @@ import java.util.UUID;
  * @since 1.0.0
  * @see MemberService
  * @see MemberRepository
- * @see EmailService
+ * @see EmailClient
  */
 @Service
 @RequiredArgsConstructor
@@ -80,8 +82,6 @@ public class MemberServiceImpl implements MemberService {
         return savedMember;
     }
 
-    @Override
-    @Transactional(readOnly = true)
     public boolean isEmailAlreadyUsed(String email) {
         return memberRepository.existsByEmail(email);
     }
@@ -114,13 +114,31 @@ public class MemberServiceImpl implements MemberService {
     @Override
     @Transactional
     public Member updateMember(MembershipUpdate update) {
-        if (isEmailAlreadyUsed(update.getEmail())) {
-            throw new IllegalArgumentException("Un compte avec cet email existe déjà.");
-        }
-        Member member = findByMemberId(update.getMemberId());
-        Member updatedMember = member.withUpdatedFields(update);
+        Member existing = findByMemberId(update.getMemberId());
+
+        validateEmailUpdate(existing, update.getEmail());
+
+        Member updatedMember = existing.withUpdatedFields(update);
         return memberRepository.save(updatedMember);
     }
+
+    private void validateEmailUpdate(Member existing, String newEmail) {
+        if (newEmail == null) {
+            return;
+        }
+        if (existing.getEmail().equalsIgnoreCase(newEmail)) {
+            throw new InvalidEmailUpdateException(
+                    "Le nouvel email doit être différent de l'email actuel."
+            );
+        }
+        if (isEmailAlreadyUsed(newEmail)) {
+            throw new EmailAlreadyUsedException(
+                    "Un compte avec cet email existe déjà."
+            );
+        }
+    }
+
+
 
     @Override
     @Transactional

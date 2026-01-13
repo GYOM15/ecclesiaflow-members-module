@@ -1,9 +1,8 @@
 package com.ecclesiaflow.business.services;
 
-import com.ecclesiaflow.business.domain.communication.EmailService;
+import com.ecclesiaflow.business.domain.communication.EmailClient;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
-import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmation;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
@@ -36,7 +35,7 @@ import java.util.UUID;
  * <ul>
  *   <li>{@link MemberRepository} - Accès aux données membres</li>
  *   <li>{@link MemberConfirmationRepository} - Gestion des codes</li>
- *   <li>{@link EmailService} - Envoi des emails de confirmation</li>
+ *   <li>{@link EmailClient} - Envoi des emails de confirmation</li>
  * </ul>
  * 
  * <p><strong>Cas d'utilisation typiques :</strong></p>
