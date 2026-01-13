@@ -310,8 +310,8 @@ class SecurityContextLoggingAspectTest {
     }
 
     @Test
-    @DisplayName("logErrorParseJwt devrait logger l'erreur avec stacktrace")
-    void logErrorParseJwt_shouldLogErrorWithStacktrace() {
+    @DisplayName("logErrorParseJwt devrait logger l'erreur sans stacktrace")
+    void logErrorParseJwt_shouldLogErrorWithoutStacktrace() {
         // Given
         Exception exception = new IllegalStateException("JWT signature validation failed");
 
@@ -322,7 +322,7 @@ class SecurityContextLoggingAspectTest {
         List<ILoggingEvent> logs = listAppender.list;
         assertThat(logs).hasSize(1);
         assertThat(logs.getFirst().getLevel()).isEqualTo(Level.ERROR);
-        assertThat(logs.getFirst().getThrowableProxy()).isNotNull();
+        assertThat(logs.getFirst().getThrowableProxy()).isNull();
     }
 
     // === TESTS POUR L'EXTRACTION DU TOKEN ===
