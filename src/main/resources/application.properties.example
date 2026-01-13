@@ -146,8 +146,30 @@ grpc.server.shutdown-timeout-seconds=30
 grpc.auth.host=localhost
 grpc.auth.port=9090
 
+# =============================================================================
+# gRPC CLIENT CONFIGURATION (Members -> Email Service)
+# =============================================================================
+# Email service gRPC endpoint
+grpc.email.host=localhost
+grpc.email.port=9092
+
 # Client shutdown timeout in seconds
 grpc.client.shutdown-timeout-seconds=5
+
+# =============================================================================
+# RESILIENCE4J CONFIGURATION (Circuit Breaker & Retry)
+# =============================================================================
+# Circuit Breaker for Email Service
+resilience4j.circuitbreaker.instances.emailService.slidingWindowSize=10
+resilience4j.circuitbreaker.instances.emailService.failureRateThreshold=50
+resilience4j.circuitbreaker.instances.emailService.waitDurationInOpenState=30s
+resilience4j.circuitbreaker.instances.emailService.permittedNumberOfCallsInHalfOpenState=3
+resilience4j.circuitbreaker.instances.emailService.automaticTransitionFromOpenToHalfOpenEnabled=true
+
+# Retry for Email Service
+resilience4j.retry.instances.emailServiceRetry.maxAttempts=3
+resilience4j.retry.instances.emailServiceRetry.waitDuration=500ms
+resilience4j.retry.instances.emailServiceRetry.retryExceptions=io.grpc.StatusRuntimeException
 
 # ============================================================================
 # OPTIONAL CONFIGURATIONS
