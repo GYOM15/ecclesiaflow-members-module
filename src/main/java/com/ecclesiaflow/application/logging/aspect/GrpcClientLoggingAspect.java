@@ -86,7 +86,7 @@ public class GrpcClientLoggingAspect {
      */
     @Before("grpcChannelShutdown()")
     public void logBeforeChannelShutdown(JoinPoint joinPoint) {
-        log.info("🛑 GRPC-CLIENT: Initiating graceful shutdown of gRPC channel to Auth service...");
+        log.info("GRPC-CLIENT: Initiating graceful shutdown of gRPC channel to Auth service...");
     }
 
     /**
@@ -96,7 +96,7 @@ public class GrpcClientLoggingAspect {
      */
     @AfterReturning("grpcChannelShutdown()")
     public void logAfterChannelShutdown(JoinPoint joinPoint) {
-        log.info("✅ GRPC-CLIENT: gRPC channel to Auth service closed successfully");
+        log.info("GRPC-CLIENT: gRPC channel to Auth service closed successfully");
     }
 
     /**
@@ -107,7 +107,7 @@ public class GrpcClientLoggingAspect {
      */
     @AfterThrowing(pointcut = "grpcChannelShutdown()", throwing = "exception")
     public void logChannelShutdownError(JoinPoint joinPoint, Exception exception) {
-        log.error("❌ GRPC-CLIENT: Error while closing gRPC channel - {}: {}", 
+        log.error("GRPC-CLIENT: Error while closing gRPC channel - {}: {}", 
                 exception.getClass().getSimpleName(), 
                 exception.getMessage());
     }
@@ -130,9 +130,9 @@ public class GrpcClientLoggingAspect {
         
         // Log selon le type de RPC
         if ("generateTemporaryToken".equals(methodName)) {
-            log.info("📤 GRPC-CLIENT: Calling Auth.{} via gRPC", methodName);
+            log.info("GRPC-CLIENT: Calling Auth.{} via gRPC", methodName);
         } else {
-            log.debug("📡 GRPC-CLIENT: Calling Auth.{} via gRPC", methodName);
+            log.debug("GRPC-CLIENT: Calling Auth.{} via gRPC", methodName);
         }
     }
 
@@ -150,9 +150,9 @@ public class GrpcClientLoggingAspect {
         String methodName = joinPoint.getSignature().getName();
         
         if ("generateTemporaryToken".equals(methodName)) {
-            log.info("✅ GRPC-CLIENT: Auth.{} completed successfully", methodName);
+            log.info("GRPC-CLIENT: Auth.{} completed successfully", methodName);
         } else {
-            log.debug("✅ GRPC-CLIENT: Auth.{} completed successfully", methodName);
+            log.debug("GRPC-CLIENT: Auth.{} completed successfully", methodName);
         }
     }
 
@@ -173,31 +173,31 @@ public class GrpcClientLoggingAspect {
         
         // Erreurs de disponibilité du service Auth (critique)
         if (exceptionType.contains("Unavailable") || exceptionType.contains("UNAVAILABLE")) {
-            log.error("❌ GRPC-CLIENT: Auth service UNAVAILABLE during {} - {}", 
+            log.error("GRPC-CLIENT: Auth service UNAVAILABLE during {} - {}", 
                     methodName, 
                     exception.getMessage());
         }
         // Erreurs de timeout (warning)
         else if (exceptionType.contains("Timeout") || exceptionType.contains("DEADLINE_EXCEEDED")) {
-            log.warn("⏱️  GRPC-CLIENT: Timeout during {} - {}", 
+            log.warn("GRPC-CLIENT: Timeout during {} - {}", 
                     methodName, 
                     exception.getMessage());
         }
         // Erreurs de validation (client error)
         else if (exception instanceof IllegalArgumentException) {
-            log.warn("⚠️  GRPC-CLIENT: Invalid argument in {} - {}", 
+            log.warn("GRPC-CLIENT: Invalid argument in {} - {}", 
                     methodName, 
                     exception.getMessage());
         }
         // Erreurs de sécurité
         else if (exception instanceof SecurityException) {
-            log.error("🔒 GRPC-CLIENT: Security error during {} - {}", 
+            log.error("GRPC-CLIENT: Security error during {} - {}", 
                     methodName, 
                     exception.getMessage());
         }
         // Autres erreurs (server error)
         else {
-            log.error("❌ GRPC-CLIENT: Error during {} - {}: {}", 
+            log.error("GRPC-CLIENT: Error during {} - {}: {}", 
                     methodName,
                     exceptionType, 
                     exception.getMessage());

@@ -55,29 +55,29 @@ public class GrpcServerLoggingAspect {
 
     @Before("grpcServerStart()")
     public void logBeforeServerStart(JoinPoint joinPoint) {
-        log.info("🚀 GRPC: Initializing gRPC server for Members module...");
+        log.info("GRPC: Initializing gRPC server for Members module...");
     }
 
     @AfterReturning("grpcServerStart()")
     public void logAfterServerStart(JoinPoint joinPoint) {
-        log.info("✅ GRPC: gRPC server started successfully and ready to accept connections");
+        log.info("GRPC: gRPC server started successfully and ready to accept connections");
     }
 
     @AfterThrowing(pointcut = "grpcServerStart()", throwing = "exception")
     public void logServerStartError(JoinPoint joinPoint, Exception exception) {
-        log.error("❌ GRPC: Failed to start gRPC server - {}: {}", 
+        log.error("GRPC: Failed to start gRPC server - {}: {}", 
                 exception.getClass().getSimpleName(), 
                 exception.getMessage());
     }
 
     @Before("grpcServerStop()")
     public void logBeforeServerStop(JoinPoint joinPoint) {
-        log.info("🛑 GRPC: Initiating graceful shutdown of gRPC server...");
+        log.info("GRPC: Initiating graceful shutdown of gRPC server...");
     }
 
     @AfterReturning("grpcServerStop()")
     public void logAfterServerStop(JoinPoint joinPoint) {
-        log.info("✅ GRPC: gRPC server stopped successfully");
+        log.info("GRPC: gRPC server stopped successfully");
     }
 
     // ========================================================================
@@ -89,9 +89,9 @@ public class GrpcServerLoggingAspect {
         String methodName = joinPoint.getSignature().getName();
         
         if ("getMemberConfirmationStatus".equals(methodName)) {
-            log.info("📨 GRPC-RPC: Received {} request from Auth module", methodName);
+            log.info("GRPC-RPC: Received {} request from Auth module", methodName);
         } else {
-            log.debug("📡 GRPC-RPC: Received {} request", methodName);
+            log.debug("GRPC-RPC: Received {} request", methodName);
         }
     }
 
@@ -100,9 +100,9 @@ public class GrpcServerLoggingAspect {
         String methodName = joinPoint.getSignature().getName();
         
         if ("getMemberConfirmationStatus".equals(methodName)) {
-            log.info("✅ GRPC-RPC: {} completed successfully", methodName);
+            log.info("GRPC-RPC: {} completed successfully", methodName);
         } else {
-            log.debug("✅ GRPC-RPC: {} completed successfully", methodName);
+            log.debug("GRPC-RPC: {} completed successfully", methodName);
         }
     }
 
@@ -111,11 +111,11 @@ public class GrpcServerLoggingAspect {
         String methodName = joinPoint.getSignature().getName();
         
         if (exception instanceof IllegalArgumentException) {
-            log.warn("⚠️  GRPC-RPC: Invalid argument in {} - {}", 
+            log.warn("GRPC-RPC: Invalid argument in {} - {}", 
                     methodName, 
                     exception.getMessage());
         } else {
-            log.error("❌ GRPC-RPC: Error in {} - {}: {}", 
+            log.error("GRPC-RPC: Error in {} - {}: {}", 
                     methodName,
                     exception.getClass().getSimpleName(), 
                     exception.getMessage());
