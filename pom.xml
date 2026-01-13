@@ -410,6 +410,37 @@
 				</configuration>
 			</plugin>
 
+			<!-- Failsafe Plugin pour les tests d'intégration -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>3.2.5</version>
+				<configuration>
+					<argLine>@{argLine}
+						-XX:+EnableDynamicAgentLoading
+						-Xshare:off
+						-Djdk.instrument.traceUsage=false
+						--add-opens java.base/java.lang=ALL-UNNAMED
+						--add-opens java.base/java.util=ALL-UNNAMED
+					</argLine>
+					<systemPropertyVariables>
+						<mockito.mock.maker>mock-maker-inline</mockito.mock.maker>
+					</systemPropertyVariables>
+					<includes>
+						<include>**/*IT.java</include>
+						<include>**/*IntegrationTest.java</include>
+					</includes>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
 			<plugin>
 				<groupId>org.openapitools</groupId>
 				<artifactId>openapi-generator-maven-plugin</artifactId>
