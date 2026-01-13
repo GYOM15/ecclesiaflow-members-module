@@ -69,16 +69,6 @@ public class BusinessOperationLoggingAspect {
     @Pointcut("execution(* com.ecclesiaflow.web.client.AuthClient.*(..))")
     public void authModuleCalls() {}
 
-    /**
-     * Pointcut pour les opérations d'envoi d'email asynchrones.
-     * <p>
-     * Intercepte toutes les méthodes du service d'email pour auditer
-     * les communications par email (confirmation, bienvenue).
-     * </p>
-     */
-    @Pointcut("execution(* com.ecclesiaflow.io.communication.email.EmailServiceImpl.*(..))")
-    public void emailOperations() {}
-
     // === CONSEILS POUR L'ENREGISTREMENT DES MEMBRES ===
     
     /**
@@ -171,54 +161,4 @@ public class BusinessOperationLoggingAspect {
         log.warn("AUTH MODULE: Échec de l'appel à {} - {}", methodName, exception.getMessage());
     }
 
-    // === CONSEILS POUR LES OPÉRATIONS EMAIL ASYNCHRONES ===
-    
-    /**
-     * Log avant opération d'envoi d'email asynchrone.
-     * <p>
-     * Enregistre le début des opérations d'envoi d'email pour audit et traçabilité.
-     * </p>
-     * 
-     * @param joinPoint point de jonction contenant les détails de l'appel
-     */
-    @Before("emailOperations()")
-    public void logBeforeEmailOperation(JoinPoint joinPoint) {
-        String methodName = joinPoint.getSignature().getName();
-        Object[] args = joinPoint.getArgs();
-        String email = args.length > 0 ? (String) args[0] : "unknown";
-        log.info("EMAIL: Début d'envoi asynchrone - {} vers {}", methodName, email);
-    }
-
-    /**
-     * Log après envoi d'email réussi.
-     * <p>
-     * Confirme le succès des opérations d'envoi d'email pour audit.
-     * </p>
-     * 
-     * @param joinPoint point de jonction contenant les détails de l'appel
-     */
-    @AfterReturning("emailOperations()")
-    public void logAfterSuccessfulEmailOperation(JoinPoint joinPoint) {
-        String methodName = joinPoint.getSignature().getName();
-        Object[] args = joinPoint.getArgs();
-        String email = args.length > 0 ? (String) args[0] : "unknown";
-        log.info("EMAIL: Envoi asynchrone réussi - {} vers {}", methodName, email);
-    }
-
-    /**
-     * Log en cas d'erreur lors d'envoi d'email.
-     * <p>
-     * Enregistre les échecs d'envoi d'email pour diagnostic et alerting.
-     * </p>
-     * 
-     * @param joinPoint point de jonction contenant les détails de l'appel
-     * @param exception l'exception qui a causé l'échec
-     */
-    @AfterThrowing(pointcut = "emailOperations()", throwing = "exception")
-    public void logEmailOperationError(JoinPoint joinPoint, Throwable exception) {
-        String methodName = joinPoint.getSignature().getName();
-        Object[] args = joinPoint.getArgs();
-        String email = args.length > 0 ? (String) args[0] : "unknown";
-        log.warn("EMAIL: Échec d'envoi asynchrone - {} vers {} - {}", methodName, email, exception.getMessage());
-    }
 }
