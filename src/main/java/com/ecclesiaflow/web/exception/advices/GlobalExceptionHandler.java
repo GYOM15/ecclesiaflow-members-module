@@ -1,5 +1,6 @@
 package com.ecclesiaflow.web.exception.advices;
 
+import com.ecclesiaflow.business.exceptions.EmailServiceUnavailableException;
 import com.ecclesiaflow.business.exceptions.ExpiredConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
@@ -7,6 +8,7 @@ import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import com.ecclesiaflow.web.exception.*;
 import com.ecclesiaflow.web.exception.model.ApiErrorResponse;
 import com.ecclesiaflow.web.exception.model.ValidationError;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
@@ -216,11 +218,35 @@ public class GlobalExceptionHandler {
         ApiErrorResponse errorResponse = ApiErrorResponse.builder()
             .status(429)
             .error("Too Many Requests")
-            .message("Trop de tentatives. Veuillez réessayer plus tard.")
+            .message("Too many requests. Please try again later.")
             .path(request.getRequestURI())
-            .errors(null)  // Pas d'erreurs de validation pour le rate limiting
+            .errors(null)
             .build();
         return ResponseEntity.status(429).body(errorResponse);
+    }
+
+    @ExceptionHandler(CallNotPermittedException.class)
+    public ResponseEntity<ApiErrorResponse> handleCircuitBreakerOpen(CallNotPermittedException ex, HttpServletRequest request) {
+        ApiErrorResponse errorResponse = ApiErrorResponse.builder()
+            .status(HttpStatus.SERVICE_UNAVAILABLE.value())
+            .error(HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase())
+            .message("Service temporarily unavailable. Please try again later.")
+            .path(request.getRequestURI())
+            .errors(null)
+            .build();
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errorResponse);
+    }
+
+    @ExceptionHandler(EmailServiceUnavailableException.class)
+    public ResponseEntity<ApiErrorResponse> handleEmailServiceUnavailable(EmailServiceUnavailableException ex, HttpServletRequest request) {
+        ApiErrorResponse errorResponse = ApiErrorResponse.builder()
+            .status(HttpStatus.SERVICE_UNAVAILABLE.value())
+            .error(HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase())
+            .message("Email service is temporarily unavailable. Your request has been noted and will be processed when the service recovers.")
+            .path(request.getRequestURI())
+            .errors(null)
+            .build();
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errorResponse);
     }
     /**
      * Construit une réponse d'erreur 400 Bad Request avec des erreurs de validation.

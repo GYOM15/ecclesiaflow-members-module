@@ -8,6 +8,8 @@ import com.ecclesiaflow.web.exception.*;
 import com.ecclesiaflow.web.exception.model.ApiErrorResponse;
 import com.ecclesiaflow.web.exception.model.ValidationError;
 import io.github.resilience4j.ratelimiter.RequestNotPermitted;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import com.ecclesiaflow.business.exceptions.EmailServiceUnavailableException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
@@ -477,7 +479,7 @@ class GlobalExceptionHandlerTest {
         ApiErrorResponse errorResponse = response.getBody();
         assertThat(errorResponse.status()).isEqualTo(429);
         assertThat(errorResponse.error()).isEqualTo("Too Many Requests");
-        assertThat(errorResponse.message()).isEqualTo("Trop de tentatives. Veuillez réessayer plus tard.");
+        assertThat(errorResponse.message()).isEqualTo("Too many requests. Please try again later.");
         assertThat(errorResponse.path()).isEqualTo("/ecclesiaflow/members");
         assertThat(errorResponse.timestamp()).isNotNull();
     }
@@ -501,7 +503,43 @@ class GlobalExceptionHandlerTest {
         ApiErrorResponse errorResponse = response.getBody();
         assertThat(errorResponse.status()).isEqualTo(429);
         assertThat(errorResponse.error()).isEqualTo("Too Many Requests");
-        assertThat(errorResponse.message()).isEqualTo("Trop de tentatives. Veuillez réessayer plus tard.");
+        assertThat(errorResponse.message()).isEqualTo("Too many requests. Please try again later.");
         assertThat(errorResponse.path()).isEqualTo("/ecclesiaflow/members/123/confirmation");
+    }
+
+    @Test
+    @DisplayName("Devrait gérer CircuitBreaker ouvert (503)")
+    void handleCircuitBreakerOpen_ShouldReturnServiceUnavailable() {
+        httpServletRequest.setRequestURI("/ecclesiaflow/members");
+        CallNotPermittedException ex = mock(CallNotPermittedException.class);
+
+        ResponseEntity<ApiErrorResponse> response = globalExceptionHandler
+                .handleCircuitBreakerOpen(ex, httpServletRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        assertThat(response.getBody()).isNotNull();
+        ApiErrorResponse body = response.getBody();
+        assertThat(body.status()).isEqualTo(503);
+        assertThat(body.error()).isEqualTo("Service Unavailable");
+        assertThat(body.message()).isEqualTo("Service temporarily unavailable. Please try again later.");
+        assertThat(body.path()).isEqualTo("/ecclesiaflow/members");
+    }
+
+    @Test
+    @DisplayName("Devrait gérer EmailServiceUnavailable (503)")
+    void handleEmailServiceUnavailable_ShouldReturnServiceUnavailable() {
+        httpServletRequest.setRequestURI("/ecclesiaflow/members/confirmation");
+        EmailServiceUnavailableException ex = new EmailServiceUnavailableException("EmailService", new RuntimeException("down"));
+
+        ResponseEntity<ApiErrorResponse> response = globalExceptionHandler
+                .handleEmailServiceUnavailable(ex, httpServletRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        assertThat(response.getBody()).isNotNull();
+        ApiErrorResponse body = response.getBody();
+        assertThat(body.status()).isEqualTo(503);
+        assertThat(body.error()).isEqualTo("Service Unavailable");
+        assertThat(body.message()).isEqualTo("Email service is temporarily unavailable. Your request has been noted and will be processed when the service recovers.");
+        assertThat(body.path()).isEqualTo("/ecclesiaflow/members/confirmation");
     }
 }
