@@ -87,11 +87,12 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
     private void generateAndSaveToken(Member member) {
         deleteExistingConfirmationToken(member.getMemberId());
         UUID newToken = tokenGenerator.generateToken();
+        var now = LocalDateTime.now();
         MemberConfirmation confirmation = MemberConfirmation.builder()
                 .memberId(member.getMemberId())
                 .token(newToken)
-                .createdAt(LocalDateTime.now())
-                .expiresAt(LocalDateTime.now().plusHours(24))
+                .createdAt(now)
+                .expiresAt(now.plusHours(24))
                 .build();
         confirmationRepository.save(confirmation);
         
