@@ -75,7 +75,7 @@ sequenceDiagram
 
 ---
 
-## ✨ Module Features
+## Module Features
 
 * **Member Management** – Complete member profile CRUD with business validation
 * **Email Confirmation** – Secure process with temporary codes (6 digits) and safe token handling
@@ -97,70 +97,34 @@ sequenceDiagram
 
 ```
 ecclesiaflow-members-module/
-├── src/
-│   ├── main/
-│   │   ├── java/com/ecclesiaflow/
-│   │   │   ├── MembersModuleApplication.java
-│   │   │   ├── application/                 # Application Layer
-│   │   │   │   ├── config/
-│   │   │   │   └── logging/
-│   │   │   │       └── aspect/              # AOP logging aspects
-│   │   │   ├── business/                    # Business Layer
-│   │   │   │   ├── domain/
-│   │   │   │   │   ├── auth/                # Auth port
-│   │   │   │   │   ├── communication/
-│   │   │   │   │   ├── confirmation/
-│   │   │   │   │   └── member/
-│   │   │   │   ├── exceptions/
-│   │   │   │   └── services/
-│   │   │   ├── io/                          # IO Layer
-│   │   │   │   ├── communication/
-│   │   │   │   ├── exception/
-│   │   │   │   ├── grpc/                    # ⭐ gRPC Layer
-│   │   │   │   │   ├── client/              # gRPC clients
-│   │   │   │   │   │   ├── AuthGrpcClient
-│   │   │   │   │   │   └── GrpcClientConfig
-│   │   │   │   │   └── server/              # gRPC servers
-│   │   │   │   │       ├── MembersGrpcServiceImpl
-│   │   │   │   │       └── GrpcServerConfig
-│   │   │   │   ├── notification/
-│   │   │   │   └── persistence/
-│   │   │   └── web/                         # Web Layer
-│   │   │       ├── client/
-│   │   │       ├── controller/
-│   │   │       ├── dto/
-│   │   │       ├── exception/
-│   │   │       ├── mappers/
-│   │   │       ├── payloads/
-│   │   │       └── security/
-│   │   ├── proto/                           # ⭐ Protobuf definitions
-│   │   │   ├── auth_service.proto           # Auth service (JWT)
-│   │   │   └── members_service.proto        # Members service
-│   │   └── resources/
-│   │       ├── api/
-│   │       │   └── members.yaml             # API-First OpenAPI
-│   │       └── application.properties.example
-│   └── test/java/com/ecclesiaflow/          # Tests (497 tests)
-│       ├── application/
-│       │   └── logging/aspect/              # AOP tests (27 tests)
-│       ├── business/
-│       ├── io/
-│       │   └── grpc/                        # ⭐ gRPC tests (75 tests)
-│       │       ├── client/
-│       │       └── server/
-│       └── web/
-├── target/
-│   └── generated-sources/
-│       └── protobuf/                        # Generated gRPC stubs
-├── pom.xml
-├── README.md
-├── COMMITS_ATOMIQUES.md                     # ⭐ Atomic commits guide
-├── GRPC_SUMMARY.md                          # ⭐ gRPC implementation summary
-├── execute_commits.sh                       # ⭐ Script to execute commits
-├── LICENSE
-├── .env.example
-├── .gitignore
-└── mvnw, mvnw.cmd                          # Maven Wrapper
+├src/
+├── main
+│   ├── java
+│   │   └── com
+│   │       └── ecclesiaflow
+│   │           ├── application
+│   │           ├── business
+│   │           ├── io
+│   │           ├── MembersModuleApplication.java
+│   │           └── web
+│   ├── proto
+│   │   ├── auth_service.proto
+│   │   ├── email_service.proto
+│   │   └── members_service.proto
+│   └── resources
+│       ├── api
+│       │   └── members.yaml
+│       └── application.properties.example
+└── test
+    ├── java
+    │   └── com
+    │       └── ecclesiaflow
+    │           ├── application
+    │           ├── business
+    │           ├── io
+    │           └── web
+    └── resources
+
 ```
 
 ---
@@ -173,13 +137,13 @@ ecclesiaflow-members-module/
 ┌─────────────────────────────────────────────────────────────┐
 │                    SUPER ADMIN                              │
 ├─────────────────────────────────────────────────────────────┤
-│  TENANT 1 (Church A)    │  TENANT 2 (Church B)    │ ...    │
-│  ┌─────────────────────┐ │ ┌─────────────────────┐  │        │
-│  │ Pastor (Admin)      │ │ │ Pastor (Admin)      │  │        │
-│  │ ├─ Member 1         │ │ │ ├─ Member 1         │  │        │
-│  │ ├─ Member 2         │ │ │ ├─ Member 2         │  │        │
-│  │ └─ ...              │ │ │ └─ ...              │  │        │
-│  │ └─────────────────────┘ │ └─────────────────────┘  │        │
+│  TENANT 1 (Church A)     │  TENANT 2 (Church B)     │ ...   │
+│  ┌─────────────────────┐ │ ┌─────────────────────┐  │       │
+│  │ Pastor (Admin)      │ │ │ Pastor (Admin)      │  │       │
+│  │ ├─ Member 1         │ │ │ ├─ Member 1         │  │       │
+│  │ ├─ Member 2         │ │ │ ├─ Member 2         │  │       │
+│  │ └─ ...              │ │ │ └─ ...              │  │       │
+│  └─────────────────────┘ │ └─────────────────────┘  │       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -890,61 +854,6 @@ open target/site/jacoco/index.html
 mvn verify -P integration-tests
 ```
 
-### **Test Structure**
-
-```
-src/test/java/com/ecclesiaflow/
-├── application/
-│   ├── config/                           # Application config tests
-│   ├── events/                           # Event handling tests
-│   └── logging/
-│       └── aspect/                       # AOP aspect tests (27 tests)
-│           ├── BusinessOperationLoggingAspectTest
-│           ├── SecurityContextLoggingAspectTest
-│           ├── AsyncEmailLoggingAspectTest
-│           ├── GrpcClientLoggingAspectTest (⭐ NEW - 14 tests)
-│           └── GrpcServerLoggingAspectTest (⭐ NEW - 13 tests)
-├── business/
-│   ├── domain/                           # Domain model tests
-│   │   ├── auth/                         # Auth port tests
-│   │   ├── communication/
-│   │   ├── confirmation/
-│   │   └── member/
-│   ├── security/                         # Security context tests
-│   └── services/
-│       └── impl/                         # Business service tests
-├── io/
-│   ├── communication/
-│   │   └── email/                        # Email service tests
-│   ├── grpc/                             # ⭐ gRPC tests (75 tests)
-│   │   ├── client/
-│   │   │   ├── AuthGrpcClientTest (16 tests)
-│   │   │   ├── AuthGrpcClientIntegrationTest (13 tests)
-│   │   │   └── GrpcClientConfigTest (8 tests)
-│   │   └── server/
-│   │       ├── MembersGrpcServiceImplTest (12 tests)
-│   │       ├── MembersServiceImplIntegrationTest
-│   │       └── GrpcServerConfigTest (12 tests)
-│   ├── notification/
-│   │   ├── email/                        # Email notifier tests
-│   │   └── sms/                          # SMS notifier tests
-│   └── persistence/
-│       ├── jpa/                          # JPA entity tests
-│       ├── mappers/                      # Entity mapper tests
-│       └── repositories/
-│           └── impl/                     # Repository implementation tests
-└── web/
-    ├── client/                           # External client tests
-    ├── config/                           # Web config tests
-    ├── controller/                       # REST controller tests
-    ├── delegate/                         # Delegate tests
-    ├── exception/
-    │   ├── advices/                      # Exception handler tests
-    │   └── model/                        # Exception model tests
-    ├── mappers/                          # DTO mapper tests
-    └── security/                         # Web security tests
-```
-
 ### **Quality Metrics**
 
 - **JaCoCo Coverage**: Minimum 90% per package
@@ -1033,7 +942,7 @@ git checkout members-module-dev
 git checkout -b new-feature
 
 # 3. Develop with atomic commits
-git commit -m "Feat(members): Add email validation"
+git commit -m "Feat(members): add email validation"
 
 # 4. Tests and quality
 mvn clean test jacoco:report
