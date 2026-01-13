@@ -45,11 +45,11 @@ public class AsyncEmailLoggingAspect {
     /**
      * Pointcut pour le traitement des événements MemberRegistered.
      * <p>
-     * Intercepte tous les appels à {@code handleMemberRegistered} du listener
-     * pour tracer le cycle de vie complet de l'envoi d'email asynchrone.
+     * Intercepte tous les appels à {@code handleMemberRegistered} du handler
+     * pour tracer le cycle de vie complet de l'envoi d'email asynchrone via gRPC.
      * </p>
      */
-    @Pointcut("execution(* com.ecclesiaflow.application.events.MemberRegistrationEventListener.handleMemberRegistered(..))")
+    @Pointcut("execution(* com.ecclesiaflow.application.handlers.MemberRegistrationEventHandler.handleMemberRegistered(..))")
     public void memberRegisteredEventHandling() {}
     
     /**
