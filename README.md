@@ -6,7 +6,7 @@
 [![MySQL](https://img.shields.io/badge/MySQL-9.0.0-blue.svg)](https://dev.mysql.com/downloads/mysql/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenAPI](https://img.shields.io/badge/OpenAPI-3.1.1-green.svg)](https://swagger.io/specification/)
-[![Tests](https://img.shields.io/badge/Tests-497%20passing-success.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-578%20passing-success.svg)]()
 
 > **Member management module for the EcclesiaFlow platform**
 
