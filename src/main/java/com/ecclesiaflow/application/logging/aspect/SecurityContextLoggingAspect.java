@@ -119,7 +119,7 @@ public class SecurityContextLoggingAspect {
         throwing = "exception"
     )
     public void logErrorParseJwt(JoinPoint joinPoint, Exception exception) {
-        log.error("Failed to parse JWT token: {}", exception.getMessage(), exception);
+        log.error("Failed to parse JWT token: {}", exception.getMessage());
     }
 
     /**
