@@ -86,10 +86,10 @@ public class MemberRegistrationEventHandler {
     public void handleMemberRegistered(MemberRegisteredEvent event) {
         try {
             String confirmationUrl = buildConfirmationUrl(event.getConfirmationToken().toString());
-            emailClient.sendConfirmationEmail(event.getEmail(), confirmationUrl);
+            emailClient.sendConfirmationEmail(event.getEmail(), confirmationUrl, event.getFirstName());
         } catch (Exception e) {
-            // Exception capturée pour ne pas impacter la transaction métier
-            // Le logging est géré par les aspects AOP
+            // Exception captured to not impact the business transaction
+            // Logging is handled by AOP aspects
         }
     }
 

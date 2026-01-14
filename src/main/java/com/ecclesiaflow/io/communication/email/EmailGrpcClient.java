@@ -35,16 +35,17 @@ public class EmailGrpcClient implements EmailClient {
     @Override
     @CircuitBreaker(name = ResilienceConfig.EMAIL_SERVICE_CB, fallbackMethod = "sendConfirmationEmailFallback")
     @Retry(name = ResilienceConfig.EMAIL_SERVICE_RETRY)
-    public UUID sendConfirmationEmail(String email, String confirmationUrl) {
+    public UUID sendConfirmationEmail(String email, String confirmationUrl, String firstName) {
         Map<String, String> variables = Map.of(
             "email", email,
-            "confirmationLink", confirmationUrl
+            "confirmationLink", confirmationUrl,
+            "firstName", firstName != null ? firstName : "Member"
         );
 
         return sendEmail(
             email,
             EmailTemplateType.EMAIL_TEMPLATE_EMAIL_CONFIRMATION,
-            "Confirmez votre adresse email - EcclesiaFlow",
+            "Confirm your email address - EcclesiaFlow",
             variables,
             Priority.PRIORITY_HIGH,
             EmailOperation.CONFIRMATION
@@ -52,7 +53,7 @@ public class EmailGrpcClient implements EmailClient {
     }
 
     @SuppressWarnings("unused")
-    private UUID sendConfirmationEmailFallback(String email, String confirmationUrl, Throwable t) {
+    private UUID sendConfirmationEmailFallback(String email, String confirmationUrl, String firstName, Throwable t) {
         throw new EmailServiceUnavailableException(SERVICE_NAME, t);
     }
 

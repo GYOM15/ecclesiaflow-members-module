@@ -30,7 +30,7 @@ class MemberRegistrationEventHandlerTest {
         assertThatNoException().isThrownBy(() -> handler.handleMemberRegistered(event));
 
         String expectedUrl = "http://localhost:8080/ecclesiaflow/members/confirmation?token=" + token;
-        verify(emailClient).sendConfirmationEmail(eq("user@example.com"), eq(expectedUrl));
+        verify(emailClient).sendConfirmationEmail(eq("user@example.com"), eq(expectedUrl), eq("John"));
     }
 
     @Test
@@ -44,10 +44,10 @@ class MemberRegistrationEventHandlerTest {
         MemberRegisteredEvent event = new MemberRegisteredEvent("user@example.com", token, "John");
 
         doThrow(new RuntimeException("service down")).when(emailClient)
-                .sendConfirmationEmail(Mockito.anyString(), Mockito.anyString());
+                .sendConfirmationEmail(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
 
         assertThatNoException().isThrownBy(() -> handler.handleMemberRegistered(event));
         // call attempted even though it fails
-        verify(emailClient).sendConfirmationEmail(Mockito.anyString(), Mockito.anyString());
+        verify(emailClient).sendConfirmationEmail(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
     }
 }

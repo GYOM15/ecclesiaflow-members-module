@@ -73,8 +73,10 @@ class EmailGrpcClientTest {
             UUID expectedId = UUID.randomUUID();
             testService.setResponseEmailId(expectedId.toString());
 
+            String firstName = "John";
+
             // When
-            UUID result = emailGrpcClient.sendConfirmationEmail(email, confirmationUrl);
+            UUID result = emailGrpcClient.sendConfirmationEmail(email, confirmationUrl, firstName);
 
             // Then
             assertThat(result).isEqualTo(expectedId);
@@ -92,8 +94,10 @@ class EmailGrpcClientTest {
             String confirmationUrl = "https://ecclesiaflow.com/confirm?token=abc123";
             testService.setErrorToThrow(Status.UNAVAILABLE.withDescription("Service down"));
 
+            String firstName = "John";
+
             // When/Then
-            assertThatThrownBy(() -> emailGrpcClient.sendConfirmationEmail(email, confirmationUrl))
+            assertThatThrownBy(() -> emailGrpcClient.sendConfirmationEmail(email, confirmationUrl, firstName))
                     .isInstanceOf(EmailServiceException.class)
                     .hasMessageContaining("UNAVAILABLE");
         }
@@ -106,8 +110,10 @@ class EmailGrpcClientTest {
             String confirmationUrl = "https://ecclesiaflow.com/confirm?token=abc123";
             testService.setErrorToThrow(Status.DEADLINE_EXCEEDED.withDescription("Timeout"));
 
+            String firstName = "John";
+
             // When/Then
-            assertThatThrownBy(() -> emailGrpcClient.sendConfirmationEmail(email, confirmationUrl))
+            assertThatThrownBy(() -> emailGrpcClient.sendConfirmationEmail(email, confirmationUrl, firstName))
                     .isInstanceOf(EmailServiceException.class)
                     .hasMessageContaining("DEADLINE_EXCEEDED");
         }
@@ -120,8 +126,10 @@ class EmailGrpcClientTest {
             String confirmationUrl = "https://ecclesiaflow.com/confirm?token=abc123";
             testService.setErrorToThrow(Status.INTERNAL.withDescription("Internal error"));
 
+            String firstName = "John";
+
             // When/Then
-            assertThatThrownBy(() -> emailGrpcClient.sendConfirmationEmail(email, confirmationUrl))
+            assertThatThrownBy(() -> emailGrpcClient.sendConfirmationEmail(email, confirmationUrl, firstName))
                     .isInstanceOf(EmailServiceException.class)
                     .hasMessageContaining("INTERNAL");
         }
@@ -134,8 +142,10 @@ class EmailGrpcClientTest {
             String confirmationUrl = "https://ecclesiaflow.com/confirm?token=abc123";
             testService.setErrorToThrow(Status.UNAVAILABLE);
 
+            String firstName = "John";
+
             // When/Then
-            assertThatThrownBy(() -> emailGrpcClient.sendConfirmationEmail(email, confirmationUrl))
+            assertThatThrownBy(() -> emailGrpcClient.sendConfirmationEmail(email, confirmationUrl, firstName))
                     .isInstanceOf(EmailServiceException.class)
                     .hasMessageContaining("CONFIRMATION");
         }
