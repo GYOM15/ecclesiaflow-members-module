@@ -16,9 +16,7 @@ info:
     - Notifications email automatisées
     - Validation stricte des données d'entrée
 
-    **Version supportée:**
-    - v1: `application/vnd.ecclesiaflow.members.v1+json`
-    - Fallback: `application/json`
+    **Content-Type:** `application/json`
   version: 1.0.0
   contact:
     name: EcclesiaFlow Team
@@ -146,7 +144,7 @@ paths:
         '200':
           description: Liste des membres récupérée avec succès
           content:
-            application/vnd.ecclesiaflow.members.v1+json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/MemberPageResponse'
         '400':
@@ -217,7 +215,7 @@ paths:
         '201':
           description: Membre créé avec succès
           content:
-            application/vnd.ecclesiaflow.members.v1+json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/SignUpResponse'
         '400':
@@ -271,7 +269,7 @@ paths:
         '200':
           description: Détails du membre récupérés avec succès
           content:
-            application/vnd.ecclesiaflow.members.v1+json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/SignUpResponse'
         '404':
@@ -328,7 +326,7 @@ paths:
         '200':
           description: Membre mis à jour avec succès
           content:
-            application/vnd.ecclesiaflow.members.v1+json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/SignUpResponse'
         '400':
@@ -444,7 +442,7 @@ paths:
         '200':
           description: Compte confirmé avec succès - Token temporaire généré
           content:
-            application/vnd.ecclesiaflow.members.v1+json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/ConfirmationResponse'
         '400':
@@ -581,7 +579,7 @@ paths:
         '200':
           description: Statut de confirmation récupéré
           content:
-            application/vnd.ecclesiaflow.members.v1+json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/MemberConfirmationStatusResponse'
         '404':
@@ -650,7 +648,7 @@ paths:
         '201':
           description: Profil membre créé avec succès
           content:
-            application/vnd.ecclesiaflow.members.v1+json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/SocialOnboardingResponse'
         '400':

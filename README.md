@@ -1,991 +1,412 @@
 # EcclesiaFlow Members Module
 
-[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.java.net/projects/jdk/21/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.5-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![gRPC](https://img.shields.io/badge/gRPC-1.60.0-blue.svg)](https://grpc.io/)
-[![MySQL](https://img.shields.io/badge/MySQL-9.0.0-blue.svg)](https://dev.mysql.com/downloads/mysql/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![OpenAPI](https://img.shields.io/badge/OpenAPI-3.1.1-green.svg)](https://swagger.io/specification/)
-[![Tests](https://img.shields.io/badge/Tests-578%20passing-success.svg)]()
+[![Java 21](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.java.net/projects/jdk/21/)
+[![Spring Boot 3.5.5](https://img.shields.io/badge/Spring%20Boot-3.5.5-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Keycloak](https://img.shields.io/badge/Keycloak-23.0-blue.svg)](https://www.keycloak.org/)
+[![gRPC 1.65.1](https://img.shields.io/badge/gRPC-1.65.1-blue.svg)](https://grpc.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> **Member management module for the EcclesiaFlow platform**
-
-Microservice dedicated to comprehensive church member management: registration, email confirmation, profile management and integration with the authentication module. Designed following Clean Architecture principles with clear separation of responsibilities.
+Member management module for the **EcclesiaFlow** multi-tenant church management platform.
+Handles registration, email confirmation, profile management, social login onboarding, and
+bi-directional gRPC communication with the authentication module.
 
 ---
 
-## Table of Contents
+## Tech Stack
 
-- [Overview](#overview)
-- [Module Features](#module-features)
-- [Project Structure](#project-structure)
-- [Multi-Tenant Architecture](#multi-tenant-architecture)
-- [Clean Architecture - 4 Layers](#clean-architecture---4-layers)
-- [EcclesiaFlow Ecosystem](#ecclesiaflow-ecosystem)
-- [Technology Stack](#technology-stack)
-- [Quick Start](#quick-start)
-- [API Examples (cURL + jq)](#api-examples-curl--jq)
-- [Configuration](#configuration)
-- [Docker Deployment](#docker-deployment)
-- [Testing and Quality](#testing-and-quality)
-- [Contributing](#contributing)
-- [License](#license)
+| Layer          | Technology                                       |
+|----------------|--------------------------------------------------|
+| Language       | [Java 21](https://openjdk.java.net/projects/jdk/21/) |
+| Framework      | [Spring Boot 3.5.5](https://spring.io/projects/spring-boot), [Spring Security 6](https://docs.spring.io/spring-security/reference/) (OAuth2 Resource Server) |
+| Identity       | [Keycloak 23.0](https://www.keycloak.org/) (OAuth2 / OIDC) |
+| Inter-module   | [gRPC 1.65.1](https://grpc.io/) / [Protobuf 4.28.2](https://protobuf.dev/) |
+| Resilience     | [Resilience4j 2.1.0](https://resilience4j.readme.io/) (Circuit Breaker + Retry) |
+| Persistence    | [MySQL 9.0](https://dev.mysql.com/doc/refman/9.0/en/), [JPA](https://jakarta.ee/specifications/persistence/), [MapStruct 1.5.5](https://mapstruct.org/) |
+| API-first      | [OpenAPI Generator 7.15.0](https://openapi-generator.tech/) |
+| Documentation  | [SpringDoc 2.8.12](https://springdoc.org/) |
+| Quality        | [JaCoCo](https://www.jacoco.org/jacoco/) (90% minimum coverage), 521 tests |
 
 ---
 
-## Overview
+## Architecture
 
-The **EcclesiaFlow Members Module** is a specialized microservice for comprehensive church member management. It is part of the EcclesiaFlow ecosystem, a multi-tenant SaaS platform where each church operates as an independent tenant.
+The module follows **Clean Architecture** with Ports & Adapters.
+Business logic has zero framework dependency; all I/O goes through ports.
 
-### **Module Responsibilities**
-
-- **Member Management**: Registration, profiles, information updates
-- **Confirmation Process**: Email validation with temporary codes  
-- **Auth Integration**: **Bi-directional gRPC communication** with authentication module
-- **Notifications**: Automatic confirmation email sending
-- **gRPC Services**: High-performance inter-service communication
-- **Clean Architecture**: Clear separation of layers (Web, Business, IO, Application)
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Members as Members Module<br/>(REST: 8080, gRPC: 9091)
-    participant Auth as Auth Module<br/>(REST: 8081, gRPC: 9090)
-    participant Email as Email Service
-
-    Note over Client,Auth: Registration → confirmation → password → final token
-
-    Client->>Members: POST /ecclesiaflow/members (REST)
-    Members->>Email: Send confirmation code (Async)
-    Members-->>Client: 201 Created
-
-    Client->>Members: GET /confirmation?token=uuid (REST)
-    Members->>Auth: GenerateTemporaryToken (gRPC)
-    Auth-->>Members: Temporary token (gRPC)
-    Members-->>Client: 200 OK + temporaryToken + passwordEndpoint
-    
-    Note over Client: Store token securely (sessionStorage)<br/>Redirect to clean URL (no token)
-
-    Client->>Auth: POST /password (REST)
-    Note right of Client: Authorization: Bearer temporaryToken<br/>Body: { newPassword }
-    Auth->>Members: GetMemberConfirmationStatus (gRPC)
-    Members-->>Auth: Confirmation status (gRPC)
-    Auth-->>Client: 200 OK { accessToken, refreshToken }
 ```
+src/main/java/com/ecclesiaflow/
+├── application/               # Spring config, event handlers, AOP logging
+│   ├── config/                # Async, gRPC, Resilience, WebClient, OpenAPI
+│   ├── handlers/              # MemberRegistrationEventHandler, MemberActivationEventHandler
+│   └── logging/               # Structured logging aspects (per layer) + SecurityMaskingUtils
+├── business/                  # Pure domain — no Spring imports
+│   ├── domain/                # Member, MemberConfirmation, MemberStatus, ports
+│   ├── services/              # MemberService, MemberConfirmationService
+│   ├── security/              # ScopeValidationAspect, RoleToScopeMapper
+│   └── exceptions/            # Domain exceptions (MemberNotFoundException, etc.)
+├── io/                        # Infrastructure adapters
+│   ├── communication/email/   # EmailGrpcClient (implements EmailClient port)
+│   ├── grpc/client/           # AuthGrpcClient (outbound: Members → Auth)
+│   ├── grpc/server/           # MembersGrpcServiceImpl (inbound: Auth → Members)
+│   └── persistence/           # JPA entities, MapStruct mappers, repositories
+└── web/                       # REST layer
+    ├── controller/            # MembersController, MembersConfirmationController
+    ├── delegate/              # Delegates (orchestrate service calls)
+    ├── exception/             # GlobalExceptionHandler, ApiErrorResponse
+    ├── mappers/               # OpenAPI model mappers
+    └── security/              # AuthenticatedUserService, KeycloakJwtConverter, SecurityConfig
+```
+
+### Key Design Patterns
+
+- **API-First**: OpenAPI spec (`src/main/resources/api/members.yaml`) generates controllers and DTOs
+- **Delegate Pattern**: Controllers implement generated interfaces, delegate to `*Delegate` classes
+- **Ports & Adapters**: Business layer defines interfaces; `io/` provides implementations
+- **Event-Driven**: Registration publishes `MemberRegisteredEvent`; handler sends confirmation email asynchronously
+- **gRPC Primary / WebClient Fallback**: Inter-module communication with graceful degradation
 
 ---
 
-## Module Features
+## Member Lifecycle
 
-* **Member Management** – Complete member profile CRUD with business validation
-* **Email Confirmation** – Secure process with temporary codes (6 digits) and safe token handling
-* **Auth Module Integration** – **Bi-directional gRPC** + WebClient fallback for inter-service communication
-* **gRPC Services** – High-performance Protocol Buffers with Health checks and Reflection
-* **gRPC Client** – AuthGrpcClient for temporary token generation with error handling
-* **gRPC Server** – MembersGrpcServiceImpl for confirmation status queries
-* **Email Notifications** – **Asynchronous SMTP service** with Gmail integration and customizable templates
-* **Clean Architecture** – 4 layers: Web, Business, IO, Application
-* **API-First Design** – Complete OpenAPI documentation with detailed schemas
-* **Comprehensive Testing** – JaCoCo coverage with unit and integration tests (**497 tests**)
-* **AOP Logging** – **Centralized aspect-based logging** for REST, gRPC, and business operations
-* **JWT Security Context** – Authenticated user context extraction with scope validation
-* **Error Handling** – GlobalExceptionHandler with standardized responses
+```
+PENDING ──confirm email──▸ CONFIRMED ──set password──▸ ACTIVE
+                                                         │
+                                                    SUSPENDED
+                                                         │
+                                                      INACTIVE
+```
+
+| Status      | Description                                           |
+|-------------|-------------------------------------------------------|
+| `PENDING`   | Registered, awaiting email confirmation               |
+| `CONFIRMED` | Email confirmed, password not yet set                 |
+| `ACTIVE`    | Fully active account (also set directly for social login) |
+| `SUSPENDED` | Temporarily suspended by admin                        |
+| `INACTIVE`  | Deactivated account                                   |
 
 ---
 
-## Project Structure
+## Request Flows
+
+### Standard Registration
 
 ```
-ecclesiaflow-members-module/
-├src/
-├── main
-│   ├── java
-│   │   └── com
-│   │       └── ecclesiaflow
-│   │           ├── application
-│   │           ├── business
-│   │           ├── io
-│   │           ├── MembersModuleApplication.java
-│   │           └── web
-│   ├── proto
-│   │   ├── auth_service.proto
-│   │   ├── email_service.proto
-│   │   └── members_service.proto
-│   └── resources
-│       ├── api
-│       │   └── members.yaml
-│       └── application.properties.example
-└── test
-    ├── java
-    │   └── com
-    │       └── ecclesiaflow
-    │           ├── application
-    │           ├── business
-    │           ├── io
-    │           └── web
-    └── resources
-
+Client ──POST /members──▸ MembersController
+                            └─▸ MembersManagementDelegate
+                                  └─▸ MemberService.registerMember()
+                                        ├─▸ Save member (status: PENDING)
+                                        └─▸ Publish MemberRegisteredEvent
+                                              └─▸ EmailGrpcClient.sendConfirmationEmail() [async]
+                         ◂── 201 Created
 ```
 
----
-
-## Multi-Tenant Architecture
-
-### Target Architecture
+### Email Confirmation → Password Setup
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    SUPER ADMIN                              │
-├─────────────────────────────────────────────────────────────┤
-│  TENANT 1 (Church A)     │  TENANT 2 (Church B)     │ ...   │
-│  ┌─────────────────────┐ │ ┌─────────────────────┐  │       │
-│  │ Pastor (Admin)      │ │ │ Pastor (Admin)      │  │       │
-│  │ ├─ Member 1         │ │ │ ├─ Member 1         │  │       │
-│  │ ├─ Member 2         │ │ │ ├─ Member 2         │  │       │
-│  │ └─ ...              │ │ │ └─ ...              │  │       │
-│  └─────────────────────┘ │ └─────────────────────┘  │       │
-└─────────────────────────────────────────────────────────────┘
+Client ──GET /members/confirmation?token=uuid──▸ MembersConfirmationController
+                                                   └─▸ MemberConfirmationDelegate
+                                                         ├─▸ Validate token (one-time use, 24h expiry)
+                                                         ├─▸ Member: PENDING → CONFIRMED
+                                                         └─▸ AuthGrpcClient.generateTemporaryToken()
+                                                  ◂── 200 { temporaryToken, passwordEndpoint }
+
+Client ──POST /auth/password/setup──▸ Auth Module (sets password, CONFIRMED → ACTIVE)
 ```
 
-### Roles and Responsibilities
-
-- **Super Admin**: Global management of all tenants (churches)
-- **Pastor (Tenant Admin)**: Church administration, member management
-- **Members**: Church members with profiles and participation
-
----
-
-## Clean Architecture - 4 Layers
-
-The module follows **Clean Architecture** principles with clear separation of responsibilities:
-
-### **Web Layer** (`com.ecclesiaflow.web`)
-- **Controllers**: `MembersController`, `MembersConfirmationController`
-- **DTOs**: `SignUpResponse`, `ConfirmationResponse`, `MemberResponse`
-- **Payloads**: `SignUpRequestPayload`, `ConfirmationRequestPayload`, `UpdateMemberRequestPayload`
-- **Mappers**: Conversion between DTOs/Payloads and domain objects
-- **Client**: `AuthClient` for inter-module communication
-- **Security**: Authentication and authorization components
-- **Exceptions**: `GlobalExceptionHandler`, custom web exceptions
-
-### **Business Layer** (`com.ecclesiaflow.business`)
-- **Services**: `MemberService`, `MemberConfirmationService` and implementations
-- **Domain**: 
-  - **Member**: `Member`, `MemberRepository`, `MembershipRegistration`, `MembershipUpdate`
-  - **Confirmation**: `MemberConfirmation`, `MembershipConfirmationResult`
-  - **Communication**: Email and notification contracts
-  - **Token**: Temporary token management
-- **Exceptions**: `MemberNotFoundException`, `EmailSendingException`
-
-### **IO Layer** (`com.ecclesiaflow.io`)
-- **Persistence**: JPA entities, Spring Data repositories, and entity mappers
-- **Communication**: 
-  - **Email**: `EmailServiceImpl` for **asynchronous SMTP communication** with Gmail
-  - **Async Processing**: `@Async` methods with dedicated thread pool for email operations
-  - **SMS**: SMS service implementation (future implementation)
-- **Notification**: 
-  - **Email**: `EmailConfirmationNotifier` for email notifications
-  - **SMS**: SMS notification infrastructure (future implementation)
-- **Exceptions**: IO-specific exceptions and error handling
-
-### **Application Layer** (`com.ecclesiaflow.application`)
-- **Config**: Application-wide configuration classes
-  - `AsyncConfig`: Asynchronous task execution configuration (email sending)
-  - `WebClientConfig`: WebClient configuration for inter-module communication
-- **Logging**: Centralized AOP aspects for comprehensive logging
-  - `BusinessOperationLoggingAspect`: **Centralized logging** for all business operations
-  - `SecurityContextLoggingAspect`: **JWT security context logging** for authentication operations
-  - `AsyncEmailLoggingAspect`: **Asynchronous email logging** for email operations
-  - `GrpcClientLoggingAspect`: **gRPC client logging** with call duration and error handling (14 tests)
-  - `GrpcServerLoggingAspect`: **gRPC server logging** for inbound RPC calls (13 tests)
-  - **Architecture principle**: All manual logging has been removed from services and delegated to aspects
-  - **Coverage**: Member registration, confirmation, gRPC calls, JWT extraction, error handling
-
-## EcclesiaFlow Ecosystem
-
-* **Members Module** (This module)
-  **REST API**: Port 8080
-  **gRPC Server**: Port 9091 (Auth → Members)
-  **Role**: Member management and confirmation status
-
-* **Authentication Module**
-  [GitHub Repo](https://github.com/GYOM15/ecclesiaflow-auth-module)
-  **REST API**: Port 8081
-  **gRPC Server**: Port 9090 (Members → Auth)
-  **Role**: JWT authentication and password management
-
-### **Communication Architecture**
+### Social Login Onboarding
 
 ```
-┌─────────────────────────────────────────────────┐
-│                  Client (HTTP)                  │
-└──────────────┬──────────────────┬───────────────┘
-               │ REST (8080)      │ REST (8081)
-               ▼                  ▼
-     ┌─────────────────┐    ┌─────────────────┐
-     │  Members Module │◄──►│   Auth Module   │
-     │   REST: 8080    │gRPC│   REST: 8081    │
-     │   gRPC: 9091    │    │   gRPC: 9090    │
-     └─────────────────┘    └─────────────────┘
-              │                      │
-              │ GenerateTemporaryToken (gRPC)
-              └─────────────────────►│
-              │                      │
-              │◄─────────────────────┘
-              │ GetMemberConfirmation|
-              |  Status (gRPC)       |
-              └──────────────────────┘
+Client ──POST /members/social-onboarding──▸ MembersController
+         (Bearer: Keycloak JWT)              └─▸ SocialOnboardingDelegate
+                                                   ├─▸ Extract keycloakUserId + email from JWT
+                                                   ├─▸ Validate email matches JWT
+                                                   └─▸ MemberService.registerSocialMember()
+                                                         └─▸ Save member (status: ACTIVE, no email confirmation)
+                                              ◂── 201 Created
 ```
 
 ---
 
-## 🛠 Technology Stack
+## API
 
-* **Backend**: Java 21, Spring Boot 3.5.5
-* **Database**: MySQL 9.0.0 with Spring Data JPA
-* **Communication**: 
-  - **gRPC**: grpc-netty-shaded 1.60.0, Protocol Buffers 3.25.1 (primary)
-  - **REST**: Spring WebFlux, WebClient (fallback)
-* **Email**: Spring Boot Mail with Gmail SMTP
-* **Documentation**: OpenAPI 3.1.1, SpringDoc, Swagger UI
-* **Build**: Maven 3.14.0 with protobuf-maven-plugin
-* **Testing**: JUnit 5, Mockito 5.14.2, JaCoCo 0.8.11 (497 tests)
-* **Logging**: AOP with AspectJ, SLF4J (gRPC + REST + Business)
-* **Security**: JWT parsing with JJWT 0.11.5
-* **Architecture**: Clean Architecture, Microservices, SOLID
+### Public Endpoints (No Authentication)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST   | `/ecclesiaflow/members` | Register new member |
+| GET    | `/ecclesiaflow/members/confirmation` | Confirm account via email link (`?token=uuid`) |
+| POST   | `/ecclesiaflow/members/new-confirmation` | Resend confirmation link |
+| GET    | `/ecclesiaflow/members/{email}/confirmation-status` | Check confirmation status |
+
+### Authenticated Endpoints (Bearer JWT)
+
+| Method | Path | Scope | Description |
+|--------|------|-------|-------------|
+| GET    | `/ecclesiaflow/members/me` | `ef:members:read:own` | Get own profile |
+| PATCH  | `/ecclesiaflow/members/me` | `ef:members:write:own` | Update own profile |
+| DELETE | `/ecclesiaflow/members/me` | `ef:members:delete:own` | Delete own account |
+| POST   | `/ecclesiaflow/members/social-onboarding` | (authenticated) | Onboard social login user |
+| GET    | `/ecclesiaflow/members` | `ef:members:read:all` | List all members (paginated) |
+| GET    | `/ecclesiaflow/members/{memberId}` | `ef:members:read:all` | Get member by ID |
+| PATCH  | `/ecclesiaflow/members/{memberId}` | `ef:members:write:all` | Update member |
+| DELETE | `/ecclesiaflow/members/{memberId}` | `ef:members:delete:all` | Delete member |
+
+### Query Parameters (GET /members)
+
+| Parameter   | Type      | Default     | Description                    |
+|-------------|-----------|-------------|--------------------------------|
+| `page`      | integer   | `0`         | Page number (0-indexed)        |
+| `size`      | integer   | `20`        | Items per page (max 100)       |
+| `search`    | string    | -           | Search by name or email        |
+| `status`    | string    | -           | Filter by member status        |
+| `sort`      | string    | `createdAt` | Sort field                     |
+| `direction` | string    | `DESC`      | Sort direction: `ASC` or `DESC`|
+
+### Error Responses
+
+| Code | Reason |
+|------|--------|
+| 400  | Validation error or malformed request |
+| 401  | Missing or invalid JWT |
+| 403  | Insufficient scopes |
+| 404  | Member or token not found |
+| 409  | Email or account already exists |
+| 410  | Confirmation token expired |
+| 500  | Internal server error |
+
+### API Documentation
+
+- **Swagger UI** — http://localhost:8080/swagger-ui/index.html
+- **OpenAPI JSON** — http://localhost:8080/v3/api-docs
+- **Contract source** — `src/main/resources/api/members.yaml`
 
 ---
 
-## Security & Authentication
+## Security
 
-### **JWT Security Context Provider**
+### Keycloak OAuth2
 
-The module implements **authenticated user context extraction** from JWT tokens for secure operations:
+The module is an **OAuth2 Resource Server** validating JWTs issued by Keycloak.
+No local JWT parsing or shared secrets — validation uses Keycloak's public JWKS endpoint.
 
-**Key Features:**
-- **Member ID Extraction**: Extracts authenticated member UUID from JWT claim `cid`
-- **Scope Extraction**: Retrieves user permissions from JWT claim `scope`
-- **Centralized Logging**: All security operations logged via `SecurityContextLoggingAspect`
+`AuthenticatedUserService` extracts identity from the JWT:
 
-**Implementation:**
-```java
-@Component
-public class AuthenticatedUserContextProvider {
-    // Extracts member ID from JWT
-    public UUID getAuthenticatedMemberId();
-    
-    // Extracts user scopes/permissions from JWT
-    public List<String> getAuthenticatedUserScopes();
-}
-```
+| Method | Source | Purpose |
+|--------|--------|---------|
+| `getKeycloakUserId()` | `sub` claim | Primary user identifier |
+| `getEmail()` | `email` claim | User email address |
+| `getRoles()` | Spring authorities | Keycloak roles (ROLE_USER, etc.) |
+| `getScopes()` | `scope` claim | OAuth2 scopes |
+| `isEmailVerified()` | `email_verified` claim | Email verification status |
 
-**JWT Token Structure:**
-```json
-{
-  "sub": "user@example.com",
-  "cid": "550e8400-e29b-41d4-a716-446655440000",
-  "scope": "ef:members:read:own ef:members:write:own",
-  "iat": 1234567890,
-  "exp": 1234571490
-}
-```
+`KeycloakJwtConverter` extracts roles from multiple JWT locations:
+1. Direct `roles` claim
+2. `realm_access.roles` (realm-level)
+3. `resource_access.{client}.roles` (client-level)
 
-**Temporary Implementation:**
-This implementation directly parses JWT in the microservice. With **Envoy Proxy** introduction, JWT validation will move upstream:
-- **Envoy** will validate JWT and extract claims
-- **Envoy** will inject enriched headers (`X-User-Id`, `X-User-Scopes`)
-- **Microservice** will simply read headers (no JWT parsing)
+### Scope Validation
 
-**Logging Architecture:**
-All security context operations are logged via AOP without polluting business code:
-- ✅ Member ID extraction attempts and results
-- ✅ Scope extraction with validation
-- ✅ JWT parsing errors with detailed messages
-- ✅ HTTP context errors
+Endpoints are protected by `@RequireScopes` annotations, validated by `ScopeValidationAspect` (AOP).
+
+Scopes are derived from two sources (union):
+- **JWT scopes** — `scope` claim (when Keycloak Authorization Services is configured)
+- **Role mapping** — `RoleToScopeMapper` converts Keycloak roles to scopes:
+
+| Role          | Scopes |
+|---------------|--------|
+| `USER`        | `read:own`, `write:own`, `delete:own` |
+| `ADMIN`       | All scopes (`read/write/delete` for `own` + `all`) |
+| `SUPER_ADMIN` | All scopes |
+
+Toggle: `ECCLESIAFLOW_SCOPES_ENABLED=false` disables scope validation (useful when Keycloak scopes are not yet configured).
+
+---
+
+## gRPC Services
+
+Proto files are in `src/main/proto/`. Classes are generated during `mvn generate-sources`.
+
+### Inbound (this module exposes — port 9091)
+
+| Proto | Service | RPC | Called by |
+|-------|---------|-----|-----------|
+| `members_service.proto` | `MembersService` | `GetMemberConfirmationStatus` | Auth module |
+| `members_service.proto` | `MembersService` | `NotifyAccountActivated` | Auth module |
+
+### Outbound (this module calls)
+
+| Proto | Service | RPC | Target | Port |
+|-------|---------|-----|--------|------|
+| `auth_service.proto` | `AuthService` | `GenerateTemporaryToken` | Auth module | 9090 |
+| `email_service.proto` | `EmailService` | `SendEmail` | Email service | 9092 |
+
+### Email Service Resilience
+
+The `EmailGrpcClient` is protected by Resilience4j:
+
+- **Circuit Breaker**: Opens after 50% failure rate (sliding window of 10 calls), 30s recovery
+- **Retry**: 3 attempts with 500ms delay for transient failures
+- **Graceful degradation**: Registration succeeds even if the email service is down
+
+---
+
+## Prerequisites
+
+- **Java 21+**
+- **Maven 3.8+**
+- **MySQL 9.0+** (or 8.0+ compatible)
+- **Keycloak** running (shared with Auth module)
+- **Auth module** running on port 8081
 
 ---
 
 ## Quick Start
 
-### 1. Prerequisites
-
-* **Java 21+** (OpenJDK or Oracle JDK)
-* **Maven 3.8+** for dependency management
-* **MySQL 9.0+** (or MySQL 8.0+ compatible)
-* **IDE** (IntelliJ IDEA recommended with Lombok support)
-* **Auth Module** running on port 8081
-
-### 2. Clone Project
+### 1. Configure environment
 
 ```bash
-git clone https://github.com/GYOM15/ecclesiaflow-members-module.git
-cd ecclesiaflow-members-module
+cp .env.example .env
 ```
 
-### 3. Database Configuration
+Key variables to fill in:
 
-```sql
--- Members Module Database
-CREATE DATABASE ecclesiaflow_members;
-CREATE USER 'ecclesiaflow'@'localhost' IDENTIFIED BY 'your_secure_password';
-GRANT ALL PRIVILEGES ON ecclesiaflow_members.* TO 'ecclesiaflow'@'localhost';
-FLUSH PRIVILEGES;
-```
+| Variable | Description |
+|----------|-------------|
+| `DB_HOST` / `DB_PORT` / `DB_NAME` | MySQL connection |
+| `DB_USERNAME` / `DB_PASSWORD` | Database credentials |
+| `KEYCLOAK_ISSUER_URI` | Keycloak realm issuer URL |
+| `KEYCLOAK_JWKS_URI` | Keycloak JWKS endpoint |
+| `GRPC_AUTH_HOST` / `GRPC_AUTH_PORT` | Auth module gRPC address |
+| `GRPC_EMAIL_HOST` / `GRPC_EMAIL_PORT` | Email service gRPC address |
 
-### 4. Application Configuration
+See `.env.example` for the full list with defaults.
+
+### 2. Build and run
 
 ```bash
-# Copy example configuration file
-cp src/main/resources/application.properties.example src/main/resources/application.properties
-
-# Edit with your actual values
-nano src/main/resources/application.properties
+mvn clean generate-sources     # compile + generate OpenAPI & Protobuf
+mvn test                       # run 521 tests + 90% coverage check
+mvn spring-boot:run            # start on port 8080
 ```
 
-**Required variables to configure:**
-```properties
-# Database
-spring.datasource.url=jdbc:mysql://localhost:3306/ecclesiaflow_members
-spring.datasource.username=ecclesiaflow
-spring.datasource.password=your_secure_password
-
-# JWT Configuration (must match Auth Module)
-jwt.secret=your-super-secret-jwt-key-minimum-256-bits-base64-encoded
-
-# Email SMTP (Gmail)
-spring.mail.username=your-email@gmail.com
-spring.mail.password=your_gmail_app_password
-
-# Auth Module
-ecclesiaflow.auth.module.base-url=http://localhost:8081
-```
-
-### 5. Generate APIs from OpenAPI Specification
+### 3. Verify
 
 ```bash
-# The OpenAPI Generator plugin runs automatically during build
-mvn clean generate-sources
+curl http://localhost:8080/actuator/health     # health check
+open http://localhost:8080/swagger-ui/index.html  # API docs
 ```
 
-### 6. Mark Generated Sources as Source Root (IntelliJ IDEA)
-
-```
-- Right-click on target/generated-sources/openapi/src/main/java
-- Select "Mark Directory as" > "Generated Sources Root"
-
-OR via Maven:
-- The maven-build-helper-plugin automatically adds it as source directory
-```
-
-### 7. Start Module
-
-```bash
-# Compile and test
-mvn clean compile test
-
-# Start in development mode
-mvn spring-boot:run
-
-# Or with specific profile
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
-```
-
-### 8. Verify Startup
-
-```bash
-# Health check
-curl http://localhost:8080/actuator/health
-
-# API documentation
-open http://localhost:8080/swagger-ui.html
-
-# Test endpoint
-curl http://localhost:8080/ecclesiaflow/hello
-```
-
----
-
-## API Examples (cURL + jq)
-
-### **Member Registration**
-
-```bash
-# 1. Register new member
-curl -X POST "http://localhost:8080/ecclesiaflow/members" \
-  -H "Content-Type: application/vnd.ecclesiaflow.members.v1+json" \
-  -d '{
-    "firstName": "John",
-    "lastName": "Doe", 
-    "email": "john.doe@example.com",
-    "address": "123 Peace Street, Paris"
-  }' | jq .
-```
-
-### **Account Confirmation (NEW: GET with token UUID)**
-
-```bash
-# 2. Confirmation via link clicked in email (GET with token UUID)
-curl -X GET "http://localhost:8080/ecclesiaflow/members/confirmation?token=550e8400-e29b-41d4-a716-446655440000" \
-  -H "Accept: application/json" | jq .
-
-# Response: 200 OK
-{
-  "message": "Compte confirmé avec succès. Vous pouvez maintenant définir votre mot de passe.",
-  "temporaryToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "expiresIn": 900,
-  "passwordEndpoint": "http://localhost:8081/ecclesiaflow/auth/password"
-}
-```
-
-**Key Changes:**
-- ✅ **GET method** instead of PATCH
-- ✅ **Token UUID in query parameter** instead of code in body
-- ✅ **No memberId required** - token contains all necessary information
-- ✅ **One-time use** - token deleted after successful confirmation
-- ✅ **24h expiration** - secure and user-friendly
-
-### **Password Setup (Auth Module)**
-
-```bash
-# 3. Set password using temporary token
-curl -X POST "http://localhost:8081/ecclesiaflow/auth/password" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "password": "MonMotDePasse123!"
-  }' | jq .
-
-# Response: 200 OK
-{
-  "message": "Mot de passe défini avec succès",
-  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiJ9..."
-}
-```
-
-### **Resend Confirmation Link (NEW: Email-based)**
-
-```bash
-# 4. Resend new confirmation link via email
-curl -X POST "http://localhost:8080/ecclesiaflow/members/new-confirmation" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "john.doe@example.com"
-  }' | jq .
-
-# Response: 200 OK (même si l'email n'existe pas - anti-énumération)
-{
-  "message": "Si cette adresse email est associée à un compte non confirmé, un nouveau lien de confirmation a été envoyé.",
-  "expiresIn": 86400
-}
-
-# Response: 409 Conflict (si compte déjà confirmé)
-{
-  "status": 409,
-  "error": "Conflict",
-  "message": "Votre compte est déjà confirmé. Vous pouvez vous connecter directement."
-}
-```
-
-### **Routes /me (Authenticated Member)**
-
-```bash
-# Get my profile (requires JWT token)
-curl -X GET "http://localhost:8080/ecclesiaflow/members/me" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
-  -H "Accept: application/json" | jq .
-
-# Response: 200 OK
-{
-  "memberId": "550e8400-e29b-41d4-a716-446655440000",
-  "email": "john.doe@example.com",
-  "firstName": "John",
-  "lastName": "Doe",
-  "address": "123 Peace Street, Paris",
-  "confirmed": true,
-  "role": "MEMBER",
-  "createdAt": "2024-01-15T10:30:00Z"
-}
-
-# Update my profile
-curl -X PATCH "http://localhost:8080/ecclesiaflow/members/me" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "firstName": "Jean",
-    "lastName": "Dupont",
-    "address": "456 New Address, Lyon"
-  }' | jq .
-
-# Delete my account
-curl -X DELETE "http://localhost:8080/ecclesiaflow/members/me" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..."
-
-# Response: 204 No Content
-```
-
-**Scopes Required:**
-- `GET /me` → `ef:members:read:own`
-- `PATCH /me` → `ef:members:write:own`
-- `DELETE /me` → `ef:members:delete:own`
-
-### **Admin Routes (Requires Admin Scopes)**
-
-```bash
-# Get all members (admin only)
-curl -X GET "http://localhost:8080/ecclesiaflow/members?page=0&size=20" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
-  -H "Accept: application/json" | jq .
-
-# Get specific member by ID (admin or owner)
-curl -X GET "http://localhost:8080/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
-  -H "Accept: application/json" | jq .
-
-# Update member (admin or owner)
-curl -X PATCH "http://localhost:8080/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "firstName": "Updated",
-    "lastName": "Name"
-  }' | jq .
-
-# Delete member (admin or owner)
-curl -X DELETE "http://localhost:8080/ecclesiaflow/members/550e8400-e29b-41d4-a716-446655440000" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..."
-```
-
-**Scopes Required:**
-- `GET /members` → `ef:members:read:all`
-- `GET /members/{id}` → `ef:members:read:own` OR `ef:members:read:all`
-- `PATCH /members/{id}` → `ef:members:write:own` OR `ef:members:write:all`
-- `DELETE /members/{id}` → `ef:members:delete:own` OR `ef:members:delete:all`
-
----
-
-## Complete API Routes Reference
-
-### **Public Routes (No Authentication Required)**
-
-| Method | Endpoint | Description | Request Body | Response | Rate Limit |
-|--------|----------|-------------|--------------|----------|------------|
-| `POST` | `/ecclesiaflow/members` | Register new member | `SignUpRequestPayload` | `201 Created` + `SignUpResponse` | ✅ Envoy |
-| `GET` | `/ecclesiaflow/members/confirmation` | Confirm account via email link | Query: `?token={uuid}` | `200 OK` + `ConfirmationResponse` | ❌ |
-| `POST` | `/ecclesiaflow/members/new-confirmation` | Resend confirmation link | `ResendConfirmationLinkRequest` | `200 OK` + message | ✅ Envoy |
-
-### **Authenticated Routes - Member Self-Service (/me)**
-
-| Method | Endpoint | Description | Required Scope | Response |
-|--------|----------|-------------|----------------|----------|
-| `GET` | `/ecclesiaflow/members/me` | Get my profile | `ef:members:read:own` | `200 OK` + `SignUpResponse` |
-| `PATCH` | `/ecclesiaflow/members/me` | Update my profile | `ef:members:write:own` | `200 OK` + `SignUpResponse` |
-| `DELETE` | `/ecclesiaflow/members/me` | Delete my account | `ef:members:delete:own` | `204 No Content` |
-
-### **Authenticated Routes - Member Management (Admin/Owner)**
-
-| Method | Endpoint | Description | Required Scopes (OR logic) | Response |
-|--------|----------|-------------|----------------------------|----------|
-| `GET` | `/ecclesiaflow/members` | List all members (paginated) | `ef:members:read:all` | `200 OK` + `MemberPageResponse` |
-| `GET` | `/ecclesiaflow/members/{memberId}` | Get member by ID | `ef:members:read:own` OR `ef:members:read:all` | `200 OK` + `SignUpResponse` |
-| `PATCH` | `/ecclesiaflow/members/{memberId}` | Update member | `ef:members:write:own` OR `ef:members:write:all` | `200 OK` + `SignUpResponse` |
-| `DELETE` | `/ecclesiaflow/members/{memberId}` | Delete member | `ef:members:delete:own` OR `ef:members:delete:all` | `204 No Content` |
-
-### **Temporary/Development Routes**
-
-| Method | Endpoint | Description | Required Scope | Response | Status |
-|--------|----------|-------------|----------------|----------|--------|
-| `GET` | `/ecclesiaflow/hello` | Test endpoint for authenticated members | `ef:members:read:own` | `200 OK` + `"Hi Member"` | 🧪 Dev only |
-| `GET` | `/ecclesiaflow/members/confirmation-status/{email}` | Check if email is confirmed | None (internal use) | `200 OK` + `{ confirmed: boolean }` | 🔒 Internal |
-
-### **Query Parameters for GET /members**
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `page` | `integer` | ❌ | `0` | Page number (0-indexed) |
-| `size` | `integer` | ❌ | `20` | Items per page (max: 100) |
-| `search` | `string` | ❌ | - | Search by name or email |
-| `confirmed` | `boolean` | ❌ | - | Filter by confirmation status |
-| `sort` | `string` | ❌ | `createdAt` | Sort field: `firstName`, `lastName`, `email`, `createdAt` |
-| `direction` | `string` | ❌ | `DESC` | Sort direction: `ASC` or `DESC` |
-
-### **Common HTTP Status Codes**
-
-| Status Code | Description | When It Occurs |
-|-------------|-------------|----------------|
-| `200 OK` | Success | Successful GET, PATCH, POST operations |
-| `201 Created` | Resource created | Member registration successful |
-| `204 No Content` | Success with no body | Successful DELETE operation |
-| `400 Bad Request` | Invalid input | Validation errors, malformed data |
-| `401 Unauthorized` | Authentication required | Missing or invalid JWT token |
-| `403 Forbidden` | Insufficient permissions | User lacks required scopes |
-| `404 Not Found` | Resource not found | Member or token doesn't exist |
-| `409 Conflict` | Resource conflict | Email already exists, account already confirmed |
-| `410 Gone` | Resource expired | Confirmation token expired (24h) |
-| `500 Internal Server Error` | Server error | Unexpected server-side error |
-
-### **EcclesiaFlow Scopes Hierarchy**
-
-```
-ef:members:read:own      → Read own member data
-ef:members:read:all      → Read all members data (includes :own)
-
-ef:members:write:own     → Update own member data
-ef:members:write:all     → Update all members data (includes :own)
-
-ef:members:delete:own    → Delete own account
-ef:members:delete:all    → Delete any member account (includes :own)
-```
-
-**Scope Logic:**
-- **OR Logic**: Routes with multiple scopes accept ANY of the listed scopes
-- **Example**: `GET /members/{id}` accepts `read:own` OR `read:all`
-- **Admin Scopes**: `:all` scopes grant full access to all members
-- **Member Scopes**: `:own` scopes restrict access to authenticated user's data
-
-### **Content-Type Headers**
-
-| Header | Value | Usage |
-|--------|-------|-------|
-| `Content-Type` | `application/vnd.ecclesiaflow.members.v1+json` | Versioned API requests (recommended) |
-| `Content-Type` | `application/json` | Standard JSON (fallback) |
-| `Accept` | `application/vnd.ecclesiaflow.members.v1+json` | Versioned API responses (recommended) |
-| `Accept` | `application/json` | Standard JSON responses (fallback) |
-| `Authorization` | `Bearer {jwt_token}` | JWT authentication (required for protected routes) |
-
-### **API Versioning**
-
-- **Current Version**: `v1`
-- **Versioning Strategy**: Media type versioning via `Accept` header
-- **Backward Compatibility**: Maintained for at least 2 major versions
-- **Deprecation Notice**: 6 months minimum before breaking changes
+> **IntelliJ**: generated sources are automatically added via `build-helper-maven-plugin`.
+> If not, mark `target/generated-sources/openapi/src/main/java` as Generated Sources Root.
 
 ---
 
 ## Configuration
 
-### **Database Variables**
+All configuration is driven by environment variables (loaded via [spring-dotenv](https://github.com/paulschwarz/spring-dotenv)).
 
-```properties
-# MySQL Configuration
-spring.datasource.url=jdbc:mysql://localhost:3306/ecclesiaflow_members
-spring.datasource.username=ecclesiaflow
-spring.datasource.password=your_secure_password
-spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+- `application.properties` — Base configuration with dev-friendly defaults
+- `application-prod.properties` — Production overrides (activate with `SPRING_PROFILES_ACTIVE=prod`)
+- `.env` — Environment-specific values (never committed)
 
-# JPA/Hibernate
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=false
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
-```
+### Key Sections
 
-### **JWT Configuration**
+**Database**: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`
 
-```properties
-# JWT Secret (must match Auth Module configuration)
-# Generate a secure base64-encoded key (minimum 256 bits)
-jwt.secret=your-super-secret-jwt-key-minimum-256-bits-base64-encoded
-```
+**Keycloak OAuth2**: `KEYCLOAK_ISSUER_URI`, `KEYCLOAK_JWKS_URI`
 
-**Important Notes:**
-- ️**JWT secret must be identical** to the one configured in the Auth Module
-- Use a **strong, randomly generated secret** in production
-- Secret must be **base64-encoded** and at least **256 bits** (32 bytes)
-- Never commit the actual secret to version control
+**gRPC**: `GRPC_ENABLED`, `GRPC_SERVER_PORT` (9091), `GRPC_AUTH_HOST/PORT` (Auth), `GRPC_EMAIL_HOST/PORT` (Email)
 
+**CORS**: `CORS_ALLOWED_ORIGINS` (default: `localhost:3000,4200,5173`)
 
-### **SMTP Email Configuration**
+**Scopes**: `ECCLESIAFLOW_SCOPES_ENABLED` (default: `true`)
 
-```properties
-# Gmail SMTP (recommended)
-spring.mail.host=smtp.gmail.com
-spring.mail.port=587
-spring.mail.username=your-email@gmail.com
-spring.mail.password=your_gmail_app_password
-spring.mail.properties.mail.smtp.auth=true
-spring.mail.properties.mail.smtp.starttls.enable=true
+**Frontend**: `FRONTEND_BASE_URL` (for confirmation email links)
 
-# EcclesiaFlow Configuration
-ecclesiaflow.mail.from=your-email@gmail.com
-ecclesiaflow.app.name=EcclesiaFlow
-```
+### Production Profile
 
-### **Asynchronous Email Processing**
+Activate with `SPRING_PROFILES_ACTIVE=prod`. Overrides:
 
-The module implements **asynchronous email sending** for optimal performance:
-
-**Architecture:**
-- **@Async methods**: Email operations run in background threads
-- **Dedicated thread pool**: Configured via `AsyncConfig` (2-10 threads, 100 queue capacity)
-- **Non-blocking**: Registration/confirmation responses are immediate
-- **Error handling**: Centralized exception management with aspect logging
-
-**Email Flow:**
-1. **Registration** → Member saved → **Async email dispatch** → Immediate 201 response
-2. **Confirmation** → Code validated → **Async welcome email** → Immediate 200 response
-3. **Background processing**: Emails sent without blocking user experience
-
-**Configuration:**
-```properties
-# Async thread pool configuration (in AsyncConfig.java)
-# Core threads: 2, Max threads: 10, Queue: 100
-# Keep-alive: 60 seconds, Graceful shutdown: 30 seconds
-```
-
-### **gRPC Configuration**
-
-```properties
-# Enable/Disable gRPC (default: true)
-grpc.enabled=true
-
-# gRPC Client (Members → Auth)
-grpc.auth.host=localhost
-grpc.auth.port=9090
-grpc.client.shutdown-timeout-seconds=5
-
-# gRPC Server (Auth → Members)
-grpc.server.port=9091
-grpc.server.shutdown-timeout-seconds=30
-```
-
-**Key Points:**
-- **grpc.enabled=true**: Primary communication via gRPC (high performance)
-- **grpc.enabled=false**: Falls back to WebClient (REST)
-- **Ports**: 9090 (Auth gRPC), 9091 (Members gRPC), 8080 (Members REST), 8081 (Auth REST)
-- **Graceful shutdown**: Configurable timeouts for clean service stops
-
-### **Resilience4j (Circuit Breaker & Retry)**
-
-The module implements **resilience patterns** for gRPC communication with the Email Service:
-
-```properties
-# Circuit Breaker - Email Service
-resilience4j.circuitbreaker.instances.emailService.sliding-window-size=10
-resilience4j.circuitbreaker.instances.emailService.failure-rate-threshold=50
-resilience4j.circuitbreaker.instances.emailService.wait-duration-in-open-state=30s
-resilience4j.circuitbreaker.instances.emailService.permitted-number-of-calls-in-half-open-state=3
-
-# Retry - Email Service
-resilience4j.retry.instances.emailServiceRetry.max-attempts=3
-resilience4j.retry.instances.emailServiceRetry.wait-duration=500ms
-```
-
-**Circuit Breaker States:**
-- **CLOSED**: Normal operation, calls pass through
-- **OPEN**: Service unavailable, fallback activated (graceful degradation)
-- **HALF_OPEN**: Testing recovery with limited calls
-
-**Key Features:**
-- **Automatic retry**: 3 attempts with 500ms delay for transient failures
-- **Graceful degradation**: Registration succeeds even if email service is down
-- **GDPR-compliant logging**: Sensitive data masked via `SecurityMaskingUtils`
-- **AOP-based logging**: Centralized via `EmailGrpcClientLoggingAspect`
-
-### **Auth Module Integration (Fallback)**
-
-```properties
-# Authentication module URL (WebClient fallback if gRPC disabled)
-ecclesiaflow.auth.module.base-url=${AUTH_MODULE_BASE_URL}
-ecclesiaflow.auth.module.enabled=true
-```
-
-### **OpenAPI Documentation**
-
-```properties
-# SpringDoc OpenAPI
-springdoc.api-docs.path=/api-docs
-springdoc.swagger-ui.path=/swagger-ui.html
-springdoc.paths-to-match=/ecclesiaflow/**
-springdoc.packages-to-scan=com.ecclesiaflow.web.controller
-```
-
-### **Environment Variables (.env)**
-
-```bash
-# Database
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=ecclesiaflow_members
-DB_USERNAME=ecclesiaflow
-DB_PASSWORD=your_secure_password
-
-# JWT Configuration (must match Auth Module)
-JWT_SECRET=your-super-secret-jwt-key-minimum-256-bits-base64-encoded
-
-# Email
-MAIL_USERNAME=your-email@gmail.com
-MAIL_PASSWORD=your_gmail_app_password
-MAIL_FROM=your-email@gmail.com
-
-# gRPC Configuration
-GRPC_ENABLED=true
-GRPC_AUTH_HOST=localhost
-GRPC_AUTH_PORT=9090
-GRPC_SERVER_PORT=9091
-GRPC_CLIENT_SHUTDOWN_TIMEOUT=5
-GRPC_SERVER_SHUTDOWN_TIMEOUT=30
-
-# External services (WebClient fallback)
-AUTH_MODULE_BASE_URL=http://localhost:8081
-
-# Server
-SERVER_PORT=8080
-SPRING_PROFILES_ACTIVE=dev
-```
+- `ddl-auto=validate` (no schema changes)
+- HikariCP pool tuning (20 max connections)
+- Reduced logging (WARN for Spring, INFO for app)
+- Kubernetes health probes enabled
+- Swagger cache enabled
+- Error details hidden
 
 ---
 
+## Testing
 
-## Testing and Quality
-
-### **Running Tests**
+521 tests covering all layers, enforced at 90% line and branch coverage.
 
 ```bash
-# Unit tests only
-mvn test
-
-# Tests with JaCoCo coverage
-mvn clean test jacoco:report
-
-# View coverage report
-open target/site/jacoco/index.html
-
-# Integration tests
-mvn verify -P integration-tests
+mvn test                              # unit + integration tests + coverage gate
+mvn clean test jacoco:report          # with HTML report
+open target/site/jacoco/index.html    # view report
 ```
 
-### **Quality Metrics**
+| Category    | Scope |
+|-------------|-------|
+| Unit        | Domain objects, services, delegates, controllers, mappers |
+| Integration | gRPC clients/server, security config, JPA repositories |
+| AOP         | 8 logging aspects (REST, gRPC, business, email, security) |
+| Exception   | GlobalExceptionHandler, error models |
 
-- **JaCoCo Coverage**: Minimum 90% per package
-- **Unit Tests**: Mockito with LENIENT strictness
-- **Integration Tests**: TestContainers for MySQL
-- **Architecture**: ArchUnit for layer validation
+Test database: **H2 in-memory** (overrides MySQL via `src/test/resources/application.properties`).
 
 ---
 
-## gRPC Implementation Guide
+## EcclesiaFlow Ecosystem
 
-### **Quick Start with gRPC**
+| Module | Port (REST) | Port (gRPC) | Description |
+|--------|-------------|-------------|-------------|
+| **Members** (this) | 8080 | 9091 | Member management, confirmation, profiles |
+| [Auth](https://github.com/GYOM15/ecclesiaflow-auth-module) | 8081 | 9090 | Keycloak integration, password management |
+| Email Service | - | 9092 | Transactional emails (confirmation, welcome) |
 
-The module uses **gRPC as the primary** inter-service communication protocol. To get started:
-
-1. **Enable gRPC** (enabled by default):
-```properties
-grpc.enabled=true
 ```
-
-2. **Configure ports** in `application.properties`:
-```properties
-grpc.auth.host=localhost
-grpc.auth.port=9090
-grpc.server.port=9091
+┌──────────────────────────────────────────────────┐
+│                  Client (HTTP)                    │
+└──────────┬───────────────────────┬───────────────┘
+           │ REST :8080            │ REST :8081
+           ▼                       ▼
+  ┌─────────────────┐     ┌─────────────────┐
+  │  Members Module │◄───►│   Auth Module    │
+  │   gRPC :9091    │gRPC │   gRPC :9090     │
+  └────────┬────────┘     └─────────────────┘
+           │ gRPC :9092
+           ▼
+  ┌─────────────────┐
+  │  Email Service   │
+  └─────────────────┘
 ```
-
-3. **Run both modules**:
-```bash
-# Terminal 1 - Auth Module
-cd ../ecclesiaflow-auth-module
-mvn spring-boot:run
-
-# Terminal 2 - Members Module
-cd ecclesiaflow-members-module
-mvn spring-boot:run
-```
-
-### **gRPC Services Available**
-
-#### **Members → Auth (Client)**
-- **Service**: `AuthService` 
-- **RPC**: `GenerateTemporaryToken(email, memberId) → temporaryToken`
-- **Port**: 9090
-- **Implementation**: `AuthGrpcClient`
-
-#### **Auth → Members (Server)**
-- **Service**: `MembersService`
-- **RPC**: `GetMemberConfirmationStatus(email) → confirmed`
-- **Port**: 9091
-- **Implementation**: `MembersGrpcServiceImpl`
-
-### **Protobuf Files**
-
-Located in `src/main/proto/`:
-- `auth_service.proto` - AuthService definition
-- `members_service.proto` - MembersService definition
-
-### **WebClient Fallback**
-
-If gRPC is disabled or unavailable:
-```properties
-grpc.enabled=false
-```
-
-The module automatically falls back to `AuthClientImpl` (WebClient/REST).
 
 ---
 
 ## Contributing
 
-### **Development Standards**
+1. Create a feature branch from `members-module-dev`
+2. Follow commit conventions (see below)
+3. Ensure `mvn test` passes (521 tests + 90% coverage)
+4. Open a Pull Request
 
-- **Clean Architecture**: Respect the 4-layer separation
-- **SOLID Principles**: Each class has a single responsibility
-- **Documentation**: Complete Javadoc for all public classes
-- **Testing**: Minimum 80% coverage with unit and integration tests
+### Commit Convention
 
-### **Git Workflow**
+```
+Subject in English, imperative, first letter capitalized (max 50 chars)
 
-```bash
-# 1. Start from development branch
-git checkout members-module-dev
-
-# 2. Create branch for new feature
-git checkout -b new-feature
-
-# 3. Develop with atomic commits
-git commit -m "Feat(members): add email validation"
-
-# 4. Tests and quality
-mvn clean test jacoco:report
-
-# 5. Push and Pull Request to members-module-dev
-git push origin new-feature
+Optional body explaining the why (max 72 chars per line)
 ```
 
-### **Commit Convention**
-
-**Format with type:**
-```
-Type(scope): description (≤ 50 characters, first letter capitalized)
-
-Message body (≤ 72 characters per line)
-
-Types: Feat, Fix, Docs, Style, Refactor, Test, Chore
-Scopes: members, confirmation, email, persistence, web
-
-NB: scope is optionnal
-```
-
-**Format without type:**
-```
-Add new feature (≤ 50 characters, first letter capitalized)
-
-Detailed message body if necessary
-(≤ 72 characters per line)
-```
-
-**Examples:**
-- `Feat(members): add email validation service`
-- `Fix(confirmation): resolve code expiration issue`
-- `Feat: resolve code expiration issue`
-- `Add comprehensive member profile validation`
-- `Update OpenAPI documentation for new endpoints`
+Examples:
+- `Add social onboarding endpoint`
+- `Fix email uniqueness check in registration`
+- `Wire role-to-scope mapping into validation aspect`
 
 ---
 
-## 📄 License
+## License
 
-MIT – see [LICENSE](LICENSE)
-
----
-
-**Developed with ❤️ for church communities worldwide**
+MIT License — see [LICENSE](LICENSE) for details.
