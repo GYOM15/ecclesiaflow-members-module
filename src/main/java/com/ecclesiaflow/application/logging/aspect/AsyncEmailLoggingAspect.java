@@ -75,7 +75,7 @@ public class AsyncEmailLoggingAspect {
         Object[] args = joinPoint.getArgs();
         if (args != null && args.length > 0 && args[0] instanceof MemberRegisteredEvent event) {
             log.info("ASYNC EVENT: MemberRegistered event received for email: {} - Queuing async email task", 
-                     event.getEmail());
+                     event.email());
         }
     }
     
@@ -100,7 +100,7 @@ public class AsyncEmailLoggingAspect {
         Object[] args = joinPoint.getArgs();
         if (args != null && args.length > 0 && args[0] instanceof MemberRegisteredEvent event) {
             log.info("ASYNC EVENT: Confirmation email sent successfully to: {} (async task completed)", 
-                     event.getEmail());
+                     event.email());
         }
     }
     
@@ -133,7 +133,7 @@ public class AsyncEmailLoggingAspect {
         if (args != null && args.length > 0 && args[0] instanceof MemberRegisteredEvent event) {
             String errorMessage = exception != null ? exception.getMessage() : "Unknown error";
             log.error("ASYNC EVENT: Failed to send confirmation email to: {} (member IS registered in DB) - {}", 
-                      event.getEmail(), 
+                      event.email(),
                       errorMessage, 
                       exception);
             log.warn("ASYNC EVENT: Member can request a new confirmation link via resend endpoint");
