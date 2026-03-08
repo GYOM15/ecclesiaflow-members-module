@@ -14,22 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Mapper pour créer les modèles OpenAPI générés à partir des entités métier.
- * <p>
- * Ce mapper crée directement les modèles OpenAPI générés à partir des entités Member,
- * en respectant la structure définie dans la spécification OpenAPI members.yaml.
- * </p>
- * 
- * <p><strong>Structure des modèles OpenAPI :</strong></p>
- * <ul>
- *   <li>SignUpResponse : structure plate avec tous les champs directement (email, firstName, etc.)</li>
- *   <li>MemberPageResponse : contient une liste de SignUpResponse dans le champ 'content'</li>
- * </ul>
- * 
- * @author EcclesiaFlow Team
- * @since 2.0.0
- */
+/** Maps domain {@link Member} objects to OpenAPI-generated response DTOs. */
 @Component
 @RequiredArgsConstructor
 public class OpenApiModelMapper {
@@ -37,13 +22,7 @@ public class OpenApiModelMapper {
     @Value("${ecclesiaflow.auth-module.base-url:http://localhost:8081}")
     private String authModuleBaseUrl;
 
-    /**
-     * Crée un SignUpResponse OpenAPI à partir d'un Member et d'un message.
-     * 
-     * @param member Entité membre
-     * @param message Message de succès
-     * @return Modèle OpenAPI SignUpResponse
-     */
+    /** Creates a {@link SignUpResponse} from a domain Member and a status message. */
     public SignUpResponse createSignUpResponse(Member member, String message) {
         SignUpResponse response = new SignUpResponse();
         response.setMessage(message);
@@ -70,12 +49,7 @@ public class OpenApiModelMapper {
         }
     }
 
-    /**
-     * Crée un MemberPageResponse OpenAPI à partir d'une Page de Member.
-     * 
-     * @param memberPage Page de membres du domaine
-     * @return Modèle OpenAPI MemberPageResponse
-     */
+    /** Converts a paginated result of Members into a {@link MemberPageResponse}. */
     public MemberPageResponse createMemberPageResponse(Page<Member> memberPage) {
         MemberPageResponse response = new MemberPageResponse();
         
@@ -117,15 +91,7 @@ public class OpenApiModelMapper {
         return response;
     }
 
-    /**
-     * Crée un ConfirmationResponse OpenAPI à partir d'un MembershipConfirmationResult.
-     * <p>
-     * Convertit le résultat de confirmation métier vers le modèle OpenAPI.
-     * </p>
-     * 
-     * @param result Résultat de la confirmation métier
-     * @return Modèle OpenAPI ConfirmationResponse
-     */
+    /** Converts a {@link MembershipConfirmationResult} into a {@link ConfirmationResponse}. */
     public ConfirmationResponse createConfirmationResponse(MembershipConfirmationResult result) {
         ConfirmationResponse response = new ConfirmationResponse();
         

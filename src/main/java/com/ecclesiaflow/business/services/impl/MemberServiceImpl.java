@@ -19,47 +19,10 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Implémentation complète du service de gestion des membres EcclesiaFlow.
- * <p>
- * Cette classe implémente l'interface {@link MemberService} et fournit toutes les opérations
- * CRUD pour la gestion des membres : inscription, consultation, mise à jour, suppression.
- * Gère également la génération automatique des tokens de confirmation lors de l'inscription.
- * </p>
+ * Core member management service.
  *
- * <p><strong>Rôle architectural :</strong> Implémentation de service - Logique métier des membres</p>
- *
- * <p><strong>Responsabilités principales :</strong></p>
- * <ul>
- *   <li>Inscription de nouveaux membres avec validation d'unicité email</li>
- *   <li>Génération automatique de tokens de confirmation à l'inscription</li>
- *   <li>Opérations CRUD complètes sur les profils membres</li>
- *   <li>Validation du statut de confirmation des comptes</li>
- *   <li>Orchestration avec les services d'email pour les notifications</li>
- * </ul>
- *
- * <p><strong>Dépendances critiques :</strong></p>
- * <ul>
- *   <li>{@link MemberRepository} - Persistance et requêtes sur les membres</li>
- *   <li>{@link MemberConfirmationRepository} - Gestion des tokens de confirmation</li>
- *   <li>{@link EmailClient} - Envoi des emails de confirmation</li>
- * </ul>
- *
- * <p><strong>Flux d'inscription typique :</strong></p>
- * <ol>
- *   <li>Vérification de l'unicité de l'email</li>
- *   <li>Création de l'entité Member avec statut non confirmé</li>
- *   <li>Persistance en base de données</li>
- *   <li>Génération d'un token de confirmation sécurisé (UUID)</li>
- *   <li>Envoi automatique de l'email avec lien de confirmation</li>
- * </ol>
- *
- * <p><strong>Garanties :</strong> Thread-safe, transactionnel, gestion d'erreurs robuste.</p>
- *
- * @author EcclesiaFlow Team
- * @since 1.0.0
- * @see MemberService
- * @see MemberRepository
- * @see EmailClient
+ * <p>Handles registration (with email confirmation), social onboarding,
+ * CRUD operations, and email uniqueness enforcement.</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -108,17 +71,17 @@ public class MemberServiceImpl implements MemberService {
     @Transactional(readOnly = true)
     public Member findByMemberId(UUID memberId) {
         return memberRepository.getByMemberId(memberId)
-                .orElseThrow(() -> new MemberNotFoundException("Membre non trouvé avec le memberId"));
+                .orElseThrow(() -> new MemberNotFoundException("Member not found"));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Member getByKeycloakUserId(String keycloakUserId) {
         if (keycloakUserId == null || keycloakUserId.isBlank()) {
-            throw new IllegalArgumentException("keycloakUserId ne peut pas être null ou vide");
+            throw new IllegalArgumentException("keycloakUserId must not be null or blank");
         }
         return memberRepository.getByKeycloakUserId(keycloakUserId)
-                .orElseThrow(() -> new MemberNotFoundException("Membre non trouvé avec le keycloakUserId: " + keycloakUserId));
+                .orElseThrow(() -> new MemberNotFoundException("Member not found for keycloakUserId: " + keycloakUserId));
     }
 
     @Override
@@ -138,13 +101,11 @@ public class MemberServiceImpl implements MemberService {
         }
         if (existing.getEmail().equalsIgnoreCase(newEmail)) {
             throw new InvalidEmailUpdateException(
-                    "Le nouvel email doit être différent de l'email actuel."
-            );
+                    "New email must differ from the current one.");
         }
         if (isEmailAlreadyUsed(newEmail)) {
             throw new EmailAlreadyUsedException(
-                    "Un compte avec cet email existe déjà."
-            );
+                    "An account with this email already exists.");
         }
     }
 
@@ -167,7 +128,7 @@ public class MemberServiceImpl implements MemberService {
         return findMembersWithCriteria(pageable, normalizeSearch(search), status);
     }
 
-    // Methodes Utilitaies
+    // --- Private helpers ---
     private Page<Member> findMembersWithCriteria(Pageable pageable, String normalizedSearch, com.ecclesiaflow.business.domain.member.MemberStatus status) {
         if (normalizedSearch != null && status != null) {
             return memberRepository.getMembersBySearchTermAndStatus(normalizedSearch, status, pageable);
