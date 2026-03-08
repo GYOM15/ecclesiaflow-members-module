@@ -81,6 +81,13 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
+		<!-- MapStruct API -->
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct</artifactId>
+			<version>1.5.5.Final</version>
+		</dependency>
+
 		<!-- Spring Boot Starter Data JPA -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -173,42 +180,16 @@
 			<artifactId>spring-boot-starter-aop</artifactId>
 		</dependency>
 
-		<!-- 
-			⚠️ DÉPENDANCES TEMPORAIRES - À RETIRER AVEC ENVOY PROXY
-			
-			Ces dépendances JJWT sont utilisées pour parser et valider le JWT directement 
-			dans le microservice (AuthenticatedUserContextProvider).
-			
-			MIGRATION FUTURE AVEC ENVOY :
-			- Envoy validera le JWT en amont (External Authorization Filter)
-			- Envoy injectera les claims dans des headers HTTP (X-User-Id, X-User-Scopes)
-			- Le microservice lira simplement les headers (pas de parsing JWT)
-			- Ces dépendances JJWT pourront être retirées
-			
-			Voir: AuthenticatedUserContextProvider.java pour plus de détails
-		-->
-		
-		<!-- JJWT API -->
+		<!-- Spring Security OAuth2 Resource Server for Keycloak JWT validation -->
 		<dependency>
-			<groupId>io.jsonwebtoken</groupId>
-			<artifactId>jjwt-api</artifactId>
-			<version>0.12.6</version>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
 		</dependency>
 
-		<!-- JJWT Implementation -->
+		<!-- Spring Security for authentication and authorization -->
 		<dependency>
-			<groupId>io.jsonwebtoken</groupId>
-			<artifactId>jjwt-impl</artifactId>
-			<version>0.12.6</version>
-			<scope>runtime</scope>
-		</dependency>
-
-		<!-- JJWT Jackson -->
-		<dependency>
-			<groupId>io.jsonwebtoken</groupId>
-			<artifactId>jjwt-jackson</artifactId>
-			<version>0.12.6</version>
-			<scope>runtime</scope>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 
 		<!-- Spring Dotenv for .env file support -->
@@ -330,9 +311,19 @@
 					<target>${java.version}</target>
 					<annotationProcessorPaths>
 						<path>
+							<groupId>org.mapstruct</groupId>
+							<artifactId>mapstruct-processor</artifactId>
+							<version>1.5.5.Final</version>
+						</path>
+						<path>
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
 							<version>1.18.34</version>
+						</path>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok-mapstruct-binding</artifactId>
+							<version>0.2.0</version>
 						</path>
 					</annotationProcessorPaths>
 				</configuration>
