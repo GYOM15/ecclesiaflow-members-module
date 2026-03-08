@@ -49,4 +49,5 @@ public class MembershipConfirmationResult {
     private String message;
     private String temporaryToken;
     private long expiresInSeconds;
+    private String passwordEndpoint;
 }
