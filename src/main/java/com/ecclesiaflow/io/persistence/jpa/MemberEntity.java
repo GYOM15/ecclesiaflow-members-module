@@ -8,7 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
-import com.ecclesiaflow.business.domain.member.Role;
+import com.ecclesiaflow.business.domain.member.MemberStatus;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -35,15 +35,17 @@ import java.util.UUID;
  *   <li>Email unique et obligatoire</li>
  *   <li>MemberId unique et immutable</li>
  *   <li>Prénom, nom et adresse obligatoires</li>
- *   <li>Rôle obligatoire avec énumération</li>
+ *   <li>Statut obligatoire avec énumération (MemberStatus)</li>
  *   <li>Identifiants UUID pour la scalabilité</li>
  * </ul>
  * 
- * <p><strong>États de confirmation :</strong></p>
+ * <p><strong>États du membre (MemberStatus) :</strong></p>
  * <ul>
- *   <li>confirmed : false par défaut, true après validation email</li>
- *   <li>confirmedAt : null jusqu'à confirmation, puis horodatage</li>
- *   <li>passwordSet : false par défaut, true après définition mot de passe</li>
+ *   <li>PENDING : statut initial, email non confirmé</li>
+ *   <li>CONFIRMED : email confirmé, mot de passe non défini</li>
+ *   <li>ACTIVE : compte pleinement actif</li>
+ *   <li>SUSPENDED/INACTIVE : compte suspendu ou désactivé</li>
+ *   <li>confirmedAt : horodatage de la confirmation email</li>
  * </ul>
  * 
  * <p><strong>Cycle de vie JPA :</strong></p>
@@ -58,7 +60,7 @@ import java.util.UUID;
  * 
  * @author EcclesiaFlow Team
  * @since 1.0.0
- * @see Role
+ * @see MemberStatus
  */
 @Entity
 @Table(name = "member")
@@ -85,25 +87,28 @@ public class MemberEntity {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @NotNull(message = "Le rôle est obligatoire")
-    @Enumerated(EnumType.ORDINAL)
-    @Column(nullable = false)
-    private Role role;
-
     @NotNull(message = "L’identifiant du membre est obligatoire")
     @Column(name = "member_id", columnDefinition = "BINARY(16)", nullable = false, unique = true, updatable = false)
     private UUID memberId;
 
-    @NotBlank(message = "L’adresse est obligatoire")
+    @NotBlank(message = "L'adresse est obligatoire")
     @Column(length = 200, nullable = false)
     private String address;
 
+    @NotNull(message = "Le statut est obligatoire")
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private boolean confirmed = false;
+    private MemberStatus status = MemberStatus.PENDING;
 
     @Column
     private LocalDateTime confirmedAt;
+
+    @Column(name = "phone_number", length = 20)
+    private String phoneNumber;
+
+    @Column(name = "keycloak_user_id")
+    private String keycloakUserId;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
