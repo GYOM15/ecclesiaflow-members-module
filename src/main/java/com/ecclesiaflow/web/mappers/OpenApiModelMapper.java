@@ -5,6 +5,7 @@ import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.web.model.ConfirmationResponse;
 import com.ecclesiaflow.web.model.MemberPageResponse;
 import com.ecclesiaflow.web.model.SignUpResponse;
+import com.ecclesiaflow.web.model.SocialOnboardingResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -60,7 +61,6 @@ public class OpenApiModelMapper {
         response.setLastName(member.getLastName());
         response.setAddress(member.getAddress());
         response.setConfirmed(member.isConfirmed());
-        response.setRole(member.getRole().name());
 
         if (member.getCreatedAt() != null) {
             response.setCreatedAt(member.getCreatedAt().toString());
@@ -102,6 +102,21 @@ public class OpenApiModelMapper {
         return response;
     }
 
+    /** Maps a Member domain object to a SocialOnboardingResponse DTO. */
+    public SocialOnboardingResponse createSocialOnboardingResponse(Member member) {
+        SocialOnboardingResponse response = new SocialOnboardingResponse();
+        response.setMessage("Profile successfully created via social login");
+        response.setEmail(member.getEmail());
+        response.setFirstName(member.getFirstName());
+        response.setLastName(member.getLastName());
+        response.setAddress(member.getAddress());
+        response.setPhoneNumber(member.getPhoneNumber());
+        response.setConfirmed(true);
+        response.setCreatedAt(member.getCreatedAt());
+        response.setConfirmedAt(member.getConfirmedAt());
+        return response;
+    }
+
     /**
      * Crée un ConfirmationResponse OpenAPI à partir d'un MembershipConfirmationResult.
      * <p>
@@ -119,11 +134,14 @@ public class OpenApiModelMapper {
             response.setTemporaryToken(result.getTemporaryToken());
             response.setExpiresIn(result.getExpiresInSeconds());
             
+            // Use passwordEndpoint from result if available, otherwise fallback to config
+            String passwordUrl = result.getPasswordEndpoint() != null 
+                    ? result.getPasswordEndpoint() 
+                    : authModuleBaseUrl + "/ecclesiaflow/auth/password";
             try {
-                String passwordUrl = authModuleBaseUrl + "/ecclesiaflow/auth/password";
                 response.setPasswordEndpoint(new java.net.URI(passwordUrl));
             } catch (java.net.URISyntaxException e) {
-                // Log l'erreur mais continue
+                // Log error but continue
             }
         }
         
