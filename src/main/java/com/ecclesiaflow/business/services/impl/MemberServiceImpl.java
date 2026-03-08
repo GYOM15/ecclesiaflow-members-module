@@ -72,7 +72,8 @@ public class MemberServiceImpl implements MemberService {
     @Transactional
     public Member registerMember(MembershipRegistration registration) {
         if (isEmailAlreadyUsed(registration.email())) {
-            throw new IllegalArgumentException("Un compte avec cet email existe déjà.");
+            throw new EmailAlreadyUsedException(
+                    "An account with this email already exists.");
         }
         Member member = createMemberFromRegistration(registration);
         Member savedMember = memberRepository.save(member);

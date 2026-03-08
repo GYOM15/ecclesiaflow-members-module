@@ -1,5 +1,6 @@
 package com.ecclesiaflow.web.exception.advices;
 
+import com.ecclesiaflow.business.exceptions.EmailAlreadyUsedException;
 import com.ecclesiaflow.business.exceptions.EmailServiceUnavailableException;
 import com.ecclesiaflow.business.exceptions.ExpiredConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.InsufficientPermissionsException;
@@ -214,6 +215,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiErrorResponse> handleIllegalArgument(IllegalArgumentException ex, WebRequest request) {
         return buildBadRequestErrorResponse(ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(EmailAlreadyUsedException.class)
+    public ResponseEntity<ApiErrorResponse> handleEmailAlreadyUsed(EmailAlreadyUsedException ex, WebRequest request) {
+        return buildSimpleErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
     @ExceptionHandler(SocialAccountAlreadyExistsException.class)
