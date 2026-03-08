@@ -45,4 +45,14 @@ public interface EmailClient {
      */
     UUID sendConfirmationEmail(String email, String confirmationUrl, String firstName);
 
+    /**
+     * Sends a welcome email after account activation.
+     * 
+     * @param email recipient email address
+     * @param firstName recipient's first name for personalization
+     * @return UUID of the sent email (for tracking)
+     * @throws com.ecclesiaflow.business.exceptions.EmailServiceException if sending fails
+     */
+    UUID sendWelcomeEmail(String email, String firstName);
+
 }

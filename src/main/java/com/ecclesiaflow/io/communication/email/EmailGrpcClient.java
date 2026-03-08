@@ -57,6 +57,30 @@ public class EmailGrpcClient implements EmailClient {
         throw new EmailServiceUnavailableException(SERVICE_NAME, t);
     }
 
+    @Override
+    @CircuitBreaker(name = ResilienceConfig.EMAIL_SERVICE_CB, fallbackMethod = "sendWelcomeEmailFallback")
+    @Retry(name = ResilienceConfig.EMAIL_SERVICE_RETRY)
+    public UUID sendWelcomeEmail(String email, String firstName) {
+        Map<String, String> variables = Map.of(
+            "email", email,
+            "firstName", firstName != null ? firstName : "Member"
+        );
+
+        return sendEmail(
+            email,
+            EmailTemplateType.EMAIL_TEMPLATE_WELCOME,
+            "Welcome to EcclesiaFlow",
+            variables,
+            Priority.PRIORITY_NORMAL,
+            EmailOperation.WELCOME
+        );
+    }
+
+    @SuppressWarnings("unused")
+    private UUID sendWelcomeEmailFallback(String email, String firstName, Throwable t) {
+        throw new EmailServiceUnavailableException(SERVICE_NAME, t);
+    }
+
     private UUID sendEmail(String toEmail,
                           EmailTemplateType templateType,
                           String subject,
