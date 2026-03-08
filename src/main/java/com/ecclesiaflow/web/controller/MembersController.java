@@ -2,12 +2,16 @@ package com.ecclesiaflow.web.controller;
 
 import com.ecclesiaflow.web.api.MembersManagementApi;
 import com.ecclesiaflow.web.api.MembersTemporaryApi;
+import com.ecclesiaflow.web.api.SocialOnboardingApi;
 import com.ecclesiaflow.web.delegate.MembersManagementDelegate;
 import com.ecclesiaflow.web.delegate.MembersTemporaryDelegate;
+import com.ecclesiaflow.web.delegate.SocialOnboardingDelegate;
 import com.ecclesiaflow.web.model.MemberConfirmationStatusResponse;
 import com.ecclesiaflow.web.model.MemberPageResponse;
 import com.ecclesiaflow.web.model.SignUpRequestPayload;
 import com.ecclesiaflow.web.model.SignUpResponse;
+import com.ecclesiaflow.web.model.SocialOnboardingRequest;
+import com.ecclesiaflow.web.model.SocialOnboardingResponse;
 import com.ecclesiaflow.web.model.UpdateMemberRequestPayload;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -48,13 +52,24 @@ import java.util.UUID;
  */
 @RestController
 @RequiredArgsConstructor
-public class MembersController implements MembersManagementApi, MembersTemporaryApi {
-    
+public class MembersController implements MembersManagementApi, MembersTemporaryApi, SocialOnboardingApi {
+
     private final MembersManagementDelegate membersManagementDelegate;
     private final MembersTemporaryDelegate membersTemporaryDelegate;
+    private final SocialOnboardingDelegate socialOnboardingDelegate;
 
     // ========================================
-    // Implémentation de MembersTemporaryApi
+    // SocialOnboardingApi
+    // ========================================
+
+    @Override
+    public ResponseEntity<SocialOnboardingResponse> _membersSocialOnboarding(
+            SocialOnboardingRequest socialOnboardingRequest) {
+        return socialOnboardingDelegate.socialOnboarding(socialOnboardingRequest);
+    }
+
+    // ========================================
+    // MembersTemporaryApi
     // ========================================
 
     /**
@@ -130,19 +145,19 @@ public ResponseEntity<MemberConfirmationStatusResponse> _membersGetConfirmationS
      * @param page Numéro de page
      * @param size Taille de la page
      * @param search Terme de recherche (nom ou email)
-     * @param confirmed Filtrer par statut de confirmation
+     * @param status Filtrer par statut de confirmation
      * @param sort Champ de tri
      * @param direction Direction du tri (asc/desc)
      * @return {@link ResponseEntity} avec la page de membres
      * 
      * @implNote <strong>Implémentation :</strong> Délègue au {@link MembersManagementDelegate}
-     * @see MembersManagementDelegate#getAllMembers(Integer, Integer, String, Boolean, String, String)
+     * @see MembersManagementDelegate#getAllMembers(Integer, Integer, String, String, String, String)
      */
     @Override
     public ResponseEntity<MemberPageResponse> _membersGetAll(
             Integer page, Integer size, @Nullable String search, 
-            @Nullable Boolean confirmed, String sort, String direction) {
-        return membersManagementDelegate.getAllMembers(page, size, search, confirmed, sort, direction);
+            @Nullable String status, String sort, String direction) {
+        return membersManagementDelegate.getAllMembers(page, size, search, status, sort, direction);
     }
 
     /**

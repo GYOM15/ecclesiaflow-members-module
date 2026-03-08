@@ -2,9 +2,12 @@ package com.ecclesiaflow.web.exception.advices;
 
 import com.ecclesiaflow.business.exceptions.EmailServiceUnavailableException;
 import com.ecclesiaflow.business.exceptions.ExpiredConfirmationCodeException;
+import com.ecclesiaflow.business.exceptions.InsufficientPermissionsException;
 import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
+import com.ecclesiaflow.business.exceptions.InvalidEmailUpdateException;
 import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
+import com.ecclesiaflow.business.exceptions.SocialAccountAlreadyExistsException;
 import com.ecclesiaflow.web.exception.*;
 import com.ecclesiaflow.web.exception.model.ApiErrorResponse;
 import com.ecclesiaflow.web.exception.model.ValidationError;
@@ -203,9 +206,24 @@ public class GlobalExceptionHandler {
         return buildSimpleErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(InvalidEmailUpdateException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidEmailUpdate(InvalidEmailUpdateException ex, WebRequest request) {
+        return buildBadRequestErrorResponse(ex.getMessage(), request);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiErrorResponse> handleIllegalArgument(IllegalArgumentException ex, WebRequest request) {
         return buildBadRequestErrorResponse(ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(SocialAccountAlreadyExistsException.class)
+    public ResponseEntity<ApiErrorResponse> handleSocialAccountAlreadyExists(SocialAccountAlreadyExistsException ex, WebRequest request) {
+        return buildSimpleErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InsufficientPermissionsException.class)
+    public ResponseEntity<ApiErrorResponse> handleInsufficientPermissions(InsufficientPermissionsException ex, WebRequest request) {
+        return buildSimpleErrorResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
     @ExceptionHandler(Exception.class)
