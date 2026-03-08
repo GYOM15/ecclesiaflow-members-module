@@ -123,7 +123,7 @@ class MembersControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.email").value("john.doe@mail.com"))
                 .andExpect(jsonPath("$.firstName").value("John"))
                 .andExpect(jsonPath("$.message").value(expectedMessage))
@@ -194,9 +194,9 @@ class MembersControllerTest {
                 .thenReturn(ResponseEntity.ok(responseDto));
 
         mockMvc.perform(get("/ecclesiaflow/members/" + id)
-                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.email").value("jane.doe@mail.com"))
                 .andExpect(jsonPath("$.firstName").value("Jane"))
                 .andExpect(jsonPath("$.message").value(expectedMessage))
@@ -212,7 +212,7 @@ class MembersControllerTest {
                 .thenThrow(new MemberNotFoundException("Member not found with ID: " + id));
 
         mockMvc.perform(get("/ecclesiaflow/members/" + id)
-                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Member not found with ID: " + id));
 
@@ -252,7 +252,7 @@ class MembersControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.firstName").value("NewName"))
                 .andExpect(jsonPath("$.email").value("new.email@mail.com"))
                 .andExpect(jsonPath("$.message").value(expectedMessage));
@@ -316,9 +316,9 @@ class MembersControllerTest {
         mockMvc.perform(get("/ecclesiaflow/members")
                         .param("page", "0")
                         .param("size", "20")
-                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.content[0].email").value("alice@mail.com"))
                 .andExpect(jsonPath("$.content[0].firstName").value("Alice"))
                 .andExpect(jsonPath("$.content[1].email").value("bob@mail.com"))
@@ -343,9 +343,9 @@ class MembersControllerTest {
         mockMvc.perform(get("/ecclesiaflow/members")
                         .param("page", "0")
                         .param("size", "20")
-                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.content").isEmpty())
                 .andExpect(jsonPath("$.totalElements").value(0))
                 .andExpect(jsonPath("$.totalPages").value(0));
@@ -373,9 +373,9 @@ class MembersControllerTest {
                         .param("search", "alice")
                         .param("page", "0")
                         .param("size", "20")
-                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.content[0].firstName").value("Alice"))
                 .andExpect(jsonPath("$.totalElements").value(1));
 
@@ -402,9 +402,9 @@ class MembersControllerTest {
                         .param("status", "ACTIVE")
                         .param("page", "0")
                         .param("size", "20")
-                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.content[0].firstName").value("Alice"))
                 .andExpect(jsonPath("$.totalElements").value(1));
 
@@ -422,9 +422,9 @@ class MembersControllerTest {
                 .thenReturn(ResponseEntity.ok(response));
 
         mockMvc.perform(get("/ecclesiaflow/members/" + email + "/confirmation-status")
-                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.confirmed").value(true));
 
         verify(membersTemporaryDelegate).getMemberConfirmationStatus(email);
@@ -439,9 +439,9 @@ class MembersControllerTest {
                 .thenReturn(ResponseEntity.ok(response));
 
         mockMvc.perform(get("/ecclesiaflow/members/" + email + "/confirmation-status")
-                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith("application/vnd.ecclesiaflow.members.v1+json"))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.confirmed").value(false));
 
         verify(membersTemporaryDelegate).getMemberConfirmationStatus(email);
@@ -454,7 +454,7 @@ class MembersControllerTest {
                 .thenThrow(new MemberNotFoundException("Member not found"));
 
         mockMvc.perform(get("/ecclesiaflow/members/" + email + "/confirmation-status")
-                        .accept("application/vnd.ecclesiaflow.members.v1+json"))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Member not found"));
 
