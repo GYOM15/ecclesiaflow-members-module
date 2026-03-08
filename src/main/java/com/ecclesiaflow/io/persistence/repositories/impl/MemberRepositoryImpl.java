@@ -76,18 +76,23 @@ public class MemberRepositoryImpl implements MemberRepository {
     }
 
     @Override
+    public Optional<Member> getByKeycloakUserId(String keycloakUserId) {
+        return springDataRepo.findByKeycloakUserId(keycloakUserId).map(mapper::toDomain);
+    }
+
+    @Override
     public boolean existsByEmail(String email) {
         return springDataRepo.existsByEmail(email);
     }
 
     @Override
-    public long countConfirmedMembers() {
-        return springDataRepo.countByConfirmedTrue();
+    public boolean existsByKeycloakUserId(String keycloakUserId) {
+        return springDataRepo.existsByKeycloakUserId(keycloakUserId);
     }
 
     @Override
-    public long countPendingConfirmations() {
-        return springDataRepo.countByConfirmedFalse();
+    public long countByStatus(com.ecclesiaflow.business.domain.member.MemberStatus status) {
+        return springDataRepo.countByStatus(status);
     }
 
     @Override
@@ -119,11 +124,11 @@ public class MemberRepositoryImpl implements MemberRepository {
     }
 
     @Override
-    public Page<Member> getByConfirmedStatus(Boolean confirmed, Pageable pageable) {
+    public Page<Member> getByStatus(com.ecclesiaflow.business.domain.member.MemberStatus status, Pageable pageable) {
         if (pageable == null) {
             throw new IllegalArgumentException("Pageable cannot be null");
         }
-        return springDataRepo.findByConfirmed(confirmed, pageable)
+        return springDataRepo.findByStatus(status, pageable)
                 .map(mapper::toDomain);
     }
 
@@ -137,13 +142,13 @@ public class MemberRepositoryImpl implements MemberRepository {
     }
 
     @Override
-    public Page<Member> getMembersBySearchTermAndConfirmationStatus(
-            String searchTerm, Boolean confirmed, Pageable pageable) {
+    public Page<Member> getMembersBySearchTermAndStatus(
+            String searchTerm, com.ecclesiaflow.business.domain.member.MemberStatus status, Pageable pageable) {
         if (pageable == null) {
             throw new IllegalArgumentException("Pageable cannot be null");
         }
-        return springDataRepo.findMembersBySearchTermAndConfirmationStatus(
-                searchTerm, confirmed, pageable)
+        return springDataRepo.findMembersBySearchTermAndStatus(
+                searchTerm, status, pageable)
                 .map(mapper::toDomain);
     }
 }

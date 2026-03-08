@@ -77,6 +77,19 @@ public interface MemberRepository {
     Optional<Member> getByEmail(String email);
     
     /**
+     * Récupère un membre par son keycloakUserId (sub claim du JWT Keycloak).
+     * <p>
+     * Utilisé pour récupérer le profil d'un utilisateur authentifié via Keycloak.
+     * Le keycloakUserId correspond au claim 'sub' du JWT.
+     * </p>
+     * 
+     * @param keycloakUserId l'identifiant Keycloak de l'utilisateur, non null et non vide
+     * @return un Optional contenant le membre si trouvé, vide sinon
+     * @throws IllegalArgumentException si keycloakUserId est null ou vide
+     */
+    Optional<Member> getByKeycloakUserId(String keycloakUserId);
+    
+    /**
      * Vérifie l'existence d'un membre avec l'email spécifié.
      * <p>
      * Méthode optimisée pour la vérification d'unicité lors de l'inscription.
@@ -88,7 +101,10 @@ public interface MemberRepository {
      * @throws IllegalArgumentException si email est null ou vide
      */
     boolean existsByEmail(String email);
-    
+
+    /** Checks whether a member with the given keycloakUserId already exists. */
+    boolean existsByKeycloakUserId(String keycloakUserId);
+
     /**
      * Récupère tous les membres du système.
      * <p>
@@ -101,18 +117,12 @@ public interface MemberRepository {
     List<Member> findAll();
     
     /**
-     * Compte le nombre de membres ayant confirmé leur compte.
+     * Compte le nombre de membres par statut.
      * 
-     * @return le nombre de membres confirmés (≥ 0)
+     * @param status le statut à compter
+     * @return le nombre de membres avec ce statut (≥ 0)
      */
-    long countConfirmedMembers();
-    
-    /**
-     * Compte le nombre de membres en attente de confirmation.
-     * 
-     * @return le nombre de membres non confirmés (≥ 0)
-     */
-    long countPendingConfirmations();
+    long countByStatus(MemberStatus status);
     
     /**
      * Sauvegarde un membre (création ou mise à jour).
@@ -154,14 +164,14 @@ public interface MemberRepository {
     Page<Member> getAll(Pageable pageable);
     
     /**
-     * Recherche des membres par statut de confirmation avec pagination.
+     * Recherche des membres par statut avec pagination.
      * 
-     * @param confirmed le statut de confirmation recherché
+     * @param status le statut recherché
      * @param pageable les paramètres de pagination, non null
      * @return une page de membres correspondant au critère
      * @throws IllegalArgumentException si pageable est null
      */
-    Page<Member> getByConfirmedStatus(Boolean confirmed, Pageable pageable);
+    Page<Member> getByStatus(MemberStatus status, Pageable pageable);
     
     /**
      * Recherche des membres par prénom, nom ou email (insensible à la casse) avec pagination.
@@ -175,15 +185,15 @@ public interface MemberRepository {
     Page<Member> getMembersBySearchTerm(String searchTerm, Pageable pageable);
     
     /**
-     * Recherche des membres par prénom, nom ou email (insensible à la casse) et par statut de confirmation avec pagination.
+     * Recherche des membres par prénom, nom ou email (insensible à la casse) et par statut avec pagination.
      * Les termes de recherche sont appliqués avec un opérateur LIKE.
      *
      * @param searchTerm Terme de recherche appliqué au prénom, nom et email. Peut être null ou vide.
-     * @param confirmed Le statut de confirmation recherché (true/false). Peut être null pour ignorer le filtre.
+     * @param status Le statut recherché. Peut être null pour ignorer le filtre.
      * @param pageable les paramètres de pagination et de tri, non null
      * @return une page de membres correspondant aux critères
      * @throws IllegalArgumentException si pageable est null
      */
-    Page<Member> getMembersBySearchTermAndConfirmationStatus(
-        String searchTerm, Boolean confirmed, Pageable pageable);
+    Page<Member> getMembersBySearchTermAndStatus(
+        String searchTerm, MemberStatus status, Pageable pageable);
 }

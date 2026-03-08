@@ -72,6 +72,18 @@ public interface SpringDataMemberRepository extends JpaRepository<MemberEntity, 
      * @return un Optional contenant l'entité si trouvée, vide sinon
      */
     Optional<MemberEntity> findByEmail(String email);
+    
+    /**
+     * Recherche une entité membre par son keycloakUserId (sub claim du JWT Keycloak).
+     * <p>
+     * Requête dérivée Spring Data : SELECT * FROM member WHERE keycloak_user_id = ?
+     * Utilise l'index unique sur la colonne keycloak_user_id pour des performances optimales.
+     * </p>
+     * 
+     * @param keycloakUserId l'identifiant Keycloak de l'utilisateur, non null
+     * @return un Optional contenant l'entité si trouvée, vide sinon
+     */
+    Optional<MemberEntity> findByKeycloakUserId(String keycloakUserId);
 
     /**
      * Vérifie l'existence d'un membre avec l'email spécifié.
@@ -85,40 +97,32 @@ public interface SpringDataMemberRepository extends JpaRepository<MemberEntity, 
      */
     boolean existsByEmail(String email);
 
+    boolean existsByKeycloakUserId(String keycloakUserId);
+
     /**
-     * Recherche toutes les entités membres par statut de confirmation.
+     * Recherche toutes les entités membres par statut.
      * <p>
-     * Requête dérivée : SELECT * FROM member WHERE confirmed = ?
-     * Utilise l'index sur la colonne confirmed pour les performances.
+     * Requête dérivée : SELECT * FROM member WHERE status = ?
+     * Utilise l'index sur la colonne status pour les performances.
      * </p>
      * 
-     * @param confirmed true pour les membres confirmés, false pour ceux en attente
+     * @param status le statut recherché (PENDING, CONFIRMED, ACTIVE, etc.)
      * @param pageable les paramètres de pagination et de tri, non null
      * @return la liste des entités correspondantes (peut être vide)
      */
-    Page<MemberEntity> findByConfirmed(Boolean confirmed, Pageable pageable);
+    Page<MemberEntity> findByStatus(com.ecclesiaflow.business.domain.member.MemberStatus status, Pageable pageable);
 
     /**
-     * Compte le nombre de membres confirmés.
+     * Compte le nombre de membres actifs.
      * <p>
-     * Requête optimisée : SELECT COUNT(*) FROM member WHERE confirmed = true
+     * Requête optimisée : SELECT COUNT(*) FROM member WHERE status = 'ACTIVE'
      * Opération de comptage pure sans chargement des entités.
      * </p>
      * 
-     * @return le nombre de membres confirmés (≥ 0)
+     * @return le nombre de membres actifs (≥ 0)
      */
-    long countByConfirmedTrue();
+    long countByStatus(com.ecclesiaflow.business.domain.member.MemberStatus status);
 
-    /**
-     * Compte le nombre de membres en attente de confirmation.
-     * <p>
-     * Requête optimisée : SELECT COUNT(*) FROM member WHERE confirmed = false
-     * Opération de comptage pure sans chargement des entités.
-     * </p>
-     * 
-     * @return le nombre de membres non confirmés (≥ 0)
-     */
-    long countByConfirmedFalse();
 
     /**
      * Recherche des membres par prénom, nom ou email (insensible à la casse) avec pagination.
@@ -139,11 +143,11 @@ public interface SpringDataMemberRepository extends JpaRepository<MemberEntity, 
     );
 
     /**
-     * Recherche des membres par prénom, nom ou email (insensible à la casse) et par statut de confirmation avec pagination.
+     * Recherche des membres par prénom, nom ou email (insensible à la casse) et par statut avec pagination.
      * Les termes de recherche sont appliqués avec un opérateur LIKE.
      *
      * @param searchTerm Terme de recherche appliqué au prénom, nom et email. Peut être null ou vide.
-     * @param confirmed Le statut de confirmation recherché (true/false). Peut être null pour ignorer le filtre.
+     * @param status Le statut recherché (PENDING, CONFIRMED, ACTIVE, etc.). Peut être null pour ignorer le filtre.
      * @param pageable les paramètres de pagination et de tri.
      * @return une page d'entités membres correspondant aux critères.
      */
@@ -152,10 +156,10 @@ public interface SpringDataMemberRepository extends JpaRepository<MemberEntity, 
            " LOWER(m.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
            " LOWER(m.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
            " LOWER(m.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
-           "AND (:confirmed IS NULL OR m.confirmed = :confirmed)")
-    Page<MemberEntity> findMembersBySearchTermAndConfirmationStatus(
+           "AND (:status IS NULL OR m.status = :status)")
+    Page<MemberEntity> findMembersBySearchTermAndStatus(
         @Param("searchTerm") String searchTerm,
-        @Param("confirmed") Boolean confirmed,
+        @Param("status") com.ecclesiaflow.business.domain.member.MemberStatus status,
         Pageable pageable
     );
 }
