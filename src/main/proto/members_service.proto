@@ -28,6 +28,19 @@ service MembersService {
    * Sécurité: Requires service-to-service authentication
    */
   rpc GetMemberConfirmationStatus(ConfirmationStatusRequest) returns (ConfirmationStatusResponse);
+
+  /**
+   * Notifies Members module that a user account has been activated in Keycloak.
+   * Called by Auth module after successful password setup and Keycloak user creation.
+   *
+   * Flow:
+   * 1. User sets password via Auth module
+   * 2. Auth creates user in Keycloak
+   * 3. Auth calls NotifyAccountActivated with memberId and keycloakUserId
+   * 4. Members updates member status from CONFIRMED to ACTIVE
+   * 5. Members stores keycloakUserId for future reference
+   */
+  rpc NotifyAccountActivated(AccountActivatedRequest) returns (AccountActivatedResponse);
 }
 
 // ============================================================================
@@ -51,4 +64,26 @@ message ConfirmationStatusResponse {
   
   // Indique si l'email du membre a été confirmé
   bool is_confirmed = 2;
+}
+
+/**
+ * Request to notify that a member account has been activated.
+ */
+message AccountActivatedRequest {
+  // Member ID (UUID string)
+  string member_id = 1;
+  
+  // Keycloak user ID assigned to this member
+  string keycloak_user_id = 2;
+}
+
+/**
+ * Response confirming account activation notification.
+ */
+message AccountActivatedResponse {
+  // Whether the notification was processed successfully
+  bool success = 1;
+  
+  // Optional message (error details if success=false)
+  string message = 2;
 }

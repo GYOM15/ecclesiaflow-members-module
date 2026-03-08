@@ -1,6 +1,7 @@
 package com.ecclesiaflow.io.grpc.client;
 
 import com.ecclesiaflow.business.domain.auth.AuthClient;
+import com.ecclesiaflow.business.domain.auth.PasswordSetupTokenResponse;
 import com.ecclesiaflow.grpc.auth.*;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
@@ -21,36 +22,6 @@ import java.util.concurrent.TimeUnit;
  * et type-safe pour les services métier.
  * </p>
  *
- * <p><strong>Rôle architectural :</strong> Adapter - gRPC Client to Business Logic</p>
- *
- * <p><strong>Responsabilités :</strong></p>
- * <ul>
- *   <li>Création et gestion des stubs gRPC (blocking/async)</li>
- *   <li>Appels RPC vers le module Auth (GenerateTemporaryToken)</li>
- *   <li>Conversion des réponses Protobuf vers types Java métier</li>
- *   <li>Gestion des erreurs gRPC et mapping vers exceptions métier</li>
- *   <li>Configuration des timeouts par appel</li>
- * </ul>
- *
- * <p><strong>Clean Architecture :</strong></p>
- * <pre>
- * Business Layer → AuthGrpcClient (Adapter) → gRPC Channel → Auth Module
- * </pre>
- *
- * <p><strong>Gestion d'erreurs :</strong></p>
- * <ul>
- *   <li>UNAVAILABLE - Service Auth indisponible → AuthServiceUnavailableException</li>
- *   <li>DEADLINE_EXCEEDED - Timeout dépassé → TimeoutException</li>
- *   <li>INVALID_ARGUMENT - Données invalides → IllegalArgumentException</li>
- *   <li>INTERNAL - Erreur serveur → RuntimeException</li>
- * </ul>
- *
- * <p><strong>Performance :</strong></p>
- * <ul>
- *   <li>Réutilise le même canal gRPC (pool de connexions)</li>
- *   <li>Timeout configurables par appel (défaut: 5s)</li>
- *   <li>Compression gzip automatique si disponible</li>
- * </ul>
  *
  * @author EcclesiaFlow Team
  * @since 1.0.0
@@ -69,20 +40,6 @@ public class AuthGrpcClient implements AuthClient {
 
     /**
      * Génère un token temporaire JWT via gRPC pour permettre la définition du mot de passe.
-     * <p>
-     * Cette méthode appelle le service gRPC {@code AuthService.GenerateTemporaryToken}
-     * du module Auth. Le token temporaire généré permet à un membre nouvellement confirmé
-     * de définir son mot de passe initial (expire en 15 minutes).
-     * </p>
-     *
-     * <p><strong>Flow de communication :</strong></p>
-     * <pre>
-     * 1. Members: Utilisateur confirme son email
-     * 2. Members → Auth (gRPC): GenerateTemporaryToken(email, memberId)
-     * 3. Auth: Génère JWT temporaire
-     * 4. Auth → Members (gRPC): TemporaryTokenResponse avec JWT
-     * 5. Members → Utilisateur: Token dans réponse HTTP
-     * </pre>
      *
      * @param email l'email du membre confirmé (requis, validé côté serveur)
      * @param memberId l'UUID du membre (requis)
@@ -92,7 +49,7 @@ public class AuthGrpcClient implements AuthClient {
      * @throws RuntimeException si erreur inattendue
      */
     @Override
-    public String retrievePostActivationToken(String email, UUID memberId) {
+    public PasswordSetupTokenResponse retrievePostActivationToken(String email, UUID memberId) {
         // Création du stub avec timeout
         AuthServiceGrpc.AuthServiceBlockingStub stub = AuthServiceGrpc
                 .newBlockingStub(authGrpcChannel)
@@ -108,8 +65,12 @@ public class AuthGrpcClient implements AuthClient {
             // Appel RPC synchrone
             TemporaryTokenResponse response = stub.generateTemporaryToken(request);
 
-            // Extraction du token de la réponse
-            return response.getTemporaryToken();
+            // Return response with token and password endpoint
+            return new PasswordSetupTokenResponse(
+                    response.getTemporaryToken(),
+                    response.getExpiresInSeconds(),
+                    response.getPasswordEndpoint()
+            );
 
         } catch (StatusRuntimeException e) {
             // Conversion des erreurs gRPC en exceptions métier
@@ -123,10 +84,6 @@ public class AuthGrpcClient implements AuthClient {
 
     /**
      * Convertit les exceptions gRPC en exceptions métier appropriées.
-     * <p>
-     * Cette méthode centralise la gestion des erreurs gRPC et les mappe
-     * vers des exceptions Java plus expressives pour la couche métier.
-     * </p>
      *
      * @param e l'exception gRPC interceptée
      * @return l'exception métier appropriée

@@ -54,14 +54,17 @@ message TemporaryTokenRequest {
  * Réponse contenant le token temporaire généré.
  * 
  * Correspondance avec REST API:
- * Response: { temporaryToken, expiresIn, message }
+ * Response: { temporaryToken, expiresIn, passwordEndpoint }
  */
 message TemporaryTokenResponse {
-  // Token JWT temporaire encodé
+  // Opaque token for password setup (base64url encoded)
   string temporary_token = 1;
   
-  // Durée de validité en secondes (ex: 900 = 15 minutes)
+  // Durée de validité en secondes (ex: 86400 = 24 hours)
   int32 expires_in_seconds = 2;
+  
+  // URL endpoint for password setup
+  string password_endpoint = 3;
 }
 
 

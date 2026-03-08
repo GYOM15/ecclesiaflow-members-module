@@ -2,6 +2,7 @@ package com.ecclesiaflow.web.client;
 
 import com.ecclesiaflow.application.config.WebClientConfig;
 import com.ecclesiaflow.business.domain.auth.AuthClient;
+import com.ecclesiaflow.business.domain.auth.PasswordSetupTokenResponse;
 import com.ecclesiaflow.web.model.TemporaryTokenRequest;
 import com.ecclesiaflow.web.model.TemporaryTokenResponse;
 import lombok.RequiredArgsConstructor;
@@ -97,14 +98,22 @@ public class AuthClientImpl implements AuthClient {
      *           pour permettre le développement en mode dégradé.
      */
     @Override
-    public String retrievePostActivationToken(String email, UUID memberId) {
+    public PasswordSetupTokenResponse retrievePostActivationToken(String email, UUID memberId) {
         try {
             TemporaryTokenRequest request = new TemporaryTokenRequest(email, memberId);
-            return post(request)
-                    .map(TemporaryTokenResponse::getTemporaryToken)
-                    .block();
+            TemporaryTokenResponse response = post(request).block();
+            return new PasswordSetupTokenResponse(
+                    response.getTemporaryToken(),
+                    response.getExpiresInSeconds() != null ? response.getExpiresInSeconds() : 86400,
+                    response.getPasswordEndpoint() != null ? response.getPasswordEndpoint() : "/ecclesiaflow/auth/password/setup"
+            );
         } catch (Exception e) {
-            return "temporary-token-mock-for-dev"; // Valeur de test en développement
+            // Fallback for development
+            return new PasswordSetupTokenResponse(
+                    "temporary-token-mock-for-dev",
+                    86400,
+                    "/ecclesiaflow/auth/password/setup"
+            );
         }
     }
 
