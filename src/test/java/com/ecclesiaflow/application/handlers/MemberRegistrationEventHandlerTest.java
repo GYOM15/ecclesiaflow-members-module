@@ -22,14 +22,14 @@ class MemberRegistrationEventHandlerTest {
     void shouldSendConfirmationEmail() {
         EmailClient emailClient = Mockito.mock(EmailClient.class);
         MemberRegistrationEventHandler handler = new MemberRegistrationEventHandler(emailClient);
-        ReflectionTestUtils.setField(handler, "baseUrl", "http://localhost:8080");
+        ReflectionTestUtils.setField(handler, "frontendBaseUrl", "http://localhost:5173");
 
         UUID token = UUID.randomUUID();
         MemberRegisteredEvent event = new MemberRegisteredEvent("user@example.com", token, "John");
 
         assertThatNoException().isThrownBy(() -> handler.handleMemberRegistered(event));
 
-        String expectedUrl = "http://localhost:8080/ecclesiaflow/members/confirmation?token=" + token;
+        String expectedUrl = "http://localhost:5173/confirm-email?token=" + token;
         verify(emailClient).sendConfirmationEmail(eq("user@example.com"), eq(expectedUrl), eq("John"));
     }
 
@@ -38,7 +38,7 @@ class MemberRegistrationEventHandlerTest {
     void shouldSwallowEmailClientExceptions() {
         EmailClient emailClient = Mockito.mock(EmailClient.class);
         MemberRegistrationEventHandler handler = new MemberRegistrationEventHandler(emailClient);
-        ReflectionTestUtils.setField(handler, "baseUrl", "http://localhost:8080");
+        ReflectionTestUtils.setField(handler, "frontendBaseUrl", "http://localhost:5173");
 
         UUID token = UUID.randomUUID();
         MemberRegisteredEvent event = new MemberRegisteredEvent("user@example.com", token, "John");

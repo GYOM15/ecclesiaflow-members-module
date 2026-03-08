@@ -87,7 +87,7 @@ class GlobalExceptionHandlerTest {
         ApiErrorResponse errorResponse = response.getBody();
         assertThat(errorResponse.status()).isEqualTo(400);
         assertThat(errorResponse.error()).isEqualTo("Bad Request");
-        assertThat(errorResponse.message()).isEqualTo("Erreur de validation des données");
+        assertThat(errorResponse.message()).isEqualTo("Validation failed");
         assertThat(errorResponse.path()).isEqualTo("/ecclesiaflow/members");
         assertThat(errorResponse.errors()).hasSize(1);
 
@@ -153,7 +153,7 @@ class GlobalExceptionHandlerTest {
 
         ApiErrorResponse errorResponse = response.getBody();
         assertThat(errorResponse.status()).isEqualTo(400);
-        assertThat(errorResponse.message()).isEqualTo("Erreur de validation des contraintes");
+        assertThat(errorResponse.message()).isEqualTo("Constraint violation");
         assertThat(errorResponse.errors()).hasSize(1);
 
         ValidationError validationError = errorResponse.errors().get(0);
@@ -194,7 +194,7 @@ class GlobalExceptionHandlerTest {
 
         ApiErrorResponse errorResponse = response.getBody();
         assertThat(errorResponse.status()).isEqualTo(400);
-        assertThat(errorResponse.message()).isEqualTo("Erreur de validation des contraintes");
+        assertThat(errorResponse.message()).isEqualTo("Constraint violation");
         assertThat(errorResponse.errors()).hasSize(1);
 
         ValidationError validationError = errorResponse.errors().get(0);
@@ -258,7 +258,7 @@ class GlobalExceptionHandlerTest {
 
         ApiErrorResponse errorResponse = response.getBody();
         assertThat(errorResponse.status()).isEqualTo(400);
-        assertThat(errorResponse.message()).isEqualTo("Requête JSON mal formée");
+        assertThat(errorResponse.message()).isEqualTo("Malformed JSON request");
         assertThat(errorResponse.path()).isEqualTo("/ecclesiaflow/members");
 
         assertThat(errorResponse.errors().getFirst().type()).isEqualTo("parsing");
@@ -403,7 +403,7 @@ class GlobalExceptionHandlerTest {
         ApiErrorResponse errorResponse = response.getBody();
         assertThat(errorResponse.status()).isEqualTo(500);
         assertThat(errorResponse.error()).isEqualTo("Internal Server Error");
-        assertThat(errorResponse.message()).isEqualTo("Une erreur interne est survenue");
+        assertThat(errorResponse.message()).isEqualTo("An internal error occurred");
     }
 
     // === RESPONSES STRUCTURE TESTS ===
@@ -453,10 +453,10 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).isNotNull();
         ApiErrorResponse errorResponse = response.getBody();
         assertThat(errorResponse.status()).isEqualTo(400);
-        assertThat(errorResponse.message()).contains("En-tête requis manquant: Authorization");
+        assertThat(errorResponse.message()).contains("Missing required header: Authorization");
         assertThat(errorResponse.path()).isEqualTo("/ecclesiaflow/members");
-        assertThat(errorResponse.errors()).hasSize(1); // Devrait avoir une erreur simple si buildBadRequestErrorResponse la crée
-        assertThat(errorResponse.errors().get(0).message()).contains("En-tête requis manquant: Authorization");
+        assertThat(errorResponse.errors()).hasSize(1);
+        assertThat(errorResponse.errors().get(0).message()).contains("Missing required header: Authorization");
     }
 
     // === RATELIMITING TESTS ===

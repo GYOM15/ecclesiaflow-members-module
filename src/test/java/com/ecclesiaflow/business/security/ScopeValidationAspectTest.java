@@ -1,6 +1,7 @@
 package com.ecclesiaflow.business.security;
 
 import com.ecclesiaflow.business.exceptions.InsufficientPermissionsException;
+import com.ecclesiaflow.web.security.AuthenticatedUserService;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,17 +10,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Method;
-import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
-/**
- * Tests unitaires pour ScopeValidationAspect.
- */
 @ExtendWith(MockitoExtension.class)
 class ScopeValidationAspectTest {
 
@@ -27,7 +26,10 @@ class ScopeValidationAspectTest {
     private ScopeValidator scopeValidator;
 
     @Mock
-    private AuthenticatedUserContextProvider contextProvider;
+    private AuthenticatedUserService authenticatedUserService;
+
+    @Mock
+    private RoleToScopeMapper roleToScopeMapper;
 
     @Mock
     private JoinPoint joinPoint;
@@ -40,6 +42,7 @@ class ScopeValidationAspectTest {
 
     @BeforeEach
     void setUp() {
+        ReflectionTestUtils.setField(aspect, "scopesEnabled", true);
         when(joinPoint.getSignature()).thenReturn(methodSignature);
     }
 
@@ -48,17 +51,19 @@ class ScopeValidationAspectTest {
         // Given
         Method method = TestClass.class.getMethod("methodWithScopes");
         when(methodSignature.getMethod()).thenReturn(method);
-        when(contextProvider.getAuthenticatedUserScopes())
-                .thenReturn(List.of("ef:members:read:own", "ef:members:write:own"));
+        when(authenticatedUserService.getScopes()).thenReturn(Set.of("ef:members:read:own"));
+        when(authenticatedUserService.getRoles()).thenReturn(Set.of("USER"));
+        when(roleToScopeMapper.getScopesForRoles(Set.of("USER")))
+                .thenReturn(Set.of("ef:members:read:own", "ef:members:write:own", "ef:members:delete:own"));
 
         // When & Then
         assertThatCode(() -> aspect.validateScopes(joinPoint))
                 .doesNotThrowAnyException();
 
         verify(scopeValidator).validateScopes(
-                List.of("ef:members:read:own", "ef:members:write:own"),
-                new String[]{"ef:members:read:own"},
-                false
+                anyList(),
+                eq(new String[]{"ef:members:read:own"}),
+                eq(false)
         );
     }
 
@@ -67,16 +72,17 @@ class ScopeValidationAspectTest {
         // Given
         Method method = TestClass.class.getMethod("methodWithScopes");
         when(methodSignature.getMethod()).thenReturn(method);
-        when(contextProvider.getAuthenticatedUserScopes())
-                .thenReturn(List.of("ef:members:write:own"));
+        when(authenticatedUserService.getScopes()).thenReturn(Set.of());
+        when(authenticatedUserService.getRoles()).thenReturn(Set.of());
+        when(roleToScopeMapper.getScopesForRoles(Set.of())).thenReturn(Set.of());
 
-        doThrow(new InsufficientPermissionsException("Permissions insuffisantes"))
+        doThrow(new InsufficientPermissionsException("Insufficient permissions"))
                 .when(scopeValidator).validateScopes(any(), any(), anyBoolean());
 
         // When & Then
         assertThatThrownBy(() -> aspect.validateScopes(joinPoint))
                 .isInstanceOf(InsufficientPermissionsException.class)
-                .hasMessageContaining("Permissions insuffisantes");
+                .hasMessageContaining("Insufficient permissions");
     }
 
     @Test
@@ -84,17 +90,20 @@ class ScopeValidationAspectTest {
         // Given
         Method method = TestClass.class.getMethod("methodWithRequireAll");
         when(methodSignature.getMethod()).thenReturn(method);
-        when(contextProvider.getAuthenticatedUserScopes())
-                .thenReturn(List.of("ef:members:read:own", "ef:members:write:own"));
+        when(authenticatedUserService.getScopes())
+                .thenReturn(Set.of("ef:members:read:own", "ef:members:write:own"));
+        when(authenticatedUserService.getRoles()).thenReturn(Set.of("USER"));
+        when(roleToScopeMapper.getScopesForRoles(Set.of("USER")))
+                .thenReturn(Set.of("ef:members:read:own", "ef:members:write:own", "ef:members:delete:own"));
 
         // When
         aspect.validateScopes(joinPoint);
 
         // Then
         verify(scopeValidator).validateScopes(
-                List.of("ef:members:read:own", "ef:members:write:own"),
-                new String[]{"ef:members:read:own", "ef:members:write:own"},
-                true
+                anyList(),
+                eq(new String[]{"ef:members:read:own", "ef:members:write:own"}),
+                eq(true)
         );
     }
 
@@ -109,7 +118,7 @@ class ScopeValidationAspectTest {
 
         // Then
         verify(scopeValidator, never()).validateScopes(any(), any(), anyBoolean());
-        verify(contextProvider, never()).getAuthenticatedUserScopes();
+        verifyNoInteractions(authenticatedUserService, roleToScopeMapper);
     }
 
     // Test class with annotated methods

@@ -1,6 +1,6 @@
 package com.ecclesiaflow.io.persistence.jpa;
 
-import com.ecclesiaflow.business.domain.member.Role;
+import com.ecclesiaflow.business.domain.member.MemberStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,20 +29,17 @@ class SpringDataMemberRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        // Nettoyage avant chaque test
         memberRepository.deleteAll();
         entityManager.flush();
         entityManager.clear();
 
-        // Création des membres pour les tests
         member1 = MemberEntity.builder()
                 .memberId(UUID.randomUUID())
                 .firstName("Alice")
                 .lastName("Smith")
                 .email("alice.smith@example.com")
                 .address("101 Pine St")
-                .role(Role.MEMBER)
-                .confirmed(true)
+                .status(MemberStatus.ACTIVE)
                 .confirmedAt(LocalDateTime.now().minusDays(5))
                 .createdAt(LocalDateTime.now().minusDays(10))
                 .updatedAt(LocalDateTime.now().minusDays(10))
@@ -55,8 +52,7 @@ class SpringDataMemberRepositoryTest {
                 .lastName("Johnson")
                 .email("bob.johnson@example.com")
                 .address("202 Elm St")
-                .role(Role.ADMIN)
-                .confirmed(false)
+                .status(MemberStatus.PENDING)
                 .createdAt(LocalDateTime.now().minusDays(8))
                 .updatedAt(LocalDateTime.now().minusDays(8))
                 .build();
@@ -68,15 +64,14 @@ class SpringDataMemberRepositoryTest {
                 .lastName("Brown")
                 .email("charlie.brown@example.com")
                 .address("303 Oak Ave")
-                .role(Role.MEMBER)
-                .confirmed(true)
+                .status(MemberStatus.ACTIVE)
                 .confirmedAt(LocalDateTime.now().minusDays(2))
                 .createdAt(LocalDateTime.now().minusDays(7))
                 .updatedAt(LocalDateTime.now().minusDays(7))
                 .build();
         entityManager.persistAndFlush(member3);
 
-        entityManager.clear(); // Détacher les entités
+        entityManager.clear();
     }
 
     @Test
@@ -105,33 +100,33 @@ class SpringDataMemberRepositoryTest {
     }
 
     @Test
-    void findByConfirmed_shouldReturnOnlyConfirmedMembersWithPagination() {
+    void findByStatus_shouldReturnOnlyActiveMembersWithPagination() {
         Pageable pageable = PageRequest.of(0, 10);
-        Page<MemberEntity> confirmedMembers = memberRepository.findByConfirmed(true, pageable);
-        
-        assertThat(confirmedMembers.getContent()).hasSize(2);
-        assertThat(confirmedMembers.getTotalElements()).isEqualTo(2);
-        assertThat(confirmedMembers.getTotalPages()).isEqualTo(1);
-        assertThat(confirmedMembers.getContent()).extracting(MemberEntity::getEmail)
+        Page<MemberEntity> activeMembers = memberRepository.findByStatus(MemberStatus.ACTIVE, pageable);
+
+        assertThat(activeMembers.getContent()).hasSize(2);
+        assertThat(activeMembers.getTotalElements()).isEqualTo(2);
+        assertThat(activeMembers.getTotalPages()).isEqualTo(1);
+        assertThat(activeMembers.getContent()).extracting(MemberEntity::getEmail)
                 .containsExactlyInAnyOrder("alice.smith@example.com", "charlie.brown@example.com");
     }
 
     @Test
-    void findByConfirmed_shouldReturnOnlyUnconfirmedMembersWithPagination() {
+    void findByStatus_shouldReturnOnlyPendingMembersWithPagination() {
         Pageable pageable = PageRequest.of(0, 10);
-        Page<MemberEntity> unconfirmedMembers = memberRepository.findByConfirmed(false, pageable);
-        
-        assertThat(unconfirmedMembers.getContent()).hasSize(1);
-        assertThat(unconfirmedMembers.getTotalElements()).isEqualTo(1);
-        assertThat(unconfirmedMembers.getTotalPages()).isEqualTo(1);
-        assertThat(unconfirmedMembers.getContent().get(0).getEmail()).isEqualTo("bob.johnson@example.com");
+        Page<MemberEntity> pendingMembers = memberRepository.findByStatus(MemberStatus.PENDING, pageable);
+
+        assertThat(pendingMembers.getContent()).hasSize(1);
+        assertThat(pendingMembers.getTotalElements()).isEqualTo(1);
+        assertThat(pendingMembers.getTotalPages()).isEqualTo(1);
+        assertThat(pendingMembers.getContent().get(0).getEmail()).isEqualTo("bob.johnson@example.com");
     }
 
     @Test
     void findMembersBySearchTerm_shouldReturnMatchingMembersWithPagination() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<MemberEntity> searchResults = memberRepository.findMembersBySearchTerm("alice", pageable);
-        
+
         assertThat(searchResults.getContent()).hasSize(1);
         assertThat(searchResults.getTotalElements()).isEqualTo(1);
         assertThat(searchResults.getContent().get(0).getFirstName()).isEqualTo("Alice");
@@ -141,51 +136,54 @@ class SpringDataMemberRepositoryTest {
     void findMembersBySearchTerm_shouldReturnEmptyPageWhenNoMatch() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<MemberEntity> searchResults = memberRepository.findMembersBySearchTerm("nonexistent", pageable);
-        
+
         assertThat(searchResults.getContent()).isEmpty();
         assertThat(searchResults.getTotalElements()).isEqualTo(0);
     }
 
     @Test
-    void findMembersBySearchTermAndConfirmationStatus_shouldReturnMatchingConfirmedMembers() {
+    void findMembersBySearchTermAndStatus_shouldReturnMatchingActiveMembers() {
         Pageable pageable = PageRequest.of(0, 10);
-        Page<MemberEntity> searchResults = memberRepository.findMembersBySearchTermAndConfirmationStatus("alice", true, pageable);
-        
+        Page<MemberEntity> searchResults = memberRepository.findMembersBySearchTermAndStatus(
+                "alice", MemberStatus.ACTIVE, pageable);
+
         assertThat(searchResults.getContent()).hasSize(1);
         assertThat(searchResults.getTotalElements()).isEqualTo(1);
         assertThat(searchResults.getContent().get(0).getFirstName()).isEqualTo("Alice");
-        assertThat(searchResults.getContent().get(0).isConfirmed()).isTrue();
+        assertThat(searchResults.getContent().get(0).getStatus()).isEqualTo(MemberStatus.ACTIVE);
     }
 
     @Test
-    void findMembersBySearchTermAndConfirmationStatus_shouldReturnMatchingUnconfirmedMembers() {
+    void findMembersBySearchTermAndStatus_shouldReturnMatchingPendingMembers() {
         Pageable pageable = PageRequest.of(0, 10);
-        Page<MemberEntity> searchResults = memberRepository.findMembersBySearchTermAndConfirmationStatus("bob", false, pageable);
-        
+        Page<MemberEntity> searchResults = memberRepository.findMembersBySearchTermAndStatus(
+                "bob", MemberStatus.PENDING, pageable);
+
         assertThat(searchResults.getContent()).hasSize(1);
         assertThat(searchResults.getTotalElements()).isEqualTo(1);
         assertThat(searchResults.getContent().get(0).getFirstName()).isEqualTo("Bob");
-        assertThat(searchResults.getContent().get(0).isConfirmed()).isFalse();
+        assertThat(searchResults.getContent().get(0).getStatus()).isEqualTo(MemberStatus.PENDING);
     }
 
     @Test
-    void findMembersBySearchTermAndConfirmationStatus_shouldReturnEmptyWhenNoMatch() {
+    void findMembersBySearchTermAndStatus_shouldReturnEmptyWhenNoMatch() {
         Pageable pageable = PageRequest.of(0, 10);
-        Page<MemberEntity> searchResults = memberRepository.findMembersBySearchTermAndConfirmationStatus("alice", false, pageable);
-        
+        Page<MemberEntity> searchResults = memberRepository.findMembersBySearchTermAndStatus(
+                "alice", MemberStatus.PENDING, pageable);
+
         assertThat(searchResults.getContent()).isEmpty();
         assertThat(searchResults.getTotalElements()).isEqualTo(0);
     }
 
     @Test
-    void countByConfirmedTrue_shouldReturnCorrectCount() {
-        long count = memberRepository.countByConfirmedTrue();
-        assertThat(count).isEqualTo(2); // Alice et Charlie
+    void countByStatus_shouldReturnCorrectActiveCount() {
+        long count = memberRepository.countByStatus(MemberStatus.ACTIVE);
+        assertThat(count).isEqualTo(2); // Alice and Charlie
     }
 
     @Test
-    void countByConfirmedFalse_shouldReturnCorrectCount() {
-        long count = memberRepository.countByConfirmedFalse();
+    void countByStatus_shouldReturnCorrectPendingCount() {
+        long count = memberRepository.countByStatus(MemberStatus.PENDING);
         assertThat(count).isEqualTo(1); // Bob
     }
 
@@ -197,15 +195,14 @@ class SpringDataMemberRepositoryTest {
                 .lastName("Clark")
                 .email("david.clark@example.com")
                 .address("404 Error St")
-                .role(Role.MEMBER)
-                .confirmed(false)
+                .status(MemberStatus.PENDING)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
 
         MemberEntity savedMember = memberRepository.save(newMember);
-        entityManager.flush(); // Ensure it's written to DB
-        entityManager.clear(); // Clear cache to read fresh from DB
+        entityManager.flush();
+        entityManager.clear();
 
         assertThat(savedMember).isNotNull();
         assertThat(savedMember.getId()).isNotNull();
@@ -216,9 +213,9 @@ class SpringDataMemberRepositoryTest {
     @Test
     void update_shouldModifyExistingMember() {
         member1.setFirstName("Alicia");
-        member1.setConfirmed(false);
+        member1.setStatus(MemberStatus.PENDING);
         member1.setConfirmedAt(null);
-        member1.setUpdatedAt(LocalDateTime.now()); // Simuler une mise à jour manuelle
+        member1.setUpdatedAt(LocalDateTime.now());
 
         memberRepository.save(member1);
         entityManager.flush();
@@ -227,7 +224,7 @@ class SpringDataMemberRepositoryTest {
         Optional<MemberEntity> updatedMember = memberRepository.findById(member1.getId());
         assertThat(updatedMember).isPresent();
         assertThat(updatedMember.get().getFirstName()).isEqualTo("Alicia");
-        assertThat(updatedMember.get().isConfirmed()).isFalse();
+        assertThat(updatedMember.get().getStatus()).isEqualTo(MemberStatus.PENDING);
         assertThat(updatedMember.get().getConfirmedAt()).isNull();
     }
 
@@ -240,6 +237,6 @@ class SpringDataMemberRepositoryTest {
 
         Optional<MemberEntity> deletedMember = memberRepository.findById(memberIdToDelete);
         assertThat(deletedMember).isEmpty();
-        assertThat(memberRepository.findAll()).hasSize(2); // member2 et member3 devraient rester
+        assertThat(memberRepository.findAll()).hasSize(2);
     }
 }

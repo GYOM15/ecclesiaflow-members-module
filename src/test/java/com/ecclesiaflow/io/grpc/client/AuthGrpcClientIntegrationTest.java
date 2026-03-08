@@ -1,5 +1,6 @@
 package com.ecclesiaflow.io.grpc.client;
 
+import com.ecclesiaflow.business.domain.auth.PasswordSetupTokenResponse;
 import com.ecclesiaflow.grpc.auth.AuthServiceGrpc;
 import com.ecclesiaflow.grpc.auth.TemporaryTokenRequest;
 import com.ecclesiaflow.grpc.auth.TemporaryTokenResponse;
@@ -20,11 +21,8 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests d'intégration pour AuthGrpcClient.
- * <p>
- * Teste le client gRPC avec un vrai serveur Auth mock via InProcessServer.
- * Couvre la communication réelle et les scénarios d'erreur.
- * </p>
+ * Integration tests for AuthGrpcClient.
+ * Tests the gRPC client with a real Auth mock via InProcessServer.
  */
 class AuthGrpcClientIntegrationTest {
 
@@ -40,7 +38,6 @@ class AuthGrpcClientIntegrationTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        // Créer un service Auth mock
         AuthServiceGrpc.AuthServiceImplBase mockService = new AuthServiceGrpc.AuthServiceImplBase() {
             @Override
             public void generateTemporaryToken(TemporaryTokenRequest request,
@@ -59,9 +56,11 @@ class AuthGrpcClientIntegrationTest {
                             Status.INTERNAL.withDescription("Failed to generate token")));
                 } else {
                     try {
-                        UUID.fromString(memberId); // Validate UUID
+                        UUID.fromString(memberId);
                         responseObserver.onNext(TemporaryTokenResponse.newBuilder()
                                 .setTemporaryToken(GENERATED_TOKEN)
+                                .setExpiresInSeconds(900)
+                                .setPasswordEndpoint("/ecclesiaflow/auth/password")
                                 .build());
                         responseObserver.onCompleted();
                     } catch (IllegalArgumentException e) {
@@ -72,7 +71,6 @@ class AuthGrpcClientIntegrationTest {
             }
         };
 
-        // Démarrer le serveur in-memory
         server = InProcessServerBuilder
                 .forName(SERVER_NAME)
                 .directExecutor()
@@ -80,13 +78,11 @@ class AuthGrpcClientIntegrationTest {
                 .build()
                 .start();
 
-        // Créer le canal client
         channel = InProcessChannelBuilder
                 .forName(SERVER_NAME)
                 .directExecutor()
                 .build();
 
-        // Créer le client
         client = new AuthGrpcClient(channel);
     }
 
@@ -103,21 +99,20 @@ class AuthGrpcClientIntegrationTest {
     @Test
     @DisplayName("Should generate temporary token successfully via real gRPC call")
     void retrievePostActivationToken_Success() {
-        // When
-        String token = client.retrievePostActivationToken(EMAIL, MEMBER_ID);
+        PasswordSetupTokenResponse response = client.retrievePostActivationToken(EMAIL, MEMBER_ID);
 
-        // Then
-        assertNotNull(token);
-        assertEquals(GENERATED_TOKEN, token);
+        assertNotNull(response);
+        assertEquals(GENERATED_TOKEN, response.token());
+        assertEquals(900, response.expiresInSeconds());
+        assertEquals("/ecclesiaflow/auth/password", response.passwordEndpoint());
     }
 
     @Test
     @DisplayName("Should throw exception for empty email")
     void retrievePostActivationToken_EmptyEmail() {
-        // When/Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            client.retrievePostActivationToken("", MEMBER_ID);
-        });
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+            client.retrievePostActivationToken("", MEMBER_ID)
+        );
 
         assertTrue(exception.getMessage().contains("Email cannot be null or empty") ||
                    exception instanceof StatusRuntimeException);
@@ -126,24 +121,20 @@ class AuthGrpcClientIntegrationTest {
     @Test
     @DisplayName("Should handle special UUID values")
     void retrievePostActivationToken_SpecialUUID() {
-        // Given - Using zero UUID which is valid but special
         UUID zeroUuid = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
-        // When
-        String token = client.retrievePostActivationToken(EMAIL, zeroUuid);
+        PasswordSetupTokenResponse response = client.retrievePostActivationToken(EMAIL, zeroUuid);
 
-        // Then - Should still generate token for any valid UUID
-        assertNotNull(token);
-        assertEquals(GENERATED_TOKEN, token);
+        assertNotNull(response);
+        assertEquals(GENERATED_TOKEN, response.token());
     }
 
     @Test
     @DisplayName("Should throw exception when service returns error")
     void retrievePostActivationToken_ServiceError() {
-        // When/Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            client.retrievePostActivationToken(INVALID_EMAIL, MEMBER_ID);
-        });
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+            client.retrievePostActivationToken(INVALID_EMAIL, MEMBER_ID)
+        );
 
         assertTrue(exception.getMessage().contains("Failed to generate token") ||
                    exception instanceof StatusRuntimeException);
@@ -152,55 +143,45 @@ class AuthGrpcClientIntegrationTest {
     @Test
     @DisplayName("Should handle multiple sequential requests")
     void retrievePostActivationToken_MultipleRequests() {
-        // When/Then
-        String token1 = client.retrievePostActivationToken(EMAIL, MEMBER_ID);
-        String token2 = client.retrievePostActivationToken(EMAIL, MEMBER_ID);
-        String token3 = client.retrievePostActivationToken(EMAIL, MEMBER_ID);
+        PasswordSetupTokenResponse r1 = client.retrievePostActivationToken(EMAIL, MEMBER_ID);
+        PasswordSetupTokenResponse r2 = client.retrievePostActivationToken(EMAIL, MEMBER_ID);
+        PasswordSetupTokenResponse r3 = client.retrievePostActivationToken(EMAIL, MEMBER_ID);
 
-        // All should succeed
-        assertEquals(GENERATED_TOKEN, token1);
-        assertEquals(GENERATED_TOKEN, token2);
-        assertEquals(GENERATED_TOKEN, token3);
+        assertEquals(GENERATED_TOKEN, r1.token());
+        assertEquals(GENERATED_TOKEN, r2.token());
+        assertEquals(GENERATED_TOKEN, r3.token());
     }
 
     @Test
     @DisplayName("Should handle concurrent requests safely")
     void retrievePostActivationToken_ConcurrentRequests() throws InterruptedException {
-        // Given
         Thread[] threads = new Thread[10];
 
-        // When
         for (int i = 0; i < threads.length; i++) {
             threads[i] = new Thread(() -> {
-                String token = client.retrievePostActivationToken(EMAIL, MEMBER_ID);
-                assertEquals(GENERATED_TOKEN, token);
+                PasswordSetupTokenResponse response = client.retrievePostActivationToken(EMAIL, MEMBER_ID);
+                assertEquals(GENERATED_TOKEN, response.token());
             });
             threads[i].start();
         }
 
-        // Wait for all threads
         for (Thread thread : threads) {
             thread.join();
         }
-
-        // Then - All requests should complete without errors
     }
 
     @Test
     @DisplayName("Should validate different member IDs")
     void retrievePostActivationToken_DifferentMemberIds() {
-        // Given
         UUID memberId1 = UUID.randomUUID();
         UUID memberId2 = UUID.randomUUID();
 
-        // When
-        String token1 = client.retrievePostActivationToken(EMAIL, memberId1);
-        String token2 = client.retrievePostActivationToken(EMAIL, memberId2);
+        PasswordSetupTokenResponse r1 = client.retrievePostActivationToken(EMAIL, memberId1);
+        PasswordSetupTokenResponse r2 = client.retrievePostActivationToken(EMAIL, memberId2);
 
-        // Then
-        assertNotNull(token1);
-        assertNotNull(token2);
-        assertEquals(token1, token2); // Mock returns same token
+        assertNotNull(r1);
+        assertNotNull(r2);
+        assertEquals(r1.token(), r2.token()); // Mock returns same token
     }
 
     @Test
@@ -214,7 +195,6 @@ class AuthGrpcClientIntegrationTest {
     @Test
     @DisplayName("Should handle UNAVAILABLE status correctly")
     void retrievePostActivationToken_Unavailable() throws Exception {
-        // Arrange - Create a service that returns UNAVAILABLE
         AuthServiceGrpc.AuthServiceImplBase unavailableService = new AuthServiceGrpc.AuthServiceImplBase() {
             @Override
             public void generateTemporaryToken(TemporaryTokenRequest request,
@@ -224,7 +204,6 @@ class AuthGrpcClientIntegrationTest {
             }
         };
 
-        // Shutdown previous server and create new one
         if (server != null) server.shutdownNow();
         if (channel != null) channel.shutdownNow();
 
@@ -240,11 +219,10 @@ class AuthGrpcClientIntegrationTest {
 
         client = new AuthGrpcClient(channel);
 
-        // Act/Assert
         AuthGrpcClient.AuthServiceUnavailableException exception =
-                assertThrows(AuthGrpcClient.AuthServiceUnavailableException.class, () -> {
-                    client.retrievePostActivationToken(EMAIL, MEMBER_ID);
-                });
+                assertThrows(AuthGrpcClient.AuthServiceUnavailableException.class, () ->
+                    client.retrievePostActivationToken(EMAIL, MEMBER_ID)
+                );
 
         assertTrue(exception.getMessage().contains("Auth service is unavailable"));
     }
@@ -252,7 +230,6 @@ class AuthGrpcClientIntegrationTest {
     @Test
     @DisplayName("Should handle DEADLINE_EXCEEDED status correctly")
     void retrievePostActivationToken_DeadlineExceeded() throws Exception {
-        // Arrange
         AuthServiceGrpc.AuthServiceImplBase timeoutService = new AuthServiceGrpc.AuthServiceImplBase() {
             @Override
             public void generateTemporaryToken(TemporaryTokenRequest request,
@@ -277,10 +254,9 @@ class AuthGrpcClientIntegrationTest {
 
         client = new AuthGrpcClient(channel);
 
-        // Act/Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            client.retrievePostActivationToken(EMAIL, MEMBER_ID);
-        });
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+            client.retrievePostActivationToken(EMAIL, MEMBER_ID)
+        );
 
         assertTrue(exception.getMessage().contains("Timeout exceeded"));
     }
@@ -288,7 +264,6 @@ class AuthGrpcClientIntegrationTest {
     @Test
     @DisplayName("Should handle INVALID_ARGUMENT status correctly")
     void retrievePostActivationToken_InvalidArgument() throws Exception {
-        // Arrange
         AuthServiceGrpc.AuthServiceImplBase invalidArgService = new AuthServiceGrpc.AuthServiceImplBase() {
             @Override
             public void generateTemporaryToken(TemporaryTokenRequest request,
@@ -313,10 +288,9 @@ class AuthGrpcClientIntegrationTest {
 
         client = new AuthGrpcClient(channel);
 
-        // Act/Assert
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            client.retrievePostActivationToken(EMAIL, MEMBER_ID);
-        });
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+            client.retrievePostActivationToken(EMAIL, MEMBER_ID)
+        );
 
         assertTrue(exception.getMessage().contains("Invalid argument"));
     }
@@ -324,7 +298,6 @@ class AuthGrpcClientIntegrationTest {
     @Test
     @DisplayName("Should handle UNAUTHENTICATED status correctly")
     void retrievePostActivationToken_Unauthenticated() throws Exception {
-        // Arrange
         AuthServiceGrpc.AuthServiceImplBase unauthService = new AuthServiceGrpc.AuthServiceImplBase() {
             @Override
             public void generateTemporaryToken(TemporaryTokenRequest request,
@@ -349,10 +322,9 @@ class AuthGrpcClientIntegrationTest {
 
         client = new AuthGrpcClient(channel);
 
-        // Act/Assert
-        SecurityException exception = assertThrows(SecurityException.class, () -> {
-            client.retrievePostActivationToken(EMAIL, MEMBER_ID);
-        });
+        SecurityException exception = assertThrows(SecurityException.class, () ->
+            client.retrievePostActivationToken(EMAIL, MEMBER_ID)
+        );
 
         assertTrue(exception.getMessage().contains("Authentication failed"));
     }
@@ -360,7 +332,6 @@ class AuthGrpcClientIntegrationTest {
     @Test
     @DisplayName("Should handle UNKNOWN status as default case")
     void retrievePostActivationToken_UnknownStatus() throws Exception {
-        // Arrange
         AuthServiceGrpc.AuthServiceImplBase unknownService = new AuthServiceGrpc.AuthServiceImplBase() {
             @Override
             public void generateTemporaryToken(TemporaryTokenRequest request,
@@ -385,10 +356,9 @@ class AuthGrpcClientIntegrationTest {
 
         client = new AuthGrpcClient(channel);
 
-        // Act/Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            client.retrievePostActivationToken(EMAIL, MEMBER_ID);
-        });
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+            client.retrievePostActivationToken(EMAIL, MEMBER_ID)
+        );
 
         assertTrue(exception.getMessage().contains("Unexpected gRPC error"));
         assertTrue(exception.getMessage().contains("UNKNOWN"));

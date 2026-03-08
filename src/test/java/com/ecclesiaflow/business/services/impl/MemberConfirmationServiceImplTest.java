@@ -1,5 +1,6 @@
 package com.ecclesiaflow.business.services.impl;
 
+import com.ecclesiaflow.business.domain.auth.PasswordSetupTokenResponse;
 import com.ecclesiaflow.business.domain.confirmation.*;
 import com.ecclesiaflow.business.domain.events.MemberRegisteredEvent;
 import com.ecclesiaflow.business.domain.member.Member;
@@ -65,9 +66,12 @@ class MemberConfirmationServiceImplTest {
                 .expiresAt(LocalDateTime.now().plusMinutes(10))
                 .build();
 
+        PasswordSetupTokenResponse tokenResponse = new PasswordSetupTokenResponse(
+                "TEMP_TOKEN", 900, "/ecclesiaflow/auth/password");
+
         when(confirmationRepository.getByToken(token)).thenReturn(Optional.of(confirmation));
         when(memberRepository.getByMemberId(memberId)).thenReturn(Optional.of(member));
-        when(authClient.retrievePostActivationToken(member.getEmail(), member.getMemberId())).thenReturn("TEMP_TOKEN");
+        when(authClient.retrievePostActivationToken(member.getEmail(), member.getMemberId())).thenReturn(tokenResponse);
 
         // when
         MembershipConfirmationResult result = service.confirmMemberByToken(token);
@@ -77,6 +81,7 @@ class MemberConfirmationServiceImplTest {
         assertEquals("TEMP_TOKEN", result.getTemporaryToken());
         assertEquals("Compte confirmé avec succès. Vous pouvez maintenant définir votre mot de passe.", result.getMessage());
         assertEquals(900, result.getExpiresInSeconds());
+        assertEquals("/ecclesiaflow/auth/password", result.getPasswordEndpoint());
         
         verify(confirmationRepository).getByToken(token);
         verify(memberRepository).getByMemberId(memberId);
@@ -217,9 +222,9 @@ class MemberConfirmationServiceImplTest {
         verify(eventPublisher).publishEvent(eventCaptor.capture());
         
         MemberRegisteredEvent publishedEvent = eventCaptor.getValue();
-        assertEquals("john@test.com", publishedEvent.getEmail());
-        assertEquals(newToken, publishedEvent.getConfirmationToken());
-        assertEquals("John", publishedEvent.getFirstName());
+        assertEquals("john@test.com", publishedEvent.email());
+        assertEquals(newToken, publishedEvent.confirmationToken());
+        assertEquals("John", publishedEvent.firstName());
     }
 
     @Test
@@ -286,9 +291,9 @@ class MemberConfirmationServiceImplTest {
         verify(eventPublisher).publishEvent(eventCaptor.capture());
         
         MemberRegisteredEvent publishedEvent = eventCaptor.getValue();
-        assertEquals("john@test.com", publishedEvent.getEmail());
-        assertEquals(newToken, publishedEvent.getConfirmationToken());
-        assertEquals("John", publishedEvent.getFirstName());
+        assertEquals("john@test.com", publishedEvent.email());
+        assertEquals(newToken, publishedEvent.confirmationToken());
+        assertEquals("John", publishedEvent.firstName());
     }
 
     @Test
@@ -326,9 +331,9 @@ class MemberConfirmationServiceImplTest {
         verify(eventPublisher).publishEvent(eventCaptor.capture());
         
         MemberRegisteredEvent publishedEvent = eventCaptor.getValue();
-        assertEquals(email, publishedEvent.getEmail());
-        assertEquals(newToken, publishedEvent.getConfirmationToken());
-        assertEquals("John", publishedEvent.getFirstName());
+        assertEquals(email, publishedEvent.email());
+        assertEquals(newToken, publishedEvent.confirmationToken());
+        assertEquals("John", publishedEvent.firstName());
     }
 
     @Test
@@ -364,8 +369,8 @@ class MemberConfirmationServiceImplTest {
         verify(eventPublisher).publishEvent(eventCaptor.capture());
         
         MemberRegisteredEvent publishedEvent = eventCaptor.getValue();
-        assertEquals("john@test.com", publishedEvent.getEmail());
-        assertEquals(newToken, publishedEvent.getConfirmationToken());
-        assertEquals("John", publishedEvent.getFirstName());
+        assertEquals("john@test.com", publishedEvent.email());
+        assertEquals(newToken, publishedEvent.confirmationToken());
+        assertEquals("John", publishedEvent.firstName());
     }
 }

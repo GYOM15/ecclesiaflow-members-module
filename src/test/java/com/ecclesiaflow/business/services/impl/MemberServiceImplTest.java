@@ -1,9 +1,6 @@
 package com.ecclesiaflow.business.services.impl;
 
-import com.ecclesiaflow.business.domain.member.Member;
-import com.ecclesiaflow.business.domain.member.MemberRepository;
-import com.ecclesiaflow.business.domain.member.MembershipRegistration;
-import com.ecclesiaflow.business.domain.member.MembershipUpdate;
+import com.ecclesiaflow.business.domain.member.*;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.business.exceptions.EmailAlreadyUsedException;
 import com.ecclesiaflow.business.exceptions.InvalidEmailUpdateException;
@@ -68,7 +65,7 @@ class MemberServiceImplTest {
     void registerMember_shouldThrowIfEmailAlreadyUsed() {
         when(memberRepository.existsByEmail(registration.email())).thenReturn(true);
 
-        assertThrows(IllegalArgumentException.class, () -> memberService.registerMember(registration));
+        assertThrows(EmailAlreadyUsedException.class, () -> memberService.registerMember(registration));
 
         verify(memberRepository, never()).save(any());
     }
@@ -289,48 +286,48 @@ class MemberServiceImplTest {
     }
 
     @Test
-    void getAllMembers_shouldReturnMembersWithConfirmationStatus() {
+    void getAllMembers_shouldReturnMembersWithStatus() {
         // Given
         Pageable pageable = PageRequest.of(0, 20);
-        Boolean confirmed = true;
+        MemberStatus status = MemberStatus.ACTIVE;
         List<Member> members = List.of(
-                Member.builder().memberId(UUID.randomUUID()).firstName("A").email("a@mail.com").confirmed(true).build()
+                Member.builder().memberId(UUID.randomUUID()).firstName("A").email("a@mail.com").status(MemberStatus.ACTIVE).build()
         );
         Page<Member> memberPage = new PageImpl<>(members, pageable, 1);
 
-        when(memberRepository.getByConfirmedStatus(confirmed, pageable)).thenReturn(memberPage);
+        when(memberRepository.getByStatus(status, pageable)).thenReturn(memberPage);
 
         // When
-        Page<Member> result = memberService.getAllMembers(pageable, null, confirmed);
+        Page<Member> result = memberService.getAllMembers(pageable, null, status);
 
         // Then
         assertEquals(1, result.getContent().size());
         assertTrue(result.getContent().getFirst().isConfirmed());
-        verify(memberRepository, times(1)).getByConfirmedStatus(confirmed, pageable);
+        verify(memberRepository, times(1)).getByStatus(status, pageable);
     }
 
     @Test
-    void getAllMembers_shouldReturnMembersWithSearchTermAndConfirmationStatus() {
+    void getAllMembers_shouldReturnMembersWithSearchTermAndStatus() {
         // Given
         Pageable pageable = PageRequest.of(0, 20);
         String searchTerm = "john";
-        Boolean confirmed = false;
+        MemberStatus status = MemberStatus.PENDING;
         List<Member> members = List.of(
-                Member.builder().memberId(UUID.randomUUID()).firstName("John").email("john@mail.com").confirmed(false).build()
+                Member.builder().memberId(UUID.randomUUID()).firstName("John").email("john@mail.com").status(MemberStatus.PENDING).build()
         );
         Page<Member> memberPage = new PageImpl<>(members, pageable, 1);
 
-        when(memberRepository.getMembersBySearchTermAndConfirmationStatus(searchTerm, confirmed, pageable))
+        when(memberRepository.getMembersBySearchTermAndStatus(searchTerm, status, pageable))
                 .thenReturn(memberPage);
 
         // When
-        Page<Member> result = memberService.getAllMembers(pageable, searchTerm, confirmed);
+        Page<Member> result = memberService.getAllMembers(pageable, searchTerm, status);
 
         // Then
         assertEquals(1, result.getContent().size());
         assertEquals("John", result.getContent().getFirst().getFirstName());
         assertFalse(result.getContent().getFirst().isConfirmed());
-        verify(memberRepository, times(1)).getMembersBySearchTermAndConfirmationStatus(searchTerm, confirmed, pageable);
+        verify(memberRepository, times(1)).getMembersBySearchTermAndStatus(searchTerm, status, pageable);
     }
 
     @Test
@@ -406,47 +403,47 @@ class MemberServiceImplTest {
     }
 
     @Test
-    void getAllMembers_shouldTrimSearchTermWithConfirmationStatus() {
-        // Given - Search with spaces and confirmation status
+    void getAllMembers_shouldTrimSearchTermWithStatus() {
+        // Given - Search with spaces and status filter
         Pageable pageable = PageRequest.of(0, 20);
         String searchTermWithSpaces = "  jane  ";
         String trimmedSearchTerm = "jane";
-        Boolean confirmed = true;
+        MemberStatus status = MemberStatus.ACTIVE;
         List<Member> members = List.of(
-                Member.builder().memberId(UUID.randomUUID()).firstName("Jane").email("jane@mail.com").confirmed(true).build()
+                Member.builder().memberId(UUID.randomUUID()).firstName("Jane").email("jane@mail.com").status(MemberStatus.ACTIVE).build()
         );
         Page<Member> memberPage = new PageImpl<>(members, pageable, 1);
 
-        when(memberRepository.getMembersBySearchTermAndConfirmationStatus(trimmedSearchTerm, confirmed, pageable))
+        when(memberRepository.getMembersBySearchTermAndStatus(trimmedSearchTerm, status, pageable))
                 .thenReturn(memberPage);
 
         // When
-        Page<Member> result = memberService.getAllMembers(pageable, searchTermWithSpaces, confirmed);
+        Page<Member> result = memberService.getAllMembers(pageable, searchTermWithSpaces, status);
 
         // Then - Should call with trimmed search term
         assertEquals(1, result.getContent().size());
         assertTrue(result.getContent().getFirst().isConfirmed());
-        verify(memberRepository, times(1)).getMembersBySearchTermAndConfirmationStatus(trimmedSearchTerm, confirmed, pageable);
+        verify(memberRepository, times(1)).getMembersBySearchTermAndStatus(trimmedSearchTerm, status, pageable);
     }
 
     @Test
-    void getAllMembers_shouldHandleEmptySearchWithConfirmedStatus() {
-        // Given - Empty search with confirmation status should ignore search
+    void getAllMembers_shouldHandleEmptySearchWithStatus() {
+        // Given - Empty search with status should ignore search
         Pageable pageable = PageRequest.of(0, 20);
-        Boolean confirmed = false;
+        MemberStatus status = MemberStatus.PENDING;
         List<Member> members = List.of(
-                Member.builder().memberId(UUID.randomUUID()).firstName("A").email("a@mail.com").confirmed(false).build()
+                Member.builder().memberId(UUID.randomUUID()).firstName("A").email("a@mail.com").status(MemberStatus.PENDING).build()
         );
         Page<Member> memberPage = new PageImpl<>(members, pageable, 1);
 
-        when(memberRepository.getByConfirmedStatus(confirmed, pageable)).thenReturn(memberPage);
+        when(memberRepository.getByStatus(status, pageable)).thenReturn(memberPage);
 
         // When - Empty search should be normalized to null
-        Page<Member> result = memberService.getAllMembers(pageable, "  ", confirmed);
+        Page<Member> result = memberService.getAllMembers(pageable, "  ", status);
 
-        // Then - Should only filter by confirmation status
+        // Then - Should only filter by status
         assertEquals(1, result.getContent().size());
-        verify(memberRepository, times(1)).getByConfirmedStatus(confirmed, pageable);
-        verify(memberRepository, never()).getMembersBySearchTermAndConfirmationStatus(anyString(), any(), any());
+        verify(memberRepository, times(1)).getByStatus(status, pageable);
+        verify(memberRepository, never()).getMembersBySearchTermAndStatus(anyString(), any(), any());
     }
 }

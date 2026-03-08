@@ -2,6 +2,8 @@ package com.ecclesiaflow.io.grpc.server;
 
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
+import com.ecclesiaflow.business.domain.member.MemberStatus;
+import org.springframework.context.ApplicationEventPublisher;
 import com.ecclesiaflow.grpc.members.ConfirmationStatusRequest;
 import com.ecclesiaflow.grpc.members.ConfirmationStatusResponse;
 import io.grpc.Status;
@@ -39,6 +41,9 @@ class MembersGrpcServiceImplTest {
     private MemberRepository memberRepository;
 
     @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    @Mock
     private StreamObserver<ConfirmationStatusResponse> responseObserver;
 
     @InjectMocks
@@ -64,7 +69,7 @@ class MembersGrpcServiceImplTest {
                 .firstName("John")
                 .lastName("Doe")
                 .confirmedAt(LocalDateTime.now())
-                .confirmed(true)
+                .status(MemberStatus.ACTIVE)
                 .build();
 
         unconfirmedMember = Member.builder()
@@ -73,7 +78,7 @@ class MembersGrpcServiceImplTest {
                 .firstName("Jane")
                 .lastName("Smith")
                 .confirmedAt(null)
-                .confirmed(false)
+                .status(MemberStatus.PENDING)
                 .build();
     }
 

@@ -50,9 +50,9 @@ class MemberRegistrationEventIntegrationTest {
         MemberRegisteredEvent event = new MemberRegisteredEvent(email, token, firstName);
         
         // then
-        assertEquals(email, event.getEmail());
-        assertEquals(token, event.getConfirmationToken());
-        assertEquals(firstName, event.getFirstName());
+        assertEquals(email, event.email());
+        assertEquals(token, event.confirmationToken());
+        assertEquals(firstName, event.firstName());
     }
 
     @Test
@@ -66,9 +66,9 @@ class MemberRegistrationEventIntegrationTest {
         
         // then
         assertNotNull(event);
-        assertNotNull(event.getEmail());
-        assertNotNull(event.getConfirmationToken());
-        assertNotNull(event.getFirstName());
+        assertNotNull(event.email());
+        assertNotNull(event.confirmationToken());
+        assertNotNull(event.firstName());
     }
 
     @Test
@@ -81,9 +81,9 @@ class MemberRegistrationEventIntegrationTest {
         );
         
         // then
-        assertEquals(testMember.getEmail(), event.getEmail());
-        assertEquals(testToken, event.getConfirmationToken());
-        assertEquals(testMember.getFirstName(), event.getFirstName());
+        assertEquals(testMember.getEmail(), event.email());
+        assertEquals(testToken, event.confirmationToken());
+        assertEquals(testMember.getFirstName(), event.firstName());
     }
 
     @Test
@@ -103,7 +103,7 @@ class MemberRegistrationEventIntegrationTest {
                 UUID.randomUUID(),
                 "Test"
             );
-            assertEquals(email, event.getEmail());
+            assertEquals(email, event.email());
         }
     }
 }

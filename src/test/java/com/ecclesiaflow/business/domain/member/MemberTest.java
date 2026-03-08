@@ -27,8 +27,8 @@ class MemberTest {
     }
 
     @Test
-    void testDefaultValues_ShouldHaveRoleMemberAndNotConfirmed() {
-        assertEquals(Role.MEMBER, member.getRole());
+    void testDefaultValues_ShouldHaveStatusPendingAndNotConfirmed() {
+        assertEquals(MemberStatus.PENDING, member.getStatus());
         assertFalse(member.isConfirmed());
     }
 
