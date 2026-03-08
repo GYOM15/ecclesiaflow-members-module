@@ -1,22 +1,21 @@
 package com.ecclesiaflow.business.services.impl;
 
-import com.ecclesiaflow.business.domain.member.MembershipRegistration;
-import com.ecclesiaflow.business.domain.member.Member;
-import com.ecclesiaflow.business.domain.member.MemberRepository;
+import com.ecclesiaflow.business.domain.member.*;
 import com.ecclesiaflow.business.exceptions.EmailAlreadyUsedException;
 import com.ecclesiaflow.business.exceptions.InvalidEmailUpdateException;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.business.domain.communication.EmailClient;
 import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
-import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
+import com.ecclesiaflow.business.exceptions.SocialAccountAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -112,6 +111,16 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Member getByKeycloakUserId(String keycloakUserId) {
+        if (keycloakUserId == null || keycloakUserId.isBlank()) {
+            throw new IllegalArgumentException("keycloakUserId ne peut pas être null ou vide");
+        }
+        return memberRepository.getByKeycloakUserId(keycloakUserId)
+                .orElseThrow(() -> new MemberNotFoundException("Membre non trouvé avec le keycloakUserId: " + keycloakUserId));
+    }
+
+    @Override
     @Transactional
     public Member updateMember(MembershipUpdate update) {
         Member existing = findByMemberId(update.getMemberId());
@@ -149,26 +158,53 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Member> getAllMembers(Pageable pageable, String search, Boolean confirmed) {
+    public Page<Member> getAllMembers(Pageable pageable, String search, com.ecclesiaflow.business.domain.member.MemberStatus status) {
         if (pageable == null) {
             throw new IllegalArgumentException("Pageable cannot be null");
         }
 
-        return findMembersWithCriteria(pageable, normalizeSearch(search), confirmed);
+        return findMembersWithCriteria(pageable, normalizeSearch(search), status);
     }
 
     // Methodes Utilitaies
-    private Page<Member> findMembersWithCriteria(Pageable pageable, String normalizedSearch, Boolean confirmed) {
-        if (normalizedSearch != null && confirmed != null) {
-            return memberRepository.getMembersBySearchTermAndConfirmationStatus(normalizedSearch, confirmed, pageable);
+    private Page<Member> findMembersWithCriteria(Pageable pageable, String normalizedSearch, com.ecclesiaflow.business.domain.member.MemberStatus status) {
+        if (normalizedSearch != null && status != null) {
+            return memberRepository.getMembersBySearchTermAndStatus(normalizedSearch, status, pageable);
         }
         if (normalizedSearch != null) {
             return memberRepository.getMembersBySearchTerm(normalizedSearch, pageable);
         }
-        if (confirmed != null) {
-            return memberRepository.getByConfirmedStatus(confirmed, pageable);
+        if (status != null) {
+            return memberRepository.getByStatus(status, pageable);
         }
         return memberRepository.getAll(pageable);
+    }
+
+    @Override
+    @Transactional
+    public Member registerSocialMember(String keycloakUserId, MembershipRegistration registration) {
+        if (memberRepository.existsByEmail(registration.email())) {
+            throw new SocialAccountAlreadyExistsException(
+                    "A member with this email already exists.");
+        }
+        if (memberRepository.existsByKeycloakUserId(keycloakUserId)) {
+            throw new SocialAccountAlreadyExistsException(
+                    "A member with this keycloakUserId already exists.");
+        }
+
+        Member member = Member.builder()
+                .memberId(UUID.randomUUID())
+                .firstName(registration.firstName())
+                .lastName(registration.lastName())
+                .email(registration.email())
+                .address(registration.address())
+                .phoneNumber(registration.phoneNumber())
+                .keycloakUserId(keycloakUserId)
+                .status(MemberStatus.ACTIVE)
+                .confirmedAt(LocalDateTime.now())
+                .build();
+
+        return memberRepository.save(member);
     }
 
     private String normalizeSearch(String search) {
