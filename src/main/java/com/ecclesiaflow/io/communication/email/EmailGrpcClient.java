@@ -39,13 +39,13 @@ public class EmailGrpcClient implements EmailClient {
         Map<String, String> variables = Map.of(
             "email", email,
             "confirmationLink", confirmationUrl,
-            "firstName", firstName != null ? firstName : "Member"
+            "firstName", firstName != null ? firstName : "Membre"
         );
 
         return sendEmail(
             email,
             EmailTemplateType.EMAIL_TEMPLATE_EMAIL_CONFIRMATION,
-            "Confirm your email address - EcclesiaFlow",
+            "Confirmez votre adresse email — EcclesiaFlow",
             variables,
             Priority.PRIORITY_HIGH,
             EmailOperation.CONFIRMATION
@@ -63,13 +63,13 @@ public class EmailGrpcClient implements EmailClient {
     public UUID sendWelcomeEmail(String email, String firstName) {
         Map<String, String> variables = Map.of(
             "email", email,
-            "firstName", firstName != null ? firstName : "Member"
+            "firstName", firstName != null ? firstName : "Membre"
         );
 
         return sendEmail(
             email,
             EmailTemplateType.EMAIL_TEMPLATE_WELCOME,
-            "Welcome to EcclesiaFlow",
+            "Bienvenue sur EcclesiaFlow",
             variables,
             Priority.PRIORITY_NORMAL,
             EmailOperation.WELCOME

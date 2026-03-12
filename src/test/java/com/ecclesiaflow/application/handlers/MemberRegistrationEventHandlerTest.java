@@ -29,7 +29,7 @@ class MemberRegistrationEventHandlerTest {
 
         assertThatNoException().isThrownBy(() -> handler.handleMemberRegistered(event));
 
-        String expectedUrl = "http://localhost:5173/confirm-email?token=" + token;
+        String expectedUrl = "http://localhost:5173/confirmation?token=" + token;
         verify(emailClient).sendConfirmationEmail(eq("user@example.com"), eq(expectedUrl), eq("John"));
     }
 

@@ -103,6 +103,6 @@ public class MemberRegistrationEventHandler {
      * @return URL complète de confirmation
      */
     private String buildConfirmationUrl(String token) {
-        return String.format("%s/confirm-email?token=%s", frontendBaseUrl, token);
+        return String.format("%s/confirmation?token=%s", frontendBaseUrl, token);
     }
 }
