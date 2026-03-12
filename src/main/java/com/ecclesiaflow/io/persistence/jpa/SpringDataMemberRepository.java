@@ -7,6 +7,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.ecclesiaflow.business.domain.member.MemberStatus;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -162,4 +165,6 @@ public interface SpringDataMemberRepository extends JpaRepository<MemberEntity, 
         @Param("status") com.ecclesiaflow.business.domain.member.MemberStatus status,
         Pageable pageable
     );
+
+    List<MemberEntity> findByStatusAndDeactivatedAtBefore(MemberStatus status, LocalDateTime cutoff);
 }

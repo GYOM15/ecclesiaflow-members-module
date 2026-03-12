@@ -3,6 +3,7 @@ package com.ecclesiaflow.business.domain.member;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,4 +46,7 @@ public interface MemberRepository {
      */
     Page<Member> getMembersBySearchTermAndStatus(
         String searchTerm, MemberStatus status, Pageable pageable);
+
+    /** Returns DEACTIVATED members whose deactivatedAt is before the given cutoff date. */
+    List<Member> findDeactivatedBefore(LocalDateTime cutoffDate);
 }

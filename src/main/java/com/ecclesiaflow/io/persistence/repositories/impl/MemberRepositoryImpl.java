@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -111,5 +112,13 @@ public class MemberRepositoryImpl implements MemberRepository {
         return springDataRepo.findMembersBySearchTermAndStatus(
                 searchTerm, status, pageable)
                 .map(mapper::toDomain);
+    }
+
+    @Override
+    public List<Member> findDeactivatedBefore(LocalDateTime cutoffDate) {
+        return springDataRepo.findByStatusAndDeactivatedAtBefore(MemberStatus.DEACTIVATED, cutoffDate)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 }
