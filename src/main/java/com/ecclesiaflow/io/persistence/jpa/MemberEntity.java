@@ -9,6 +9,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import com.ecclesiaflow.business.domain.member.MemberStatus;
+import com.ecclesiaflow.business.domain.member.SocialProvider;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -60,6 +61,19 @@ public class MemberEntity {
 
     @Column(name = "keycloak_user_id")
     private String keycloakUserId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "social_provider")
+    private SocialProvider socialProvider;
+
+    @Column(name = "has_local_credentials")
+    private boolean hasLocalCredentials;
+
+    @Column(name = "deactivated_at")
+    private LocalDateTime deactivatedAt;
+
+    @Column(name = "anonymized_at")
+    private LocalDateTime anonymizedAt;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

@@ -4,6 +4,7 @@ import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
+import com.ecclesiaflow.business.domain.member.SocialProvider;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -147,17 +148,26 @@ public interface MemberService {
     Member updateMember(MembershipUpdate update);
     
     /**
+     * Soft-deletes a member: disables Keycloak login, sets status to DEACTIVATED.
+     * Actual data anonymization happens after the grace period via scheduled cleanup.
+     *
+     * @param memberId the member's shared UUID
+     * @throws MemberNotFoundException if no member exists with this memberId
+     */
+    void deactivateMember(UUID memberId);
+
+    /**
      * Supprime définitivement un membre du système.
      * <p>
      * Cette méthode effectue une suppression complète du membre
      * et de toutes ses données associées. Opération irréversible
      * réservée aux administrateurs.
      * </p>
-     * 
+     *
      * @param id l'identifiant du membre à supprimer, non null
      * @throws MemberNotFoundException si le membre n'existe pas
      * @throws IllegalArgumentException si id est null
-     * 
+     *
      * @implNote Opération transactionnelle en écriture avec cascade sur données liées.
      */
     void deleteMember(UUID id);
@@ -181,14 +191,16 @@ public interface MemberService {
     Page<Member> getAllMembers(Pageable pageable, String search, com.ecclesiaflow.business.domain.member.MemberStatus status);
 
     /**
-     * Registers a member via social login (Google/Facebook). Unlike {@link #registerMember},
-     * this skips email confirmation and creates the member directly as ACTIVE.
+     * Registers a member via social login (Google/Facebook/Microsoft).
+     * Skips email confirmation and creates the member directly as ACTIVE.
      *
      * @param keycloakUserId the Keycloak sub claim identifying the user
-     * @param registration member profile data (pre-filled from JWT claims)
+     * @param socialProvider the social identity provider used for authentication
+     * @param registration   member profile data (pre-filled from JWT claims)
      * @return the newly created ACTIVE member
      * @throws com.ecclesiaflow.business.exceptions.SocialAccountAlreadyExistsException
      *         if a member with the same email or keycloakUserId already exists
      */
-    Member registerSocialMember(String keycloakUserId, MembershipRegistration registration);
+    Member registerSocialMember(String keycloakUserId, SocialProvider socialProvider,
+                                MembershipRegistration registration);
 }

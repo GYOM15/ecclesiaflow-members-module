@@ -20,12 +20,17 @@ public enum MemberStatus {
     ACTIVE,
 
     /**
+     * Member requested account deletion — grace period before anonymization.
+     */
+    DEACTIVATED,
+
+    /**
      * Member account has been suspended.
      */
     SUSPENDED,
 
     /**
-     * Member account has been deactivated.
+     * Member data has been anonymized (post-grace-period GDPR cleanup).
      */
     INACTIVE
 }

@@ -362,12 +362,12 @@ class MembersManagementDelegateTest {
         verifyNoInteractions(openApiModelMapper);
     }
 
-    // --- Tests for deleteMember ---
+    // --- Tests for deleteMember (now calls deactivateMember) ---
     @Test
-    void deleteMember_shouldReturnNoContent() {
+    void deleteMember_shouldCallDeactivateAndReturnNoContent() {
         // Given
         UUID memberId = UUID.randomUUID();
-        doNothing().when(memberService).deleteMember(memberId);
+        doNothing().when(memberService).deactivateMember(memberId);
 
         // When
         ResponseEntity<Void> response = membersManagementDelegate.deleteMember(memberId);
@@ -376,7 +376,8 @@ class MembersManagementDelegateTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(response.getBody()).isNull();
 
-        verify(memberService).deleteMember(memberId);
+        verify(memberService).deactivateMember(memberId);
+        verify(memberService, never()).deleteMember(any());
     }
 
     @Test
@@ -384,14 +385,14 @@ class MembersManagementDelegateTest {
         // Given
         UUID memberId = UUID.randomUUID();
         doThrow(new MemberNotFoundException("Member not found"))
-                .when(memberService).deleteMember(memberId);
+                .when(memberService).deactivateMember(memberId);
 
         // When/Then
         assertThatThrownBy(() -> membersManagementDelegate.deleteMember(memberId))
                 .isInstanceOf(MemberNotFoundException.class)
                 .hasMessage("Member not found");
 
-        verify(memberService).deleteMember(memberId);
+        verify(memberService).deactivateMember(memberId);
     }
 
     @Test
@@ -489,7 +490,7 @@ class MembersManagementDelegateTest {
     }
 
     @Test
-    void deleteMyAccount_shouldDeleteAuthenticatedMemberAccount() {
+    void deleteMyAccount_shouldDeactivateAuthenticatedMemberAccount() {
         // Given
         String keycloakUserId = "kc-user-123";
         UUID memberId = UUID.randomUUID();
@@ -502,7 +503,7 @@ class MembersManagementDelegateTest {
 
         when(authenticatedUserService.getKeycloakUserId()).thenReturn(keycloakUserId);
         when(memberService.getByKeycloakUserId(keycloakUserId)).thenReturn(member);
-        doNothing().when(memberService).deleteMember(memberId);
+        doNothing().when(memberService).deactivateMember(memberId);
 
         // When
         ResponseEntity<Void> result = membersManagementDelegate.deleteMyAccount();
@@ -513,6 +514,7 @@ class MembersManagementDelegateTest {
 
         verify(authenticatedUserService).getKeycloakUserId();
         verify(memberService).getByKeycloakUserId(keycloakUserId);
-        verify(memberService).deleteMember(memberId);
+        verify(memberService).deactivateMember(memberId);
+        verify(memberService, never()).deleteMember(any());
     }
 }

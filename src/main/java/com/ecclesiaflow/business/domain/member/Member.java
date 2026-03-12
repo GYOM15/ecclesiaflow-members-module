@@ -75,6 +75,10 @@ public class Member {
     private final LocalDateTime updatedAt;
     private final String phoneNumber;
     private final String keycloakUserId;
+    private final SocialProvider socialProvider;
+    private final boolean hasLocalCredentials;
+    private final LocalDateTime deactivatedAt;
+    private final LocalDateTime anonymizedAt;
 
     @Builder.Default
     private final MemberStatus status = MemberStatus.PENDING;

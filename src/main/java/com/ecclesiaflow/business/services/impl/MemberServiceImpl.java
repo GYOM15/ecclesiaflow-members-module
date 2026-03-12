@@ -7,7 +7,9 @@ import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import com.ecclesiaflow.business.exceptions.SocialAccountAlreadyExistsException;
+import com.ecclesiaflow.business.domain.events.MemberActivatedEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ public class MemberServiceImpl implements MemberService {
     private final MemberRepository memberRepository;
     private final MemberConfirmationService confirmationService;
     private final AuthClient authClient;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -93,6 +96,20 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     @Transactional
+    public void deactivateMember(UUID memberId) {
+        Member member = findByMemberId(memberId);
+        if (member.getKeycloakUserId() != null) {
+            authClient.disableKeycloakUser(member.getKeycloakUserId());
+        }
+        Member deactivated = member.toBuilder()
+                .status(MemberStatus.DEACTIVATED)
+                .deactivatedAt(LocalDateTime.now())
+                .build();
+        memberRepository.save(deactivated);
+    }
+
+    @Override
+    @Transactional
     public void deleteMember(UUID memberId) {
         Member member = findByMemberId(memberId);
         if (member.getKeycloakUserId() != null) {
@@ -127,7 +144,8 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     @Transactional
-    public Member registerSocialMember(String keycloakUserId, MembershipRegistration registration) {
+    public Member registerSocialMember(String keycloakUserId, SocialProvider socialProvider,
+                                       MembershipRegistration registration) {
         if (memberRepository.existsByEmail(registration.email())) {
             throw new SocialAccountAlreadyExistsException(
                     "A member with this email already exists.");
@@ -145,11 +163,15 @@ public class MemberServiceImpl implements MemberService {
                 .address(registration.address())
                 .phoneNumber(registration.phoneNumber())
                 .keycloakUserId(keycloakUserId)
+                .socialProvider(socialProvider)
+                .hasLocalCredentials(false)
                 .status(MemberStatus.ACTIVE)
                 .confirmedAt(LocalDateTime.now())
                 .build();
 
-        return memberRepository.save(member);
+        Member savedMember = memberRepository.save(member);
+        eventPublisher.publishEvent(new MemberActivatedEvent(savedMember.getEmail(), savedMember.getFirstName()));
+        return savedMember;
     }
 
     private String normalizeSearch(String search) {

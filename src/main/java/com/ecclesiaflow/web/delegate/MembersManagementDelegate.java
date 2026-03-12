@@ -95,10 +95,10 @@ public class MembersManagementDelegate {
         return ResponseEntity.ok(response);
     }
 
-    /** Permanently deletes a member. */
+    /** Soft-deletes a member (sets DEACTIVATED status, disables Keycloak login). */
     @RequireScopes({"ef:members:delete:own", "ef:members:delete:all"})
     public ResponseEntity<Void> deleteMember(UUID memberId) {
-        memberService.deleteMember(memberId);
+        memberService.deactivateMember(memberId);
 
         return ResponseEntity.noContent().build();
     }
@@ -129,13 +129,13 @@ public class MembersManagementDelegate {
         return ResponseEntity.ok(response);
     }
 
-    /** Deletes the authenticated member's account. */
+    /** Soft-deletes the authenticated member's account. */
     @RequireScopes("ef:members:delete:own")
     public ResponseEntity<Void> deleteMyAccount() {
         String keycloakUserId = authenticatedUserService.getKeycloakUserId();
         Member member = memberService.getByKeycloakUserId(keycloakUserId);
 
-        memberService.deleteMember(member.getMemberId());
+        memberService.deactivateMember(member.getMemberId());
 
         return ResponseEntity.noContent().build();
     }
