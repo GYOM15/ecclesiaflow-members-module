@@ -293,25 +293,23 @@ class MembersManagementDelegateTest {
         UUID memberId = UUID.randomUUID();
         UpdateMemberRequestPayload requestPayload = new UpdateMemberRequestPayload();
         requestPayload.setFirstName("NewName");
-        requestPayload.setEmail("new.email@example.com");
 
         MembershipUpdate businessUpdate = MembershipUpdate.builder()
                 .memberId(memberId)
                 .firstName("NewName")
-                .email("new.email@example.com")
                 .build();
 
         Member updatedMember = Member.builder()
                 .memberId(memberId)
                 .firstName("NewName")
                 .lastName("Doe")
-                .email("new.email@example.com")
+                .email("existing@example.com")
                 .status(MemberStatus.ACTIVE)
                 .createdAt(LocalDateTime.now().minusDays(1))
                 .build();
 
         SignUpResponse expectedResponse = new SignUpResponse()
-                .email("new.email@example.com")
+                .email("existing@example.com")
                 .firstName("NewName")
                 .lastName("Doe")
                 .confirmed(true)
@@ -331,7 +329,6 @@ class MembersManagementDelegateTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getFirstName()).isEqualTo("NewName");
-        assertThat(response.getBody().getEmail()).isEqualTo("new.email@example.com");
 
         verify(updateRequestMapper).fromUpdateMemberRequest(memberId, requestPayload);
         verify(memberService).updateMember(businessUpdate);
@@ -456,14 +453,13 @@ class MembersManagementDelegateTest {
                 .memberId(memberId)
                 .firstName("Updated")
                 .lastName("Name")
-                .email("updated@example.com")
                 .address("New Address")
                 .phoneNumber("+1234567890")
                 .build();
 
         Member updatedMember = Member.builder()
                 .memberId(memberId)
-                .email("updated@example.com")
+                .email("test@example.com")
                 .firstName("Updated")
                 .lastName("Name")
                 .address("New Address")
@@ -471,7 +467,7 @@ class MembersManagementDelegateTest {
                 .build();
 
         SignUpResponse response = new SignUpResponse();
-        response.setEmail("updated@example.com");
+        response.setEmail("test@example.com");
 
         when(authenticatedUserService.getKeycloakUserId()).thenReturn(keycloakUserId);
         when(memberService.getByKeycloakUserId(keycloakUserId)).thenReturn(existingMember);

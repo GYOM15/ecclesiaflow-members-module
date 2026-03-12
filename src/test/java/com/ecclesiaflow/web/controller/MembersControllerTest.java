@@ -225,20 +225,19 @@ class MembersControllerTest {
         UUID id = UUID.randomUUID();
         UpdateMemberRequestPayload updateRequest = new UpdateMemberRequestPayload();
         updateRequest.setFirstName("NewName");
-        updateRequest.setEmail("new.email@mail.com");
 
         Member updatedMember = Member.builder()
                 .memberId(id)
                 .firstName("NewName")
                 .lastName("Doe")
-                .email("new.email@mail.com")
+                .email("existing@mail.com")
                 .status(MemberStatus.ACTIVE)
                 .createdAt(LocalDateTime.now().minusDays(1))
                 .build();
 
         String expectedMessage = "Member updated";
         SignUpResponse responseDto = new SignUpResponse()
-                .email("new.email@mail.com")
+                .email("existing@mail.com")
                 .firstName("NewName")
                 .lastName("Doe")
                 .confirmed(true)
@@ -254,7 +253,7 @@ class MembersControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.firstName").value("NewName"))
-                .andExpect(jsonPath("$.email").value("new.email@mail.com"))
+                .andExpect(jsonPath("$.email").value("existing@mail.com"))
                 .andExpect(jsonPath("$.message").value(expectedMessage));
 
         verify(membersManagementDelegate).updateMemberPartially(eq(id), any(UpdateMemberRequestPayload.class));

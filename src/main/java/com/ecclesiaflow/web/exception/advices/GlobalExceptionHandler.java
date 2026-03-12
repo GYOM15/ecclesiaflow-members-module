@@ -5,7 +5,7 @@ import com.ecclesiaflow.business.exceptions.EmailServiceUnavailableException;
 import com.ecclesiaflow.business.exceptions.ExpiredConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.InsufficientPermissionsException;
 import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
-import com.ecclesiaflow.business.exceptions.InvalidEmailUpdateException;
+
 import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import com.ecclesiaflow.business.exceptions.SocialAccountAlreadyExistsException;
@@ -140,11 +140,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ExpiredConfirmationCodeException.class)
     public ResponseEntity<ApiErrorResponse> handleExpiredConfirmationCode(ExpiredConfirmationCodeException ex, WebRequest request) {
-        return buildBadRequestErrorResponse(ex.getMessage(), request);
-    }
-
-    @ExceptionHandler(InvalidEmailUpdateException.class)
-    public ResponseEntity<ApiErrorResponse> handleInvalidEmailUpdate(InvalidEmailUpdateException ex, WebRequest request) {
         return buildBadRequestErrorResponse(ex.getMessage(), request);
     }
 

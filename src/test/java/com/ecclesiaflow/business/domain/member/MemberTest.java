@@ -37,7 +37,6 @@ class MemberTest {
         MembershipUpdate update = MembershipUpdate.builder()
                 .memberId(member.getMemberId())
                 .firstName("Jane")
-                .email("jane.doe@test.com")
                 .address("456 Avenue")
                 .build();
 
@@ -45,7 +44,7 @@ class MemberTest {
 
         assertEquals("Jane", updated.getFirstName());
         assertEquals("Doe", updated.getLastName()); // resté identique
-        assertEquals("jane.doe@test.com", updated.getEmail());
+        assertEquals(member.getEmail(), updated.getEmail()); // email inchangé
         assertEquals("456 Avenue", updated.getAddress());
         assertNotEquals(member.getUpdatedAt(), updated.getUpdatedAt());
     }

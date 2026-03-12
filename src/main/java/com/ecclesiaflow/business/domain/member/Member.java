@@ -98,7 +98,6 @@ public class Member {
         return this.toBuilder()
                 .firstName(chooseUpdatedValue(update.getFirstName(), this.firstName))
                 .lastName(chooseUpdatedValue(update.getLastName(), this.lastName))
-                .email(chooseUpdatedValue(update.getEmail(), this.email))
                 .address(chooseUpdatedValue(update.getAddress(), this.address))
                 .phoneNumber(chooseUpdatedValue(update.getPhoneNumber(), this.phoneNumber))
                 .createdAt(this.createdAt)

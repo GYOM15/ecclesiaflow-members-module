@@ -933,12 +933,6 @@ components:
           description: "Nouveau nom de famille du membre"
           maxLength: 50
           example: "Martin"
-        email:
-          type: string
-          format: email
-          description: "Nouvelle adresse email du membre"
-          maxLength: 100
-          example: "jean.martin@example.com"
         address:
           type: string
           description: "Nouvelle adresse physique du membre"
