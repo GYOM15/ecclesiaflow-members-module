@@ -1,9 +1,9 @@
 package com.ecclesiaflow.business.services.impl;
 
+import com.ecclesiaflow.business.domain.auth.AuthClient;
 import com.ecclesiaflow.business.domain.member.*;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.business.exceptions.EmailAlreadyUsedException;
-import com.ecclesiaflow.business.exceptions.InvalidEmailUpdateException;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +29,9 @@ class MemberServiceImplTest {
 
     @Mock
     private MemberConfirmationService confirmationService;
+
+    @Mock
+    private AuthClient authClient;
 
     @InjectMocks
     private MemberServiceImpl memberService;
@@ -130,10 +133,8 @@ class MemberServiceImplTest {
         MembershipUpdate update = MembershipUpdate.builder()
                 .memberId(id)
                 .firstName("NewName")
-                .email("new@mail.com")
                 .build();
 
-        when(memberRepository.existsByEmail("new@mail.com")).thenReturn(false);
         when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
         when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -144,36 +145,11 @@ class MemberServiceImplTest {
     }
 
     @Test
-    void updateMember_shouldThrowIfEmailAlreadyUsed() {
-        UUID id = UUID.randomUUID();
-        Member existing = Member.builder()
-                .memberId(id)
-                .firstName("OldName")
-                .email("old@mail.com")
-                .build();
-
-        MembershipUpdate update = MembershipUpdate.builder()
-                .memberId(id)
-                .firstName("NewName")
-                .email("existing@mail.com")
-                .build();
-
-        when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
-        when(memberRepository.existsByEmail("existing@mail.com")).thenReturn(true);
-
-        assertThrows(EmailAlreadyUsedException.class, () -> memberService.updateMember(update));
-
-        verify(memberRepository).getByMemberId(id);
-        verify(memberRepository, never()).save(any());
-    }
-
-    @Test
     void updateMember_shouldThrowIfMemberNotFound() {
         UUID id = UUID.randomUUID();
         MembershipUpdate update = MembershipUpdate.builder()
                 .memberId(id)
                 .firstName("NewName")
-                .email("new@mail.com")
                 .build();
 
         when(memberRepository.getByMemberId(id)).thenReturn(Optional.empty());
@@ -184,62 +160,55 @@ class MemberServiceImplTest {
     }
 
     @Test
-    void updateMember_shouldThrowIfEmailSameAsCurrent() {
+    void deleteMember_shouldDeleteKeycloakUserThenDbMember() {
         UUID id = UUID.randomUUID();
+        String keycloakUserId = "kc-user-123";
         Member existing = Member.builder()
-                .memberId(id)
-                .firstName("OldName")
-                .email("same@mail.com")
+                .memberId(id).firstName("ToDelete").email("del@mail.com")
+                .keycloakUserId(keycloakUserId).status(MemberStatus.ACTIVE)
                 .build();
-
-        MembershipUpdate update = MembershipUpdate.builder()
-                .memberId(id)
-                .firstName("NewName")
-                .email("same@mail.com")
-                .build();
-
-        when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
-
-        assertThrows(InvalidEmailUpdateException.class, () -> memberService.updateMember(update));
-
-        verify(memberRepository, never()).save(any());
-    }
-
-    @Test
-    void updateMember_shouldSucceedWithNullEmail() {
-        UUID id = UUID.randomUUID();
-        Member existing = Member.builder()
-                .memberId(id)
-                .firstName("OldName")
-                .email("existing@mail.com")
-                .build();
-
-        MembershipUpdate update = MembershipUpdate.builder()
-                .memberId(id)
-                .firstName("NewName")
-                .email(null)
-                .build();
-
-        when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
-        when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        Member result = memberService.updateMember(update);
-
-        assertEquals("NewName", result.getFirstName());
-        verify(memberRepository).save(any(Member.class));
-        verify(memberRepository, never()).existsByEmail(any());
-    }
-
-    @Test
-    void deleteMember_shouldDeleteIfExists() {
-        UUID id = UUID.randomUUID();
-        Member existing = Member.builder().memberId(id).firstName("ToDelete").email("del@mail.com").build();
 
         when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
 
         memberService.deleteMember(id);
 
+        var inOrder = inOrder(authClient, memberRepository);
+        inOrder.verify(authClient).deleteKeycloakUser(keycloakUserId);
+        inOrder.verify(memberRepository).delete(existing);
+    }
+
+    @Test
+    void deleteMember_shouldSkipKeycloakWhenUserIdIsNull() {
+        UUID id = UUID.randomUUID();
+        Member existing = Member.builder()
+                .memberId(id).firstName("Pending").email("pending@mail.com")
+                .keycloakUserId(null).status(MemberStatus.PENDING)
+                .build();
+
+        when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
+
+        memberService.deleteMember(id);
+
+        verify(authClient, never()).deleteKeycloakUser(any());
         verify(memberRepository).delete(existing);
+    }
+
+    @Test
+    void deleteMember_shouldNotDeleteDbWhenKeycloakFails() {
+        UUID id = UUID.randomUUID();
+        String keycloakUserId = "kc-user-456";
+        Member existing = Member.builder()
+                .memberId(id).firstName("ToDelete").email("del@mail.com")
+                .keycloakUserId(keycloakUserId).status(MemberStatus.ACTIVE)
+                .build();
+
+        when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
+        doThrow(new RuntimeException("Keycloak unavailable"))
+                .when(authClient).deleteKeycloakUser(keycloakUserId);
+
+        assertThrows(RuntimeException.class, () -> memberService.deleteMember(id));
+
+        verify(memberRepository, never()).delete(any());
     }
 
     @Test

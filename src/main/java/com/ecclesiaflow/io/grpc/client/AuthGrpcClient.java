@@ -74,7 +74,25 @@ public class AuthGrpcClient implements AuthClient {
 
         } catch (StatusRuntimeException e) {
             // Conversion des erreurs gRPC en exceptions métier
-            throw handleGrpcException(e);
+            throw handleGrpcException(e, "generateTemporaryToken");
+        }
+    }
+
+    @Override
+    public void deleteKeycloakUser(String keycloakUserId) {
+        AuthServiceGrpc.AuthServiceBlockingStub stub = AuthServiceGrpc
+                .newBlockingStub(authGrpcChannel)
+                .withDeadlineAfter(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+        try {
+            DeleteKeycloakUserRequest request = DeleteKeycloakUserRequest.newBuilder()
+                    .setKeycloakUserId(keycloakUserId)
+                    .build();
+
+            stub.deleteKeycloakUser(request);
+
+        } catch (StatusRuntimeException e) {
+            throw handleGrpcException(e, "deleteKeycloakUser");
         }
     }
 
@@ -88,28 +106,28 @@ public class AuthGrpcClient implements AuthClient {
      * @param e l'exception gRPC interceptée
      * @return l'exception métier appropriée
      */
-    private RuntimeException handleGrpcException(StatusRuntimeException e) {
+    private RuntimeException handleGrpcException(StatusRuntimeException e, String methodName) {
         Status.Code code = e.getStatus().getCode();
         String description = e.getStatus().getDescription();
 
         return switch (code) {
             case UNAVAILABLE -> new AuthServiceUnavailableException(
                     "Auth service is unavailable: " + description, e);
-            
+
             case DEADLINE_EXCEEDED -> new RuntimeException(
-                    "Timeout exceeded while calling " + "generateTemporaryToken" + ": " + description, e);
-            
+                    "Timeout exceeded while calling " + methodName + ": " + description, e);
+
             case INVALID_ARGUMENT -> new IllegalArgumentException(
-                    "Invalid argument in " + "generateTemporaryToken" + ": " + description, e);
-            
+                    "Invalid argument in " + methodName + ": " + description, e);
+
             case INTERNAL -> new RuntimeException(
-                    "Internal error in Auth service during " + "generateTemporaryToken" + ": " + description, e);
-            
+                    "Internal error in Auth service during " + methodName + ": " + description, e);
+
             case UNAUTHENTICATED -> new SecurityException(
-                    "Authentication failed during " + "generateTemporaryToken" + ": " + description, e);
-            
+                    "Authentication failed during " + methodName + ": " + description, e);
+
             default -> new RuntimeException(
-                    "Unexpected gRPC error during " + "generateTemporaryToken" + " [" + code + "]: " + description, e);
+                    "Unexpected gRPC error during " + methodName + " [" + code + "]: " + description, e);
         };
     }
 

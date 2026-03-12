@@ -1,12 +1,10 @@
 package com.ecclesiaflow.business.services.impl;
 
+import com.ecclesiaflow.business.domain.auth.AuthClient;
 import com.ecclesiaflow.business.domain.member.*;
 import com.ecclesiaflow.business.exceptions.EmailAlreadyUsedException;
-import com.ecclesiaflow.business.exceptions.InvalidEmailUpdateException;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.business.services.MemberService;
-import com.ecclesiaflow.business.domain.communication.EmailClient;
-import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import com.ecclesiaflow.business.exceptions.SocialAccountAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +28,7 @@ public class MemberServiceImpl implements MemberService {
     
     private final MemberRepository memberRepository;
     private final MemberConfirmationService confirmationService;
+    private final AuthClient authClient;
 
     @Override
     @Transactional
@@ -88,33 +87,17 @@ public class MemberServiceImpl implements MemberService {
     @Transactional
     public Member updateMember(MembershipUpdate update) {
         Member existing = findByMemberId(update.getMemberId());
-
-        validateEmailUpdate(existing, update.getEmail());
-
         Member updatedMember = existing.withUpdatedFields(update);
         return memberRepository.save(updatedMember);
     }
-
-    private void validateEmailUpdate(Member existing, String newEmail) {
-        if (newEmail == null) {
-            return;
-        }
-        if (existing.getEmail().equalsIgnoreCase(newEmail)) {
-            throw new InvalidEmailUpdateException(
-                    "New email must differ from the current one.");
-        }
-        if (isEmailAlreadyUsed(newEmail)) {
-            throw new EmailAlreadyUsedException(
-                    "An account with this email already exists.");
-        }
-    }
-
-
 
     @Override
     @Transactional
     public void deleteMember(UUID memberId) {
         Member member = findByMemberId(memberId);
+        if (member.getKeycloakUserId() != null) {
+            authClient.deleteKeycloakUser(member.getKeycloakUserId());
+        }
         memberRepository.delete(member);
     }
 

@@ -42,4 +42,16 @@ public interface AuthClient {
      * @throws RuntimeException si la communication avec le module Auth échoue
      */
     PasswordSetupTokenResponse retrievePostActivationToken(String email, UUID memberId);
+
+    /**
+     * Supprime un utilisateur Keycloak via le module Auth.
+     * <p>
+     * Appelé avant la suppression d'un membre de la base de données
+     * pour éviter les utilisateurs orphelins dans Keycloak.
+     * </p>
+     *
+     * @param keycloakUserId l'identifiant Keycloak de l'utilisateur à supprimer
+     * @throws RuntimeException si la communication avec le module Auth échoue
+     */
+    void deleteKeycloakUser(String keycloakUserId);
 }

@@ -29,6 +29,12 @@ service AuthService {
    * Sécurité: Requires service-to-service authentication
    */
   rpc GenerateTemporaryToken(TemporaryTokenRequest) returns (TemporaryTokenResponse);
+
+  /**
+   * Supprime un utilisateur Keycloak lors de la suppression d'un membre.
+   * Appelé par Members avant de supprimer le membre de la base de données.
+   */
+  rpc DeleteKeycloakUser(DeleteKeycloakUserRequest) returns (DeleteKeycloakUserResponse);
 }
 
 // ============================================================================
@@ -59,13 +65,28 @@ message TemporaryTokenRequest {
 message TemporaryTokenResponse {
   // Opaque token for password setup (base64url encoded)
   string temporary_token = 1;
-  
+
   // Durée de validité en secondes (ex: 86400 = 24 hours)
   int32 expires_in_seconds = 2;
-  
+
   // URL endpoint for password setup
   string password_endpoint = 3;
 }
 
+// ============================================================================
+// Suppression utilisateur Keycloak
+// ============================================================================
 
+/**
+ * Requête de suppression d'un utilisateur Keycloak.
+ * Le keycloak_user_id correspond au champ 'sub' du JWT.
+ */
+message DeleteKeycloakUserRequest {
+  string keycloak_user_id = 1;
+}
+
+message DeleteKeycloakUserResponse {
+  bool success = 1;
+  string message = 2;
+}
 
