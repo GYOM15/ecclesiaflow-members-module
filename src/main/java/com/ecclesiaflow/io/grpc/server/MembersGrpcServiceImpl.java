@@ -186,6 +186,50 @@ public class MembersGrpcServiceImpl extends MembersServiceGrpc.MembersServiceImp
     }
 
     // ========================================================================
+    // NotifyLocalCredentialsAdded
+    // ========================================================================
+
+    @Override
+    @Transactional
+    public void notifyLocalCredentialsAdded(
+            LocalCredentialsAddedRequest request,
+            StreamObserver<LocalCredentialsAddedResponse> responseObserver) {
+
+        try {
+            if (request.getKeycloakUserId().isBlank()) {
+                throw new IllegalArgumentException("keycloak_user_id cannot be empty");
+            }
+
+            Optional<Member> memberOpt = memberRepository.getByKeycloakUserId(request.getKeycloakUserId());
+            if (memberOpt.isEmpty()) {
+                responseObserver.onNext(LocalCredentialsAddedResponse.newBuilder()
+                        .setSuccess(false)
+                        .setMessage("Member not found for keycloakUserId: " + request.getKeycloakUserId())
+                        .build());
+                responseObserver.onCompleted();
+                return;
+            }
+
+            Member member = memberOpt.get();
+            Member updated = member.toBuilder().hasLocalCredentials(true).build();
+            memberRepository.save(updated);
+
+            responseObserver.onNext(LocalCredentialsAddedResponse.newBuilder()
+                    .setSuccess(true)
+                    .setMessage("Local credentials flag updated")
+                    .build());
+            responseObserver.onCompleted();
+
+        } catch (IllegalArgumentException e) {
+            handleInvalidArgument(responseObserver, e);
+        } catch (Exception e) {
+            responseObserver.onError(Status.INTERNAL
+                    .withDescription("Failed to update local credentials flag")
+                    .asRuntimeException());
+        }
+    }
+
+    // ========================================================================
     // Validation methods
     // ========================================================================
 

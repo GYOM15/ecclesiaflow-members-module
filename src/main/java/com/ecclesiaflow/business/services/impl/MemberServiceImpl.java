@@ -98,9 +98,6 @@ public class MemberServiceImpl implements MemberService {
     @Transactional
     public void deactivateMember(UUID memberId) {
         Member member = findByMemberId(memberId);
-        if (member.getKeycloakUserId() != null) {
-            authClient.disableKeycloakUser(member.getKeycloakUserId());
-        }
         Member deactivated = member.toBuilder()
                 .status(MemberStatus.DEACTIVATED)
                 .deactivatedAt(LocalDateTime.now())
@@ -172,6 +169,20 @@ public class MemberServiceImpl implements MemberService {
         Member savedMember = memberRepository.save(member);
         eventPublisher.publishEvent(new MemberActivatedEvent(savedMember.getEmail(), savedMember.getFirstName()));
         return savedMember;
+    }
+
+    @Override
+    @Transactional
+    public Member reactivateMember(UUID memberId) {
+        Member member = findByMemberId(memberId);
+        if (member.getStatus() != MemberStatus.DEACTIVATED) {
+            throw new IllegalStateException("Only DEACTIVATED accounts can be reactivated");
+        }
+        Member reactivated = member.toBuilder()
+                .status(MemberStatus.ACTIVE)
+                .deactivatedAt(null)
+                .build();
+        return memberRepository.save(reactivated);
     }
 
     private String normalizeSearch(String search) {

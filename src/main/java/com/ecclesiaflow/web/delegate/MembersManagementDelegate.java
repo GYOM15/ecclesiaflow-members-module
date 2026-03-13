@@ -140,6 +140,14 @@ public class MembersManagementDelegate {
         return ResponseEntity.noContent().build();
     }
 
+    /** Reactivates the authenticated member's deactivated account. */
+    public ResponseEntity<SignUpResponse> reactivateMyAccount() {
+        String keycloakUserId = authenticatedUserService.getKeycloakUserId();
+        Member member = memberService.getByKeycloakUserId(keycloakUserId);
+        Member reactivated = memberService.reactivateMember(member.getMemberId());
+        return ResponseEntity.ok(openApiModelMapper.createSignUpResponse(reactivated, "Account reactivated"));
+    }
+
     // --- Private helpers ---
 
     private Pageable createPageable(Integer page, Integer size, String sort, String direction) {

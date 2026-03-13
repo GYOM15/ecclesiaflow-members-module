@@ -203,4 +203,15 @@ public interface MemberService {
      */
     Member registerSocialMember(String keycloakUserId, SocialProvider socialProvider,
                                 MembershipRegistration registration);
+
+    /**
+     * Reactivates a DEACTIVATED member account during the grace period.
+     * Sets status back to ACTIVE and clears the deactivation timestamp.
+     *
+     * @param memberId the member's shared UUID
+     * @return the reactivated member
+     * @throws MemberNotFoundException if no member exists with this memberId
+     * @throws IllegalStateException if the member is not in DEACTIVATED status
+     */
+    Member reactivateMember(UUID memberId);
 }

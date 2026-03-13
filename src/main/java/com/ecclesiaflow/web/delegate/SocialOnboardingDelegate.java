@@ -2,6 +2,7 @@ package com.ecclesiaflow.web.delegate;
 
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
+import com.ecclesiaflow.business.domain.member.SocialProvider;
 import com.ecclesiaflow.business.security.RequireScopes;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.web.exception.InvalidRequestException;
@@ -50,6 +51,8 @@ public class SocialOnboardingDelegate {
 
         validateEmailMatchesJwt(request.getEmail(), jwtEmail);
 
+        SocialProvider socialProvider = detectSocialProvider();
+
         MembershipRegistration registration = new MembershipRegistration(
                 request.getFirstName(),
                 request.getLastName(),
@@ -58,7 +61,7 @@ public class SocialOnboardingDelegate {
                 request.getPhoneNumber()
         );
 
-        Member member = memberService.registerSocialMember(keycloakUserId, registration);
+        Member member = memberService.registerSocialMember(keycloakUserId, socialProvider, registration);
 
         SocialOnboardingResponse response = openApiModelMapper
                 .createSocialOnboardingResponse(member);
@@ -71,5 +74,15 @@ public class SocialOnboardingDelegate {
             throw new InvalidRequestException(
                     "Request email does not match the authenticated user's email");
         }
+    }
+
+    private SocialProvider detectSocialProvider() {
+        String idp = authenticatedUserService.getIdentityProvider().orElse("");
+        return switch (idp.toLowerCase()) {
+            case "google" -> SocialProvider.GOOGLE;
+            case "microsoft" -> SocialProvider.MICROSOFT;
+            case "facebook" -> SocialProvider.FACEBOOK;
+            default -> null;
+        };
     }
 }

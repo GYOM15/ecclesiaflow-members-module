@@ -58,6 +58,11 @@ public class AuthenticatedUserService {
                 .orElse(Set.of());
     }
 
+    /** Returns the {@code identity_provider} claim from the JWT (e.g. "google", "facebook", "microsoft"). */
+    public Optional<String> getIdentityProvider() {
+        return getJwt().map(jwt -> jwt.getClaimAsString("identity_provider"));
+    }
+
     /** Returns whether the {@code email_verified} claim is true. */
     public boolean isEmailVerified() {
         return getJwt()

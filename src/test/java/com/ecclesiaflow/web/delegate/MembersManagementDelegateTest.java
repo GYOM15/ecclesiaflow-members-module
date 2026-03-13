@@ -517,4 +517,39 @@ class MembersManagementDelegateTest {
         verify(memberService).deactivateMember(memberId);
         verify(memberService, never()).deleteMember(any());
     }
+
+    @Test
+    void reactivateMyAccount_shouldDelegateToService() {
+        // Given
+        String keycloakUserId = "kc-user-123";
+        UUID memberId = UUID.randomUUID();
+        Member member = Member.builder()
+                .memberId(memberId)
+                .email("test@example.com")
+                .firstName("Test")
+                .status(MemberStatus.DEACTIVATED)
+                .build();
+        Member reactivated = member.toBuilder()
+                .status(MemberStatus.ACTIVE)
+                .build();
+
+        SignUpResponse response = new SignUpResponse();
+        response.setEmail("test@example.com");
+
+        when(authenticatedUserService.getKeycloakUserId()).thenReturn(keycloakUserId);
+        when(memberService.getByKeycloakUserId(keycloakUserId)).thenReturn(member);
+        when(memberService.reactivateMember(memberId)).thenReturn(reactivated);
+        when(openApiModelMapper.createSignUpResponse(reactivated, "Account reactivated")).thenReturn(response);
+
+        // When
+        ResponseEntity<SignUpResponse> result = membersManagementDelegate.reactivateMyAccount();
+
+        // Then
+        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(result.getBody()).isNotNull();
+
+        verify(authenticatedUserService).getKeycloakUserId();
+        verify(memberService).getByKeycloakUserId(keycloakUserId);
+        verify(memberService).reactivateMember(memberId);
+    }
 }

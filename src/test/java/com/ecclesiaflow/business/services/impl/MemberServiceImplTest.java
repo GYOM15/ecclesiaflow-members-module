@@ -426,12 +426,11 @@ class MemberServiceImplTest {
     // --- deactivateMember tests ---
 
     @Test
-    void deactivateMember_shouldDisableKeycloakThenSaveDeactivated() {
+    void deactivateMember_shouldSetStatusDeactivatedWithTimestamp() {
         UUID id = UUID.randomUUID();
-        String keycloakUserId = "kc-user-123";
         Member existing = Member.builder()
                 .memberId(id).firstName("ToDeactivate").email("deact@mail.com")
-                .keycloakUserId(keycloakUserId).status(MemberStatus.ACTIVE)
+                .keycloakUserId("kc-user-123").status(MemberStatus.ACTIVE)
                 .build();
 
         when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
@@ -439,47 +438,10 @@ class MemberServiceImplTest {
 
         memberService.deactivateMember(id);
 
-        var inOrder = inOrder(authClient, memberRepository);
-        inOrder.verify(authClient).disableKeycloakUser(keycloakUserId);
-        inOrder.verify(memberRepository).save(argThat(member ->
+        verify(memberRepository).save(argThat(member ->
                 member.getStatus() == MemberStatus.DEACTIVATED
                         && member.getDeactivatedAt() != null));
-    }
-
-    @Test
-    void deactivateMember_shouldSkipKeycloakWhenUserIdIsNull() {
-        UUID id = UUID.randomUUID();
-        Member existing = Member.builder()
-                .memberId(id).firstName("Pending").email("pending@mail.com")
-                .keycloakUserId(null).status(MemberStatus.PENDING)
-                .build();
-
-        when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
-        when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        memberService.deactivateMember(id);
-
-        verify(authClient, never()).disableKeycloakUser(any());
-        verify(memberRepository).save(argThat(member ->
-                member.getStatus() == MemberStatus.DEACTIVATED));
-    }
-
-    @Test
-    void deactivateMember_shouldRollbackWhenKeycloakFails() {
-        UUID id = UUID.randomUUID();
-        String keycloakUserId = "kc-user-456";
-        Member existing = Member.builder()
-                .memberId(id).firstName("ToDeactivate").email("deact@mail.com")
-                .keycloakUserId(keycloakUserId).status(MemberStatus.ACTIVE)
-                .build();
-
-        when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
-        doThrow(new RuntimeException("Keycloak unavailable"))
-                .when(authClient).disableKeycloakUser(keycloakUserId);
-
-        assertThrows(RuntimeException.class, () -> memberService.deactivateMember(id));
-
-        verify(memberRepository, never()).save(any());
+        verifyNoInteractions(authClient);
     }
 
     @Test
@@ -489,7 +451,54 @@ class MemberServiceImplTest {
 
         assertThrows(MemberNotFoundException.class, () -> memberService.deactivateMember(id));
 
-        verify(authClient, never()).disableKeycloakUser(any());
+        verify(memberRepository, never()).save(any());
+    }
+
+    // --- reactivateMember tests ---
+
+    @Test
+    void reactivateMember_shouldSetStatusActiveAndClearDeactivatedAt() {
+        UUID id = UUID.randomUUID();
+        Member existing = Member.builder()
+                .memberId(id).firstName("Deactivated").email("deact@mail.com")
+                .keycloakUserId("kc-user-123").status(MemberStatus.DEACTIVATED)
+                .deactivatedAt(java.time.LocalDateTime.now().minusDays(5))
+                .build();
+
+        when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
+        when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Member result = memberService.reactivateMember(id);
+
+        assertEquals(MemberStatus.ACTIVE, result.getStatus());
+        assertNull(result.getDeactivatedAt());
+        verify(memberRepository).save(argThat(member ->
+                member.getStatus() == MemberStatus.ACTIVE
+                        && member.getDeactivatedAt() == null));
+    }
+
+    @Test
+    void reactivateMember_shouldThrowWhenNotDeactivated() {
+        UUID id = UUID.randomUUID();
+        Member existing = Member.builder()
+                .memberId(id).firstName("Active").email("active@mail.com")
+                .status(MemberStatus.ACTIVE)
+                .build();
+
+        when(memberRepository.getByMemberId(id)).thenReturn(Optional.of(existing));
+
+        assertThrows(IllegalStateException.class, () -> memberService.reactivateMember(id));
+
+        verify(memberRepository, never()).save(any());
+    }
+
+    @Test
+    void reactivateMember_shouldThrowWhenMemberNotFound() {
+        UUID id = UUID.randomUUID();
+        when(memberRepository.getByMemberId(id)).thenReturn(Optional.empty());
+
+        assertThrows(MemberNotFoundException.class, () -> memberService.reactivateMember(id));
+
         verify(memberRepository, never()).save(any());
     }
 

@@ -1,11 +1,14 @@
 package com.ecclesiaflow.web.security;
 
+import com.ecclesiaflow.business.domain.member.MemberRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -55,6 +58,13 @@ public class SecurityConfig {
     private String allowedOrigins;
 
     private final KeycloakJwtConverter keycloakJwtConverter;
+    private final MemberRepository memberRepository;
+    private final ObjectMapper objectMapper;
+
+    @Bean
+    public MemberStatusFilter memberStatusFilter() {
+        return new MemberStatusFilter(memberRepository, objectMapper);
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -86,7 +96,8 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/ecclesiaflow/members",
                     "/ecclesiaflow/members/confirmation",
-                    "/ecclesiaflow/members/new-confirmation"
+                    "/ecclesiaflow/members/new-confirmation",
+                    "/ecclesiaflow/members/me/email/confirm"
                 ).permitAll()
                 
                 // Health checks for Kubernetes
@@ -98,8 +109,10 @@ public class SecurityConfig {
                 
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
-            );
-        
+            )
+            // Block deactivated/suspended/inactive members after JWT validation
+            .addFilterAfter(memberStatusFilter(), BearerTokenAuthenticationFilter.class);
+
         return http.build();
     }
 
