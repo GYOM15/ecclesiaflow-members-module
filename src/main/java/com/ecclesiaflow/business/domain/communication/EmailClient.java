@@ -55,4 +55,14 @@ public interface EmailClient {
      */
     UUID sendWelcomeEmail(String email, String firstName);
 
+    /**
+     * Notifies the old email address that the account email has been changed.
+     *
+     * @param oldEmail  the previous email address
+     * @param firstName recipient's first name for personalization
+     * @return UUID of the sent email (for tracking)
+     * @throws com.ecclesiaflow.business.exceptions.EmailServiceException if sending fails
+     */
+    UUID sendEmailChangedNotification(String oldEmail, String firstName);
+
 }

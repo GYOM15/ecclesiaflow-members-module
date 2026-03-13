@@ -81,6 +81,30 @@ public class EmailGrpcClient implements EmailClient {
         throw new EmailServiceUnavailableException(SERVICE_NAME, t);
     }
 
+    @Override
+    @CircuitBreaker(name = ResilienceConfig.EMAIL_SERVICE_CB, fallbackMethod = "sendEmailChangedNotificationFallback")
+    @Retry(name = ResilienceConfig.EMAIL_SERVICE_RETRY)
+    public UUID sendEmailChangedNotification(String oldEmail, String firstName) {
+        Map<String, String> variables = Map.of(
+            "email", oldEmail,
+            "firstName", firstName != null ? firstName : "Membre"
+        );
+
+        return sendEmail(
+            oldEmail,
+            EmailTemplateType.EMAIL_TEMPLATE_PROFILE_UPDATED,
+            "Your email address has been changed — EcclesiaFlow",
+            variables,
+            Priority.PRIORITY_NORMAL,
+            EmailOperation.EMAIL_CHANGED
+        );
+    }
+
+    @SuppressWarnings("unused")
+    private UUID sendEmailChangedNotificationFallback(String oldEmail, String firstName, Throwable t) {
+        throw new EmailServiceUnavailableException(SERVICE_NAME, t);
+    }
+
     private UUID sendEmail(String toEmail,
                           EmailTemplateType templateType,
                           String subject,
