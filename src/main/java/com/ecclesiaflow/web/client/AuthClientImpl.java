@@ -123,6 +123,18 @@ public class AuthClientImpl implements AuthClient {
                 "deleteKeycloakUser requires gRPC (grpc.enabled=true)");
     }
 
+    @Override
+    public void disableKeycloakUser(String keycloakUserId) {
+        throw new UnsupportedOperationException(
+                "disableKeycloakUser requires gRPC (grpc.enabled=true)");
+    }
+
+    @Override
+    public void updateKeycloakUserEmail(String keycloakUserId, String newEmail) {
+        throw new UnsupportedOperationException(
+                "updateKeycloakUserEmail requires gRPC (grpc.enabled=true)");
+    }
+
     // === Méthodes utilitaires ===
 
     /**

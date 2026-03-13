@@ -11,6 +11,7 @@ import com.ecclesiaflow.web.model.SignUpResponse;
 import com.ecclesiaflow.web.model.UpdateMemberRequestPayload;
 import com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler;
 import com.ecclesiaflow.web.model.MemberPageResponse;
+import com.ecclesiaflow.web.delegate.EmailChangeDelegate;
 import com.ecclesiaflow.web.delegate.MembersManagementDelegate;
 import com.ecclesiaflow.web.delegate.MembersTemporaryDelegate;
 import com.ecclesiaflow.web.delegate.SocialOnboardingDelegate;
@@ -57,6 +58,9 @@ class MembersControllerTest {
     @Mock
     private SocialOnboardingDelegate socialOnboardingDelegate;
 
+    @Mock
+    private EmailChangeDelegate emailChangeDelegate;
+
     @InjectMocks
     private MembersController membersController;
 
@@ -66,7 +70,7 @@ class MembersControllerTest {
     void setup() {
         MockitoAnnotations.openMocks(this);
         membersController = new MembersController(
-                membersManagementDelegate, membersTemporaryDelegate, socialOnboardingDelegate);
+                membersManagementDelegate, membersTemporaryDelegate, socialOnboardingDelegate, emailChangeDelegate);
         mockMvc = MockMvcBuilders.standaloneSetup(membersController)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())

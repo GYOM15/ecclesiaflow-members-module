@@ -2,6 +2,7 @@ package com.ecclesiaflow.web.mappers;
 
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import com.ecclesiaflow.business.domain.member.Member;
+import com.ecclesiaflow.business.domain.member.SocialProvider;
 import com.ecclesiaflow.web.model.ConfirmationResponse;
 import com.ecclesiaflow.web.model.MemberPageResponse;
 import com.ecclesiaflow.web.model.SignUpResponse;
@@ -40,13 +41,25 @@ public class OpenApiModelMapper {
         response.setLastName(member.getLastName());
         response.setAddress(member.getAddress());
         response.setConfirmed(member.isConfirmed());
+        response.setHasLocalCredentials(member.isHasLocalCredentials());
 
+        if (member.getSocialProvider() != null) {
+            response.setSocialProvider(mapSocialProvider(member.getSocialProvider()));
+        }
         if (member.getCreatedAt() != null) {
             response.setCreatedAt(member.getCreatedAt().toString());
         }
         if (member.getConfirmedAt() != null) {
             response.setConfirmedAt(member.getConfirmedAt().toString());
         }
+    }
+
+    private SignUpResponse.SocialProviderEnum mapSocialProvider(SocialProvider provider) {
+        return switch (provider) {
+            case GOOGLE -> SignUpResponse.SocialProviderEnum.GOOGLE;
+            case MICROSOFT -> SignUpResponse.SocialProviderEnum.MICROSOFT;
+            case FACEBOOK -> SignUpResponse.SocialProviderEnum.FACEBOOK;
+        };
     }
 
     /** Converts a paginated result of Members into a {@link MemberPageResponse}. */

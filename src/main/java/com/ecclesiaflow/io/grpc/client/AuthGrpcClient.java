@@ -96,8 +96,45 @@ public class AuthGrpcClient implements AuthClient {
         }
     }
 
+    @Override
+    public void disableKeycloakUser(String keycloakUserId) {
+        AuthServiceGrpc.AuthServiceBlockingStub stub = AuthServiceGrpc
+                .newBlockingStub(authGrpcChannel)
+                .withDeadlineAfter(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+        try {
+            DisableKeycloakUserRequest request = DisableKeycloakUserRequest.newBuilder()
+                    .setKeycloakUserId(keycloakUserId)
+                    .build();
+
+            stub.disableKeycloakUser(request);
+
+        } catch (StatusRuntimeException e) {
+            throw handleGrpcException(e, "disableKeycloakUser");
+        }
+    }
+
+    @Override
+    public void updateKeycloakUserEmail(String keycloakUserId, String newEmail) {
+        AuthServiceGrpc.AuthServiceBlockingStub stub = AuthServiceGrpc
+                .newBlockingStub(authGrpcChannel)
+                .withDeadlineAfter(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+        try {
+            UpdateKeycloakUserEmailRequest request = UpdateKeycloakUserEmailRequest.newBuilder()
+                    .setKeycloakUserId(keycloakUserId)
+                    .setNewEmail(newEmail)
+                    .build();
+
+            stub.updateKeycloakUserEmail(request);
+
+        } catch (StatusRuntimeException e) {
+            throw handleGrpcException(e, "updateKeycloakUserEmail");
+        }
+    }
+
     // ========================================================================
-    // Gestion des erreurs gRPC
+    // Error handling
     // ========================================================================
 
     /**

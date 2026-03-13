@@ -54,4 +54,8 @@ public interface AuthClient {
      * @throws RuntimeException si la communication avec le module Auth échoue
      */
     void deleteKeycloakUser(String keycloakUserId);
+
+    void disableKeycloakUser(String keycloakUserId);
+
+    void updateKeycloakUserEmail(String keycloakUserId, String newEmail);
 }

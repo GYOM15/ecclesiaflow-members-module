@@ -6,81 +6,24 @@ option java_outer_classname = "AuthServiceProto";
 
 package ecclesiaflow.auth;
 
-/**
- * Service d'authentification EcclesiaFlow pour communication inter-modules.
- * 
- * Ce service gRPC permet la génération de tokens temporaires sécurisés
- * utilisés lors du processus de confirmation de compte et définition
- * du mot de passe initial.
- *
- * Architecture: Communication synchrone entre Members Module et Auth Module
- * Sécurité: JWT dans metadata pour authentification inter-services
- */
 service AuthService {
-  /**
-   * Génère un token temporaire JWT pour permettre la définition du mot de passe.
-   * 
-   * Flow:
-   * 1. Members module confirme un compte email
-   * 2. Members appelle Auth via gRPC pour obtenir un token temporaire
-   * 3. Token temporaire renvoyé à l'utilisateur (expire en 15min)
-   * 4. Utilisateur utilise ce token pour définir son mot de passe
-   *
-   * Sécurité: Requires service-to-service authentication
-   */
   rpc GenerateTemporaryToken(TemporaryTokenRequest) returns (TemporaryTokenResponse);
-
-  /**
-   * Supprime un utilisateur Keycloak lors de la suppression d'un membre.
-   * Appelé par Members avant de supprimer le membre de la base de données.
-   */
   rpc DeleteKeycloakUser(DeleteKeycloakUserRequest) returns (DeleteKeycloakUserResponse);
+  rpc DisableKeycloakUser(DisableKeycloakUserRequest) returns (DisableKeycloakUserResponse);
+  rpc UpdateKeycloakUserEmail(UpdateKeycloakUserEmailRequest) returns (UpdateKeycloakUserEmailResponse);
 }
 
-// ============================================================================
-// Request/Response Messages
-// ============================================================================
-
-/**
- * Requête pour générer un token temporaire.
- * 
- * Correspondance avec REST API:
- * POST /ecclesiaflow/auth/temporary-token
- * Body: { email, memberId }
- */
 message TemporaryTokenRequest {
-  // Email du membre confirmé (requis)
   string email = 1;
-  
-  // UUID du membre dans le système (requis)
   string member_id = 2;
 }
 
-/**
- * Réponse contenant le token temporaire généré.
- * 
- * Correspondance avec REST API:
- * Response: { temporaryToken, expiresIn, passwordEndpoint }
- */
 message TemporaryTokenResponse {
-  // Opaque token for password setup (base64url encoded)
   string temporary_token = 1;
-
-  // Durée de validité en secondes (ex: 86400 = 24 hours)
   int32 expires_in_seconds = 2;
-
-  // URL endpoint for password setup
   string password_endpoint = 3;
 }
 
-// ============================================================================
-// Suppression utilisateur Keycloak
-// ============================================================================
-
-/**
- * Requête de suppression d'un utilisateur Keycloak.
- * Le keycloak_user_id correspond au champ 'sub' du JWT.
- */
 message DeleteKeycloakUserRequest {
   string keycloak_user_id = 1;
 }
@@ -90,3 +33,21 @@ message DeleteKeycloakUserResponse {
   string message = 2;
 }
 
+message DisableKeycloakUserRequest {
+  string keycloak_user_id = 1;
+}
+
+message DisableKeycloakUserResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message UpdateKeycloakUserEmailRequest {
+  string keycloak_user_id = 1;
+  string new_email = 2;
+}
+
+message UpdateKeycloakUserEmailResponse {
+  bool success = 1;
+  string message = 2;
+}

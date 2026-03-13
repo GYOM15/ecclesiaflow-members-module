@@ -763,6 +763,96 @@ paths:
         '403':
           $ref: '#/components/responses/ForbiddenError'
 
+  /ecclesiaflow/members/me/email:
+    patch:
+      tags:
+        - Email Change
+      summary: Request email address change
+      description: |
+        Initiates an email change by sending a confirmation link to the new address.
+        The current email remains unchanged until the new one is confirmed.
+        SSO users without a local password receive a 403 error.
+      operationId: Members.RequestEmailChange
+      security:
+        - BearerAuth: []
+      x-required-scopes:
+        - ef:members:write:own
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEmailRequestPayload'
+      responses:
+        '202':
+          description: Confirmation email sent to new address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailChangeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+
+  /ecclesiaflow/members/me/email/confirm:
+    post:
+      tags:
+        - Email Change
+      summary: Confirm email address change
+      description: |
+        Confirms the email change using the token received by email.
+        Updates the email in both the Members database and Keycloak.
+      operationId: Members.ConfirmEmailChange
+      security: []
+      parameters:
+        - name: token
+          in: query
+          description: Email change confirmation token (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Email updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignUpResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+
+  /ecclesiaflow/members/me/reactivate:
+    post:
+      tags:
+        - Members Management
+      summary: Reactivate a deactivated account
+      description: |
+        Reactivates a DEACTIVATED account during the 30-day grace period.
+        The user must be authenticated (Keycloak is not disabled).
+        Only accounts with DEACTIVATED status can be reactivated.
+      operationId: Members.ReactivateMyAccount
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Account reactivated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignUpResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
 components:
   securitySchemes:
     BearerAuth:
@@ -944,6 +1034,26 @@ components:
           description: "Nouveau numéro de téléphone au format international"
           pattern: "^\\+?[1-9]\\d{1,14}$"
           example: "+33987654321"
+
+    UpdateEmailRequestPayload:
+      type: object
+      description: "Request to change the member's email address"
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 100
+          example: "new.email@example.com"
+
+    EmailChangeResponse:
+      type: object
+      description: "Response after requesting an email change"
+      properties:
+        message:
+          type: string
+          example: "Confirmation email sent to new address"
 
     SocialOnboardingRequest:
       type: object
@@ -1141,6 +1251,14 @@ components:
           type: string
           description: "Date de confirmation du compte (format ISO)"
           example: "2024-01-15T10:45:00Z"
+        socialProvider:
+          type: string
+          enum: [GOOGLE, MICROSOFT, FACEBOOK]
+          nullable: true
+          description: "Social identity provider used during registration (null for standard accounts)"
+        hasLocalCredentials:
+          type: boolean
+          description: "Whether the member has a local password set"
 
     PageMetadata:
       type: object
@@ -1285,6 +1403,8 @@ components:
             - UNAUTHORIZED_ACCESS
             - INSUFFICIENT_PERMISSIONS
             - SOCIAL_ACCOUNT_EXISTS
+            - LOCAL_CREDENTIALS_REQUIRED
+            - INVALID_EMAIL_UPDATE
             - INTERNAL_SERVER_ERROR
           example: "VALIDATION_ERROR"
         message:
@@ -1539,3 +1659,15 @@ tags:
       3. Affichage formulaire pré-rempli (given_name, family_name, email du JWT)
       4. `POST /ecclesiaflow/members/social-onboarding` → 201 (profil créé)
       5. Redirection vers le dashboard avec profil complet
+
+  - name: Email Change
+    description: |
+      Email address change with re-verification flow.
+
+      **Process:**
+      1. User requests email change via PATCH /members/me/email
+      2. Confirmation link sent to the new email address
+      3. User clicks the link → POST /members/me/email/confirm?token=UUID
+      4. Email updated in both Members DB and Keycloak
+
+      **SSO users:** Must add a local password before changing their email.

@@ -6,6 +6,8 @@ import com.ecclesiaflow.business.exceptions.ExpiredConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.InsufficientPermissionsException;
 import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
 
+import com.ecclesiaflow.business.exceptions.InvalidEmailUpdateException;
+import com.ecclesiaflow.business.exceptions.LocalCredentialsRequiredException;
 import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import com.ecclesiaflow.business.exceptions.SocialAccountAlreadyExistsException;
@@ -148,11 +150,28 @@ public class GlobalExceptionHandler {
         return buildBadRequestErrorResponse(ex.getMessage(), request);
     }
 
+    @ExceptionHandler(InvalidEmailUpdateException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidEmailUpdate(InvalidEmailUpdateException ex, WebRequest request) {
+        return buildBadRequestErrorResponse(ex.getMessage(), request);
+    }
+
     // --- 403 Forbidden ---
 
     @ExceptionHandler(InsufficientPermissionsException.class)
     public ResponseEntity<ApiErrorResponse> handleInsufficientPermissions(InsufficientPermissionsException ex, WebRequest request) {
         return buildSimpleErrorResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(LocalCredentialsRequiredException.class)
+    public ResponseEntity<ApiErrorResponse> handleLocalCredentialsRequired(LocalCredentialsRequiredException ex, WebRequest request) {
+        String providerName = switch (ex.getProvider()) {
+            case GOOGLE -> "Google";
+            case MICROSOFT -> "Microsoft";
+            case FACEBOOK -> "Facebook";
+        };
+        String message = "Your account was created with " + providerName
+                + ". Please add a password before changing your email.";
+        return buildSimpleErrorResponse(HttpStatus.FORBIDDEN, message, request);
     }
 
     // --- 404 Not Found ---

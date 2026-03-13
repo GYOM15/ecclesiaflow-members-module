@@ -1,17 +1,21 @@
 package com.ecclesiaflow.web.controller;
 
+import com.ecclesiaflow.web.api.EmailChangeApi;
 import com.ecclesiaflow.web.api.MembersManagementApi;
 import com.ecclesiaflow.web.api.MembersTemporaryApi;
 import com.ecclesiaflow.web.api.SocialOnboardingApi;
+import com.ecclesiaflow.web.delegate.EmailChangeDelegate;
 import com.ecclesiaflow.web.delegate.MembersManagementDelegate;
 import com.ecclesiaflow.web.delegate.MembersTemporaryDelegate;
 import com.ecclesiaflow.web.delegate.SocialOnboardingDelegate;
+import com.ecclesiaflow.web.model.EmailChangeResponse;
 import com.ecclesiaflow.web.model.MemberConfirmationStatusResponse;
 import com.ecclesiaflow.web.model.MemberPageResponse;
 import com.ecclesiaflow.web.model.SignUpRequestPayload;
 import com.ecclesiaflow.web.model.SignUpResponse;
 import com.ecclesiaflow.web.model.SocialOnboardingRequest;
 import com.ecclesiaflow.web.model.SocialOnboardingResponse;
+import com.ecclesiaflow.web.model.UpdateEmailRequestPayload;
 import com.ecclesiaflow.web.model.UpdateMemberRequestPayload;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,11 +30,12 @@ import java.util.UUID;
  */
 @RestController
 @RequiredArgsConstructor
-public class MembersController implements MembersManagementApi, MembersTemporaryApi, SocialOnboardingApi {
+public class MembersController implements MembersManagementApi, MembersTemporaryApi, SocialOnboardingApi, EmailChangeApi {
 
     private final MembersManagementDelegate membersManagementDelegate;
     private final MembersTemporaryDelegate membersTemporaryDelegate;
     private final SocialOnboardingDelegate socialOnboardingDelegate;
+    private final EmailChangeDelegate emailChangeDelegate;
 
     // --- SocialOnboardingApi ---
 
@@ -96,5 +101,22 @@ public class MembersController implements MembersManagementApi, MembersTemporary
     @Override
     public ResponseEntity<Void> _membersDeleteMyAccount() {
         return membersManagementDelegate.deleteMyAccount();
+    }
+
+    @Override
+    public ResponseEntity<SignUpResponse> _membersReactivateMyAccount() {
+        return membersManagementDelegate.reactivateMyAccount();
+    }
+
+    // --- EmailChangeApi ---
+
+    @Override
+    public ResponseEntity<EmailChangeResponse> _membersRequestEmailChange(UpdateEmailRequestPayload updateEmailRequestPayload) {
+        return emailChangeDelegate.requestEmailChange(updateEmailRequestPayload);
+    }
+
+    @Override
+    public ResponseEntity<SignUpResponse> _membersConfirmEmailChange(UUID token) {
+        return emailChangeDelegate.confirmEmailChange(token);
     }
 }
