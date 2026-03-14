@@ -43,8 +43,7 @@ public class MemberEntity {
     @Column(name = "member_id", columnDefinition = "BINARY(16)", nullable = false, unique = true, updatable = false)
     private UUID memberId;
 
-    @NotBlank(message = "Address is required")
-    @Column(length = 200, nullable = false)
+    @Column(length = 200)
     private String address;
 
     @NotNull(message = "Status is required")
