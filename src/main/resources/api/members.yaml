@@ -1235,6 +1235,10 @@ components:
           type: string
           description: "Adresse physique du membre (optionnelle)"
           example: "123 Rue de la Paix, 75001 Paris"
+        phoneNumber:
+          type: string
+          description: "Phone number of the member (optional)"
+          example: "+33612345678"
         token:
           type: string
           description: "Token d'authentification (si applicable)"

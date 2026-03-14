@@ -40,6 +40,7 @@ public class OpenApiModelMapper {
         response.setFirstName(member.getFirstName());
         response.setLastName(member.getLastName());
         response.setAddress(member.getAddress());
+        response.setPhoneNumber(member.getPhoneNumber());
         response.setConfirmed(member.isConfirmed());
         response.setHasLocalCredentials(member.isHasLocalCredentials());
 
