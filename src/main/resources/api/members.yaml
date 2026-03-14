@@ -200,8 +200,8 @@ paths:
                 summary: Membre basique
                 value:
                   firstName: "Jean"
-                  lastName: "Dupont"
-                  email: "jean.dupont@example.com"
+                  lastName: "Tremblay"
+                  email: "jean.tremblay@example.com"
                   address: "123 Rue de la Paix, Montréal, H3A 1B2"
               complete_member:
                 summary: Membre avec informations complètes
@@ -574,7 +574,7 @@ paths:
           schema:
             type: string
             format: email
-            example: "jean.dupont@example.com"
+            example: "jean.tremblay@example.com"
       responses:
         '200':
           description: Statut de confirmation récupéré
@@ -634,8 +634,8 @@ paths:
                 summary: Onboarding après login Google
                 value:
                   firstName: "Jean"
-                  lastName: "Dupont"
-                  email: "jean.dupont@gmail.com"
+                  lastName: "Tremblay"
+                  email: "jean.tremblay@gmail.com"
               complete_onboarding:
                 summary: Onboarding avec informations complètes
                 value:
@@ -990,24 +990,24 @@ components:
           description: "Nom de famille du membre"
           minLength: 2
           maxLength: 50
-          example: "Dupont"
+          example: "Tremblay"
         email:
           type: string
           format: email
           description: "Adresse email du membre (doit être unique)"
           maxLength: 100
-          example: "jean.dupont@example.com"
+          example: "jean.tremblay@example.com"
         address:
           type: string
           description: "Adresse physique du membre (optionnelle)"
           minLength: 10
           maxLength: 200
-          example: "123 Rue de la Paix, 75001 Paris"
+          example: "123 Rue Sainte-Catherine, Montréal H3B 1A7"
         phoneNumber:
           type: string
           description: "Numéro de téléphone au format international (optionnel)"
           pattern: "^\\+?[1-9]\\d{1,14}$"
-          example: "+33123456789"
+          example: "+15141234567"
 
     UpdateMemberRequestPayload:
       type: object
@@ -1028,12 +1028,12 @@ components:
           description: "Nouvelle adresse physique du membre"
           minLength: 10
           maxLength: 200
-          example: "456 Avenue des Champs, 75008 Paris"
+          example: "456 Boulevard René-Lévesque, Québec G1R 2B5"
         phoneNumber:
           type: string
           description: "Nouveau numéro de téléphone au format international"
           pattern: "^\\+?[1-9]\\d{1,14}$"
-          example: "+33987654321"
+          example: "+14189876543"
 
     UpdateEmailRequestPayload:
       type: object
@@ -1076,7 +1076,7 @@ components:
           description: "Nom de famille du membre (pré-rempli depuis le JWT `family_name`)"
           minLength: 2
           maxLength: 50
-          example: "Dupont"
+          example: "Tremblay"
         email:
           type: string
           format: email
@@ -1084,18 +1084,18 @@ components:
             Adresse email du membre.
             Doit correspondre à l'email dans le JWT Keycloak (vérification serveur).
           maxLength: 100
-          example: "jean.dupont@gmail.com"
+          example: "jean.tremblay@gmail.com"
         address:
           type: string
           description: "Adresse physique du membre (optionnelle)"
           minLength: 10
           maxLength: 200
-          example: "123 Rue de la Paix, 75001 Paris"
+          example: "123 Rue Sainte-Catherine, Montréal H3B 1A7"
         phoneNumber:
           type: string
           description: "Numéro de téléphone au format international (optionnel)"
           pattern: "^\\+?[1-9]\\d{1,14}$"
-          example: "+33123456789"
+          example: "+15141234567"
 
     SocialOnboardingResponse:
       type: object
@@ -1116,7 +1116,7 @@ components:
           type: string
           format: email
           description: "Adresse email du membre"
-          example: "jean.dupont@gmail.com"
+          example: "jean.tremblay@gmail.com"
         firstName:
           type: string
           description: "Prénom du membre"
@@ -1124,15 +1124,15 @@ components:
         lastName:
           type: string
           description: "Nom de famille du membre"
-          example: "Dupont"
+          example: "Tremblay"
         address:
           type: string
           description: "Adresse physique du membre (si fournie)"
-          example: "123 Rue de la Paix, 75001 Paris"
+          example: "123 Rue Sainte-Catherine, Montréal H3B 1A7"
         phoneNumber:
           type: string
           description: "Numéro de téléphone (si fourni)"
-          example: "+33123456789"
+          example: "+15141234567"
         confirmed:
           type: boolean
           description: "Toujours `true` pour les comptes créés via onboarding social"
@@ -1159,7 +1159,7 @@ components:
           format: email
           description: "Adresse email du compte à confirmer"
           maxLength: 100
-          example: "jean.dupont@example.com"
+          example: "jean.tremblay@example.com"
 
     TemporaryTokenRequest:
       type: object
@@ -1222,7 +1222,7 @@ components:
           type: string
           format: email
           description: "Adresse email du membre"
-          example: "jean.dupont@example.com"
+          example: "jean.tremblay@example.com"
         firstName:
           type: string
           description: "Prénom du membre"
@@ -1230,15 +1230,15 @@ components:
         lastName:
           type: string
           description: "Nom de famille du membre"
-          example: "Dupont"
+          example: "Tremblay"
         address:
           type: string
           description: "Adresse physique du membre (optionnelle)"
-          example: "123 Rue de la Paix, 75001 Paris"
+          example: "123 Rue Sainte-Catherine, Montréal H3B 1A7"
         phoneNumber:
           type: string
           description: "Phone number of the member (optional)"
-          example: "+33612345678"
+          example: "+15146123456"
         token:
           type: string
           description: "Token d'authentification (si applicable)"
