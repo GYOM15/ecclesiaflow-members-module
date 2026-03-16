@@ -1,66 +1,28 @@
 package com.ecclesiaflow.business.services.impl;
 
-import com.ecclesiaflow.business.domain.member.MembershipRegistration;
-import com.ecclesiaflow.business.domain.member.Member;
-import com.ecclesiaflow.business.domain.member.MemberRepository;
+import com.ecclesiaflow.business.domain.auth.AuthClient;
+import com.ecclesiaflow.business.domain.member.*;
 import com.ecclesiaflow.business.exceptions.EmailAlreadyUsedException;
-import com.ecclesiaflow.business.exceptions.InvalidEmailUpdateException;
 import com.ecclesiaflow.business.services.MemberConfirmationService;
 import com.ecclesiaflow.business.services.MemberService;
-import com.ecclesiaflow.business.domain.communication.EmailClient;
-import com.ecclesiaflow.business.domain.confirmation.MemberConfirmationRepository;
-import com.ecclesiaflow.business.domain.member.MembershipUpdate;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
+import com.ecclesiaflow.business.exceptions.SocialAccountAlreadyExistsException;
+import com.ecclesiaflow.business.domain.events.MemberActivatedEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Implémentation complète du service de gestion des membres EcclesiaFlow.
- * <p>
- * Cette classe implémente l'interface {@link MemberService} et fournit toutes les opérations
- * CRUD pour la gestion des membres : inscription, consultation, mise à jour, suppression.
- * Gère également la génération automatique des tokens de confirmation lors de l'inscription.
- * </p>
+ * Core member management service.
  *
- * <p><strong>Rôle architectural :</strong> Implémentation de service - Logique métier des membres</p>
- *
- * <p><strong>Responsabilités principales :</strong></p>
- * <ul>
- *   <li>Inscription de nouveaux membres avec validation d'unicité email</li>
- *   <li>Génération automatique de tokens de confirmation à l'inscription</li>
- *   <li>Opérations CRUD complètes sur les profils membres</li>
- *   <li>Validation du statut de confirmation des comptes</li>
- *   <li>Orchestration avec les services d'email pour les notifications</li>
- * </ul>
- *
- * <p><strong>Dépendances critiques :</strong></p>
- * <ul>
- *   <li>{@link MemberRepository} - Persistance et requêtes sur les membres</li>
- *   <li>{@link MemberConfirmationRepository} - Gestion des tokens de confirmation</li>
- *   <li>{@link EmailClient} - Envoi des emails de confirmation</li>
- * </ul>
- *
- * <p><strong>Flux d'inscription typique :</strong></p>
- * <ol>
- *   <li>Vérification de l'unicité de l'email</li>
- *   <li>Création de l'entité Member avec statut non confirmé</li>
- *   <li>Persistance en base de données</li>
- *   <li>Génération d'un token de confirmation sécurisé (UUID)</li>
- *   <li>Envoi automatique de l'email avec lien de confirmation</li>
- * </ol>
- *
- * <p><strong>Garanties :</strong> Thread-safe, transactionnel, gestion d'erreurs robuste.</p>
- *
- * @author EcclesiaFlow Team
- * @since 1.0.0
- * @see MemberService
- * @see MemberRepository
- * @see EmailClient
+ * <p>Handles registration (with email confirmation), social onboarding,
+ * CRUD operations, and email uniqueness enforcement.</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -68,12 +30,15 @@ public class MemberServiceImpl implements MemberService {
     
     private final MemberRepository memberRepository;
     private final MemberConfirmationService confirmationService;
+    private final AuthClient authClient;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
     public Member registerMember(MembershipRegistration registration) {
         if (isEmailAlreadyUsed(registration.email())) {
-            throw new IllegalArgumentException("Un compte avec cet email existe déjà.");
+            throw new EmailAlreadyUsedException(
+                    "An account with this email already exists.");
         }
         Member member = createMemberFromRegistration(registration);
         Member savedMember = memberRepository.save(member);
@@ -108,67 +73,116 @@ public class MemberServiceImpl implements MemberService {
     @Transactional(readOnly = true)
     public Member findByMemberId(UUID memberId) {
         return memberRepository.getByMemberId(memberId)
-                .orElseThrow(() -> new MemberNotFoundException("Membre non trouvé avec le memberId"));
+                .orElseThrow(() -> new MemberNotFoundException("Member not found"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Member getByKeycloakUserId(String keycloakUserId) {
+        if (keycloakUserId == null || keycloakUserId.isBlank()) {
+            throw new IllegalArgumentException("keycloakUserId must not be null or blank");
+        }
+        return memberRepository.getByKeycloakUserId(keycloakUserId)
+                .orElseThrow(() -> new MemberNotFoundException("Member not found for keycloakUserId: " + keycloakUserId));
     }
 
     @Override
     @Transactional
     public Member updateMember(MembershipUpdate update) {
         Member existing = findByMemberId(update.getMemberId());
-
-        validateEmailUpdate(existing, update.getEmail());
-
         Member updatedMember = existing.withUpdatedFields(update);
         return memberRepository.save(updatedMember);
     }
 
-    private void validateEmailUpdate(Member existing, String newEmail) {
-        if (newEmail == null) {
-            return;
-        }
-        if (existing.getEmail().equalsIgnoreCase(newEmail)) {
-            throw new InvalidEmailUpdateException(
-                    "Le nouvel email doit être différent de l'email actuel."
-            );
-        }
-        if (isEmailAlreadyUsed(newEmail)) {
-            throw new EmailAlreadyUsedException(
-                    "Un compte avec cet email existe déjà."
-            );
-        }
+    @Override
+    @Transactional
+    public void deactivateMember(UUID memberId) {
+        Member member = findByMemberId(memberId);
+        Member deactivated = member.toBuilder()
+                .status(MemberStatus.DEACTIVATED)
+                .deactivatedAt(LocalDateTime.now())
+                .build();
+        memberRepository.save(deactivated);
     }
-
-
 
     @Override
     @Transactional
     public void deleteMember(UUID memberId) {
         Member member = findByMemberId(memberId);
+        if (member.getKeycloakUserId() != null) {
+            authClient.deleteKeycloakUser(member.getKeycloakUserId());
+        }
         memberRepository.delete(member);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Member> getAllMembers(Pageable pageable, String search, Boolean confirmed) {
+    public Page<Member> getAllMembers(Pageable pageable, String search, com.ecclesiaflow.business.domain.member.MemberStatus status) {
         if (pageable == null) {
             throw new IllegalArgumentException("Pageable cannot be null");
         }
 
-        return findMembersWithCriteria(pageable, normalizeSearch(search), confirmed);
+        return findMembersWithCriteria(pageable, normalizeSearch(search), status);
     }
 
-    // Methodes Utilitaies
-    private Page<Member> findMembersWithCriteria(Pageable pageable, String normalizedSearch, Boolean confirmed) {
-        if (normalizedSearch != null && confirmed != null) {
-            return memberRepository.getMembersBySearchTermAndConfirmationStatus(normalizedSearch, confirmed, pageable);
+    // --- Private helpers ---
+    private Page<Member> findMembersWithCriteria(Pageable pageable, String normalizedSearch, com.ecclesiaflow.business.domain.member.MemberStatus status) {
+        if (normalizedSearch != null && status != null) {
+            return memberRepository.getMembersBySearchTermAndStatus(normalizedSearch, status, pageable);
         }
         if (normalizedSearch != null) {
             return memberRepository.getMembersBySearchTerm(normalizedSearch, pageable);
         }
-        if (confirmed != null) {
-            return memberRepository.getByConfirmedStatus(confirmed, pageable);
+        if (status != null) {
+            return memberRepository.getByStatus(status, pageable);
         }
         return memberRepository.getAll(pageable);
+    }
+
+    @Override
+    @Transactional
+    public Member registerSocialMember(String keycloakUserId, SocialProvider socialProvider,
+                                       MembershipRegistration registration) {
+        if (memberRepository.existsByEmail(registration.email())) {
+            throw new SocialAccountAlreadyExistsException(
+                    "A member with this email already exists.");
+        }
+        if (memberRepository.existsByKeycloakUserId(keycloakUserId)) {
+            throw new SocialAccountAlreadyExistsException(
+                    "A member with this keycloakUserId already exists.");
+        }
+
+        Member member = Member.builder()
+                .memberId(UUID.randomUUID())
+                .firstName(registration.firstName())
+                .lastName(registration.lastName())
+                .email(registration.email())
+                .address(registration.address())
+                .phoneNumber(registration.phoneNumber())
+                .keycloakUserId(keycloakUserId)
+                .socialProvider(socialProvider)
+                .hasLocalCredentials(false)
+                .status(MemberStatus.ACTIVE)
+                .confirmedAt(LocalDateTime.now())
+                .build();
+
+        Member savedMember = memberRepository.save(member);
+        eventPublisher.publishEvent(new MemberActivatedEvent(savedMember.getEmail(), savedMember.getFirstName()));
+        return savedMember;
+    }
+
+    @Override
+    @Transactional
+    public Member reactivateMember(UUID memberId) {
+        Member member = findByMemberId(memberId);
+        if (member.getStatus() != MemberStatus.DEACTIVATED) {
+            throw new IllegalStateException("Only DEACTIVATED accounts can be reactivated");
+        }
+        Member reactivated = member.toBuilder()
+                .status(MemberStatus.ACTIVE)
+                .deactivatedAt(null)
+                .build();
+        return memberRepository.save(reactivated);
     }
 
     private String normalizeSearch(String search) {

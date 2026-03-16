@@ -2,9 +2,11 @@ package com.ecclesiaflow.web.mappers;
 
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import com.ecclesiaflow.business.domain.member.Member;
+import com.ecclesiaflow.business.domain.member.SocialProvider;
 import com.ecclesiaflow.web.model.ConfirmationResponse;
 import com.ecclesiaflow.web.model.MemberPageResponse;
 import com.ecclesiaflow.web.model.SignUpResponse;
+import com.ecclesiaflow.web.model.SocialOnboardingResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -13,22 +15,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Mapper pour créer les modèles OpenAPI générés à partir des entités métier.
- * <p>
- * Ce mapper crée directement les modèles OpenAPI générés à partir des entités Member,
- * en respectant la structure définie dans la spécification OpenAPI members.yaml.
- * </p>
- * 
- * <p><strong>Structure des modèles OpenAPI :</strong></p>
- * <ul>
- *   <li>SignUpResponse : structure plate avec tous les champs directement (email, firstName, etc.)</li>
- *   <li>MemberPageResponse : contient une liste de SignUpResponse dans le champ 'content'</li>
- * </ul>
- * 
- * @author EcclesiaFlow Team
- * @since 2.0.0
- */
+/** Maps domain {@link Member} objects to OpenAPI-generated response DTOs. */
 @Component
 @RequiredArgsConstructor
 public class OpenApiModelMapper {
@@ -36,13 +23,7 @@ public class OpenApiModelMapper {
     @Value("${ecclesiaflow.auth-module.base-url:http://localhost:8081}")
     private String authModuleBaseUrl;
 
-    /**
-     * Crée un SignUpResponse OpenAPI à partir d'un Member et d'un message.
-     * 
-     * @param member Entité membre
-     * @param message Message de succès
-     * @return Modèle OpenAPI SignUpResponse
-     */
+    /** Creates a {@link SignUpResponse} from a domain Member and a status message. */
     public SignUpResponse createSignUpResponse(Member member, String message) {
         SignUpResponse response = new SignUpResponse();
         response.setMessage(message);
@@ -59,9 +40,13 @@ public class OpenApiModelMapper {
         response.setFirstName(member.getFirstName());
         response.setLastName(member.getLastName());
         response.setAddress(member.getAddress());
+        response.setPhoneNumber(member.getPhoneNumber());
         response.setConfirmed(member.isConfirmed());
-        response.setRole(member.getRole().name());
+        response.setHasLocalCredentials(member.isHasLocalCredentials());
 
+        if (member.getSocialProvider() != null) {
+            response.setSocialProvider(mapSocialProvider(member.getSocialProvider()));
+        }
         if (member.getCreatedAt() != null) {
             response.setCreatedAt(member.getCreatedAt().toString());
         }
@@ -70,12 +55,15 @@ public class OpenApiModelMapper {
         }
     }
 
-    /**
-     * Crée un MemberPageResponse OpenAPI à partir d'une Page de Member.
-     * 
-     * @param memberPage Page de membres du domaine
-     * @return Modèle OpenAPI MemberPageResponse
-     */
+    private SignUpResponse.SocialProviderEnum mapSocialProvider(SocialProvider provider) {
+        return switch (provider) {
+            case GOOGLE -> SignUpResponse.SocialProviderEnum.GOOGLE;
+            case MICROSOFT -> SignUpResponse.SocialProviderEnum.MICROSOFT;
+            case FACEBOOK -> SignUpResponse.SocialProviderEnum.FACEBOOK;
+        };
+    }
+
+    /** Converts a paginated result of Members into a {@link MemberPageResponse}. */
     public MemberPageResponse createMemberPageResponse(Page<Member> memberPage) {
         MemberPageResponse response = new MemberPageResponse();
         
@@ -102,15 +90,22 @@ public class OpenApiModelMapper {
         return response;
     }
 
-    /**
-     * Crée un ConfirmationResponse OpenAPI à partir d'un MembershipConfirmationResult.
-     * <p>
-     * Convertit le résultat de confirmation métier vers le modèle OpenAPI.
-     * </p>
-     * 
-     * @param result Résultat de la confirmation métier
-     * @return Modèle OpenAPI ConfirmationResponse
-     */
+    /** Maps a Member domain object to a SocialOnboardingResponse DTO. */
+    public SocialOnboardingResponse createSocialOnboardingResponse(Member member) {
+        SocialOnboardingResponse response = new SocialOnboardingResponse();
+        response.setMessage("Profile successfully created via social login");
+        response.setEmail(member.getEmail());
+        response.setFirstName(member.getFirstName());
+        response.setLastName(member.getLastName());
+        response.setAddress(member.getAddress());
+        response.setPhoneNumber(member.getPhoneNumber());
+        response.setConfirmed(true);
+        response.setCreatedAt(member.getCreatedAt());
+        response.setConfirmedAt(member.getConfirmedAt());
+        return response;
+    }
+
+    /** Converts a {@link MembershipConfirmationResult} into a {@link ConfirmationResponse}. */
     public ConfirmationResponse createConfirmationResponse(MembershipConfirmationResult result) {
         ConfirmationResponse response = new ConfirmationResponse();
         
@@ -119,11 +114,14 @@ public class OpenApiModelMapper {
             response.setTemporaryToken(result.getTemporaryToken());
             response.setExpiresIn(result.getExpiresInSeconds());
             
+            // Use passwordEndpoint from result if available, otherwise fallback to config
+            String passwordUrl = result.getPasswordEndpoint() != null 
+                    ? result.getPasswordEndpoint() 
+                    : authModuleBaseUrl + "/ecclesiaflow/auth/password";
             try {
-                String passwordUrl = authModuleBaseUrl + "/ecclesiaflow/auth/password";
                 response.setPasswordEndpoint(new java.net.URI(passwordUrl));
             } catch (java.net.URISyntaxException e) {
-                // Log l'erreur mais continue
+                // Log error but continue
             }
         }
         

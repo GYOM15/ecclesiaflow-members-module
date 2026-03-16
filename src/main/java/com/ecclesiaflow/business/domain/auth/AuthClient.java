@@ -32,14 +32,30 @@ public interface AuthClient {
      * Génère un token temporaire pour permettre la définition du mot de passe.
      * <p>
      * Après confirmation de compte, cette méthode appelle le module Auth
-     * pour générer un token temporaire (validité: 15 minutes) permettant
+     * pour générer un token temporaire (validité: 24 heures) permettant
      * à l'utilisateur de définir son mot de passe initial.
      * </p>
      * 
      * @param email l'email du membre confirmé
      * @param memberId l'identifiant UUID du membre
-     * @return le token temporaire JWT généré
+     * @return response containing token and password setup endpoint
      * @throws RuntimeException si la communication avec le module Auth échoue
      */
-    String retrievePostActivationToken(String email, UUID memberId);
+    PasswordSetupTokenResponse retrievePostActivationToken(String email, UUID memberId);
+
+    /**
+     * Supprime un utilisateur Keycloak via le module Auth.
+     * <p>
+     * Appelé avant la suppression d'un membre de la base de données
+     * pour éviter les utilisateurs orphelins dans Keycloak.
+     * </p>
+     *
+     * @param keycloakUserId l'identifiant Keycloak de l'utilisateur à supprimer
+     * @throws RuntimeException si la communication avec le module Auth échoue
+     */
+    void deleteKeycloakUser(String keycloakUserId);
+
+    void disableKeycloakUser(String keycloakUserId);
+
+    void updateKeycloakUserEmail(String keycloakUserId, String newEmail);
 }

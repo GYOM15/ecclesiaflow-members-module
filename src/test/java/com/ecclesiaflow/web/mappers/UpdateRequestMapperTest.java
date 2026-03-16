@@ -30,7 +30,6 @@ class UpdateRequestMapperTest {
         UpdateMemberRequestPayload request = new UpdateMemberRequestPayload();
         request.setFirstName("Jean");
         request.setLastName("Dupont");
-        request.setEmail("jean.dupont@example.com");
         request.setAddress("123 Rue de la Paix");
 
         // When
@@ -41,7 +40,6 @@ class UpdateRequestMapperTest {
         assertEquals(testMemberId, result.getMemberId());
         assertEquals("Jean", result.getFirstName());
         assertEquals("Dupont", result.getLastName());
-        assertEquals("jean.dupont@example.com", result.getEmail());
         assertEquals("123 Rue de la Paix", result.getAddress());
     }
 
@@ -58,7 +56,6 @@ class UpdateRequestMapperTest {
         // Given
         UpdateMemberRequestPayload request = new UpdateMemberRequestPayload();
         request.setFirstName("Jean");
-        request.setEmail("jean.nouveau@example.com");
         // lastName et address restent null
 
         // When
@@ -69,7 +66,6 @@ class UpdateRequestMapperTest {
         assertEquals(testMemberId, result.getMemberId());
         assertEquals("Jean", result.getFirstName());
         assertNull(result.getLastName());
-        assertEquals("jean.nouveau@example.com", result.getEmail());
         assertNull(result.getAddress());
     }
 
@@ -79,7 +75,6 @@ class UpdateRequestMapperTest {
         UpdateMemberRequestPayload request = new UpdateMemberRequestPayload();
         request.setFirstName("");
         request.setLastName("");
-        request.setEmail("");
         request.setAddress("");
 
         // When
@@ -90,7 +85,6 @@ class UpdateRequestMapperTest {
         assertEquals(testMemberId, result.getMemberId());
         assertEquals("", result.getFirstName());
         assertEquals("", result.getLastName());
-        assertEquals("", result.getEmail());
         assertEquals("", result.getAddress());
     }
 
@@ -108,7 +102,6 @@ class UpdateRequestMapperTest {
         assertEquals(testMemberId, result.getMemberId());
         assertEquals("Marie", result.getFirstName());
         assertNull(result.getLastName());
-        assertNull(result.getEmail());
         assertNull(result.getAddress());
     }
 
@@ -118,7 +111,6 @@ class UpdateRequestMapperTest {
         UpdateMemberRequestPayload request = new UpdateMemberRequestPayload();
         request.setFirstName("Jean-François");
         request.setLastName("O'Connor");
-        request.setEmail("jean.françois@église.com");
         request.setAddress("123 Rue de l'Église, Montréal");
 
         // When
@@ -129,7 +121,6 @@ class UpdateRequestMapperTest {
         assertEquals(testMemberId, result.getMemberId());
         assertEquals("Jean-François", result.getFirstName());
         assertEquals("O'Connor", result.getLastName());
-        assertEquals("jean.françois@église.com", result.getEmail());
         assertEquals("123 Rue de l'Église, Montréal", result.getAddress());
     }
 }

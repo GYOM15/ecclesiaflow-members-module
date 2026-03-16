@@ -1,11 +1,10 @@
 package com.ecclesiaflow.web.delegate;
 
 import com.ecclesiaflow.business.domain.member.Member;
+import com.ecclesiaflow.business.domain.member.MemberStatus;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
-import com.ecclesiaflow.business.domain.member.Role;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
-import com.ecclesiaflow.business.security.AuthenticatedUserContextProvider;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.web.mappers.OpenApiModelMapper;
 import com.ecclesiaflow.web.mappers.UpdateRequestMapper;
@@ -13,6 +12,7 @@ import com.ecclesiaflow.web.model.MemberPageResponse;
 import com.ecclesiaflow.web.model.SignUpRequestPayload;
 import com.ecclesiaflow.web.model.SignUpResponse;
 import com.ecclesiaflow.web.model.UpdateMemberRequestPayload;
+import com.ecclesiaflow.web.security.AuthenticatedUserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -49,7 +49,7 @@ class MembersManagementDelegateTest {
     private OpenApiModelMapper openApiModelMapper;
 
     @Mock
-    private AuthenticatedUserContextProvider contextProvider;
+    private AuthenticatedUserService authenticatedUserService;
 
     @InjectMocks
     private MembersManagementDelegate membersManagementDelegate;
@@ -69,8 +69,7 @@ class MembersManagementDelegateTest {
                 .firstName("John")
                 .lastName("Doe")
                 .email("john.doe@example.com")
-                .role(Role.MEMBER)
-                .confirmed(false)
+                .status(MemberStatus.PENDING)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -78,7 +77,6 @@ class MembersManagementDelegateTest {
                 .email("john.doe@example.com")
                 .firstName("John")
                 .lastName("Doe")
-                .role("MEMBER")
                 .confirmed(false)
                 .message("Member registered (temporary - approval system coming)");
 
@@ -106,8 +104,8 @@ class MembersManagementDelegateTest {
     void getAllMembers_shouldReturnPageOfMembers() {
         // Given
         List<Member> members = List.of(
-                Member.builder().memberId(UUID.randomUUID()).firstName("Alice").email("alice@example.com").role(Role.MEMBER).createdAt(LocalDateTime.now()).confirmed(true).build(),
-                Member.builder().memberId(UUID.randomUUID()).firstName("Bob").email("bob@example.com").role(Role.MEMBER).createdAt(LocalDateTime.now()).confirmed(false).build()
+                Member.builder().memberId(UUID.randomUUID()).firstName("Alice").email("alice@example.com").status(MemberStatus.ACTIVE).createdAt(LocalDateTime.now()).build(),
+                Member.builder().memberId(UUID.randomUUID()).firstName("Bob").email("bob@example.com").status(MemberStatus.PENDING).createdAt(LocalDateTime.now()).build()
         );
 
         Page<Member> memberPage = new PageImpl<>(members, PageRequest.of(0, 20), 2);
@@ -122,7 +120,7 @@ class MembersManagementDelegateTest {
                 .size(20)
                 .number(0);
 
-        when(memberService.getAllMembers(any(Pageable.class), eq(null), eq(null)))
+        when(memberService.getAllMembers(any(Pageable.class), eq(null), (MemberStatus) isNull()))
                 .thenReturn(memberPage);
         when(openApiModelMapper.createMemberPageResponse(memberPage))
                 .thenReturn(expectedResponse);
@@ -136,7 +134,7 @@ class MembersManagementDelegateTest {
         assertThat(response.getBody().getTotalElements()).isEqualTo(2L);
         assertThat(response.getBody().getContent()).hasSize(2);
 
-        verify(memberService).getAllMembers(any(Pageable.class), eq(null), eq(null));
+        verify(memberService).getAllMembers(any(Pageable.class), eq(null), (MemberStatus) isNull());
         verify(openApiModelMapper).createMemberPageResponse(memberPage);
     }
 
@@ -148,7 +146,7 @@ class MembersManagementDelegateTest {
                 .content(Collections.emptyList())
                 .totalElements(0L);
 
-        when(memberService.getAllMembers(any(Pageable.class), eq("alice"), eq(null)))
+        when(memberService.getAllMembers(any(Pageable.class), eq("alice"), (MemberStatus) isNull()))
                 .thenReturn(memberPage);
         when(openApiModelMapper.createMemberPageResponse(memberPage))
                 .thenReturn(expectedResponse);
@@ -157,81 +155,81 @@ class MembersManagementDelegateTest {
         membersManagementDelegate.getAllMembers(0, 20, "alice", null, "firstName", "asc");
 
         // Then
-        verify(memberService).getAllMembers(any(Pageable.class), eq("alice"), eq(null));
+        verify(memberService).getAllMembers(any(Pageable.class), eq("alice"), (MemberStatus) isNull());
     }
 
     @Test
-    void getAllMembers_shouldHandleConfirmationFilter() {
+    void getAllMembers_shouldHandleStatusFilter() {
         // Given
         Page<Member> memberPage = new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 20), 0);
         MemberPageResponse expectedResponse = new MemberPageResponse()
                 .content(Collections.emptyList())
                 .totalElements(0L);
 
-        when(memberService.getAllMembers(any(Pageable.class), eq(null), eq(true)))
+        when(memberService.getAllMembers(any(Pageable.class), eq(null), eq(MemberStatus.ACTIVE)))
                 .thenReturn(memberPage);
         when(openApiModelMapper.createMemberPageResponse(memberPage))
                 .thenReturn(expectedResponse);
 
         // When
-        membersManagementDelegate.getAllMembers(0, 20, null, true, "firstName", "asc");
+        membersManagementDelegate.getAllMembers(0, 20, null, "ACTIVE", "firstName", "asc");
 
         // Then
-        verify(memberService).getAllMembers(any(Pageable.class), eq(null), eq(true));
+        verify(memberService).getAllMembers(any(Pageable.class), eq(null), eq(MemberStatus.ACTIVE));
     }
 
     @Test
     void getAllMembers_shouldHandleDescendingSort() {
-        // Given - Test de la branche DESC dans createPageable()
+        // Given
         Page<Member> memberPage = new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 20), 0);
-        when(memberService.getAllMembers(any(Pageable.class), eq(null), eq(null)))
+        when(memberService.getAllMembers(any(Pageable.class), eq(null), (MemberStatus) isNull()))
                 .thenReturn(memberPage);
         when(openApiModelMapper.createMemberPageResponse(memberPage))
                 .thenReturn(new MemberPageResponse());
 
-        // When - direction = "desc"
+        // When
         ResponseEntity<MemberPageResponse> response = membersManagementDelegate.getAllMembers(
                 0, 20, null, null, "lastName", "desc");
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(memberService).getAllMembers(any(Pageable.class), eq(null), eq(null));
+        verify(memberService).getAllMembers(any(Pageable.class), eq(null), (MemberStatus) isNull());
     }
 
     @Test
     void getAllMembers_shouldHandleCustomPageSize() {
-        // Given - Test avec des valeurs personnalisées (non null)
+        // Given
         Page<Member> memberPage = new PageImpl<>(Collections.emptyList(), PageRequest.of(2, 50), 0);
-        when(memberService.getAllMembers(any(Pageable.class), eq(null), eq(null)))
+        when(memberService.getAllMembers(any(Pageable.class), eq(null), (MemberStatus) isNull()))
                 .thenReturn(memberPage);
         when(openApiModelMapper.createMemberPageResponse(memberPage))
                 .thenReturn(new MemberPageResponse());
 
-        // When - page=2, size=50
+        // When
         ResponseEntity<MemberPageResponse> response = membersManagementDelegate.getAllMembers(
                 2, 50, null, null, "email", "asc");
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(memberService).getAllMembers(any(Pageable.class), eq(null), eq(null));
+        verify(memberService).getAllMembers(any(Pageable.class), eq(null), (MemberStatus) isNull());
     }
 
     @Test
     void getAllMembers_shouldHandleAllNullParameters() {
-        // Given - Test avec tous les paramètres null (valeurs par défaut)
+        // Given
         Page<Member> memberPage = new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 20), 0);
-        when(memberService.getAllMembers(any(Pageable.class), eq(null), eq(null)))
+        when(memberService.getAllMembers(any(Pageable.class), eq(null), (MemberStatus) isNull()))
                 .thenReturn(memberPage);
         when(openApiModelMapper.createMemberPageResponse(memberPage))
                 .thenReturn(new MemberPageResponse());
 
-        // When - Tous les paramètres sont null
+        // When
         ResponseEntity<MemberPageResponse> response = membersManagementDelegate.getAllMembers(
                 null, null, null, null, null, null);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(memberService).getAllMembers(any(Pageable.class), eq(null), eq(null));
+        verify(memberService).getAllMembers(any(Pageable.class), eq(null), (MemberStatus) isNull());
     }
 
     // --- Tests for getMemberById ---
@@ -244,8 +242,7 @@ class MembersManagementDelegateTest {
                 .firstName("Jane")
                 .lastName("Doe")
                 .email("jane.doe@example.com")
-                .role(Role.MEMBER)
-                .confirmed(true)
+                .status(MemberStatus.ACTIVE)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -253,12 +250,11 @@ class MembersManagementDelegateTest {
                 .email("jane.doe@example.com")
                 .firstName("Jane")
                 .lastName("Doe")
-                .role("MEMBER")
                 .confirmed(true)
-                .message("Membre trouvé");
+                .message("Member found");
 
         when(memberService.findByMemberId(memberId)).thenReturn(member);
-        when(openApiModelMapper.createSignUpResponse(member, "Membre trouvé"))
+        when(openApiModelMapper.createSignUpResponse(member, "Member found"))
                 .thenReturn(expectedResponse);
 
         // When
@@ -271,7 +267,7 @@ class MembersManagementDelegateTest {
         assertThat(response.getBody().getConfirmed()).isTrue();
 
         verify(memberService).findByMemberId(memberId);
-        verify(openApiModelMapper).createSignUpResponse(member, "Membre trouvé");
+        verify(openApiModelMapper).createSignUpResponse(member, "Member found");
     }
 
     @Test
@@ -279,12 +275,12 @@ class MembersManagementDelegateTest {
         // Given
         UUID memberId = UUID.randomUUID();
         when(memberService.findByMemberId(memberId))
-                .thenThrow(new MemberNotFoundException("Membre non trouvé"));
+                .thenThrow(new MemberNotFoundException("Member not found"));
 
         // When/Then
         assertThatThrownBy(() -> membersManagementDelegate.getMemberById(memberId))
                 .isInstanceOf(MemberNotFoundException.class)
-                .hasMessage("Membre non trouvé");
+                .hasMessage("Member not found");
 
         verify(memberService).findByMemberId(memberId);
         verifyNoInteractions(openApiModelMapper);
@@ -297,37 +293,33 @@ class MembersManagementDelegateTest {
         UUID memberId = UUID.randomUUID();
         UpdateMemberRequestPayload requestPayload = new UpdateMemberRequestPayload();
         requestPayload.setFirstName("NewName");
-        requestPayload.setEmail("new.email@example.com");
 
         MembershipUpdate businessUpdate = MembershipUpdate.builder()
                 .memberId(memberId)
                 .firstName("NewName")
-                .email("new.email@example.com")
                 .build();
 
         Member updatedMember = Member.builder()
                 .memberId(memberId)
                 .firstName("NewName")
                 .lastName("Doe")
-                .email("new.email@example.com")
-                .role(Role.MEMBER)
-                .confirmed(true)
+                .email("existing@example.com")
+                .status(MemberStatus.ACTIVE)
                 .createdAt(LocalDateTime.now().minusDays(1))
                 .build();
 
         SignUpResponse expectedResponse = new SignUpResponse()
-                .email("new.email@example.com")
+                .email("existing@example.com")
                 .firstName("NewName")
                 .lastName("Doe")
-                .role("MEMBER")
                 .confirmed(true)
-                .message("Membre modifié avec succès");
+                .message("Member updated");
 
         when(updateRequestMapper.fromUpdateMemberRequest(memberId, requestPayload))
                 .thenReturn(businessUpdate);
         when(memberService.updateMember(businessUpdate))
                 .thenReturn(updatedMember);
-        when(openApiModelMapper.createSignUpResponse(updatedMember, "Membre modifié avec succès"))
+        when(openApiModelMapper.createSignUpResponse(updatedMember, "Member updated"))
                 .thenReturn(expectedResponse);
 
         // When
@@ -337,11 +329,10 @@ class MembersManagementDelegateTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getFirstName()).isEqualTo("NewName");
-        assertThat(response.getBody().getEmail()).isEqualTo("new.email@example.com");
 
         verify(updateRequestMapper).fromUpdateMemberRequest(memberId, requestPayload);
         verify(memberService).updateMember(businessUpdate);
-        verify(openApiModelMapper).createSignUpResponse(updatedMember, "Membre modifié avec succès");
+        verify(openApiModelMapper).createSignUpResponse(updatedMember, "Member updated");
     }
 
     @Test
@@ -359,24 +350,24 @@ class MembersManagementDelegateTest {
         when(updateRequestMapper.fromUpdateMemberRequest(memberId, requestPayload))
                 .thenReturn(businessUpdate);
         when(memberService.updateMember(businessUpdate))
-                .thenThrow(new MemberNotFoundException("Membre non trouvé"));
+                .thenThrow(new MemberNotFoundException("Member not found"));
 
         // When/Then
         assertThatThrownBy(() -> membersManagementDelegate.updateMemberPartially(memberId, requestPayload))
                 .isInstanceOf(MemberNotFoundException.class)
-                .hasMessage("Membre non trouvé");
+                .hasMessage("Member not found");
 
         verify(updateRequestMapper).fromUpdateMemberRequest(memberId, requestPayload);
         verify(memberService).updateMember(businessUpdate);
         verifyNoInteractions(openApiModelMapper);
     }
 
-    // --- Tests for deleteMember ---
+    // --- Tests for deleteMember (now calls deactivateMember) ---
     @Test
-    void deleteMember_shouldReturnNoContent() {
+    void deleteMember_shouldCallDeactivateAndReturnNoContent() {
         // Given
         UUID memberId = UUID.randomUUID();
-        doNothing().when(memberService).deleteMember(memberId);
+        doNothing().when(memberService).deactivateMember(memberId);
 
         // When
         ResponseEntity<Void> response = membersManagementDelegate.deleteMember(memberId);
@@ -385,27 +376,29 @@ class MembersManagementDelegateTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(response.getBody()).isNull();
 
-        verify(memberService).deleteMember(memberId);
+        verify(memberService).deactivateMember(memberId);
+        verify(memberService, never()).deleteMember(any());
     }
 
     @Test
     void deleteMember_shouldPropagateMemberNotFoundException() {
         // Given
         UUID memberId = UUID.randomUUID();
-        doThrow(new MemberNotFoundException("Membre non trouvé"))
-                .when(memberService).deleteMember(memberId);
+        doThrow(new MemberNotFoundException("Member not found"))
+                .when(memberService).deactivateMember(memberId);
 
         // When/Then
         assertThatThrownBy(() -> membersManagementDelegate.deleteMember(memberId))
                 .isInstanceOf(MemberNotFoundException.class)
-                .hasMessage("Membre non trouvé");
+                .hasMessage("Member not found");
 
-        verify(memberService).deleteMember(memberId);
+        verify(memberService).deactivateMember(memberId);
     }
 
     @Test
     void getMyProfile_shouldReturnAuthenticatedMemberProfile() {
         // Given
+        String keycloakUserId = "kc-user-123";
         UUID memberId = UUID.randomUUID();
         Member member = Member.builder()
                 .memberId(memberId)
@@ -413,8 +406,7 @@ class MembersManagementDelegateTest {
                 .firstName("Test")
                 .lastName("User")
                 .address("123 Test St")
-                .role(Role.MEMBER)
-                .confirmed(true)
+                .status(MemberStatus.ACTIVE)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -423,9 +415,9 @@ class MembersManagementDelegateTest {
         response.setFirstName("Test");
         response.setLastName("User");
 
-        when(contextProvider.getAuthenticatedMemberId()).thenReturn(memberId);
-        when(memberService.findByMemberId(memberId)).thenReturn(member);
-        when(openApiModelMapper.createSignUpResponse(member, "Profil récupéré")).thenReturn(response);
+        when(authenticatedUserService.getKeycloakUserId()).thenReturn(keycloakUserId);
+        when(memberService.getByKeycloakUserId(keycloakUserId)).thenReturn(member);
+        when(openApiModelMapper.createSignUpResponse(member, "Profile retrieved")).thenReturn(response);
 
         // When
         ResponseEntity<SignUpResponse> result = membersManagementDelegate.getMyProfile();
@@ -435,45 +427,54 @@ class MembersManagementDelegateTest {
         assertThat(result.getBody()).isNotNull();
         assertThat(result.getBody().getEmail()).isEqualTo("test@example.com");
 
-        verify(contextProvider).getAuthenticatedMemberId();
-        verify(memberService).findByMemberId(memberId);
-        verify(openApiModelMapper).createSignUpResponse(member, "Profil récupéré");
+        verify(authenticatedUserService).getKeycloakUserId();
+        verify(memberService).getByKeycloakUserId(keycloakUserId);
+        verify(openApiModelMapper).createSignUpResponse(member, "Profile retrieved");
     }
 
     @Test
     void updateMyProfile_shouldUpdateAuthenticatedMemberProfile() {
         // Given
+        String keycloakUserId = "kc-user-123";
         UUID memberId = UUID.randomUUID();
         UpdateMemberRequestPayload updatePayload = new UpdateMemberRequestPayload();
         updatePayload.setFirstName("Updated");
         updatePayload.setLastName("Name");
 
+        Member existingMember = Member.builder()
+                .memberId(memberId)
+                .email("test@example.com")
+                .firstName("Test")
+                .lastName("User")
+                .address("123 Test St")
+                .status(MemberStatus.ACTIVE)
+                .build();
+
         MembershipUpdate membershipUpdate = MembershipUpdate.builder()
                 .memberId(memberId)
                 .firstName("Updated")
                 .lastName("Name")
-                .email("updated@example.com")
                 .address("New Address")
                 .phoneNumber("+1234567890")
                 .build();
 
         Member updatedMember = Member.builder()
                 .memberId(memberId)
-                .email("updated@example.com")
+                .email("test@example.com")
                 .firstName("Updated")
                 .lastName("Name")
                 .address("New Address")
-                .role(Role.MEMBER)
-                .confirmed(true)
+                .status(MemberStatus.ACTIVE)
                 .build();
 
         SignUpResponse response = new SignUpResponse();
-        response.setEmail("updated@example.com");
+        response.setEmail("test@example.com");
 
-        when(contextProvider.getAuthenticatedMemberId()).thenReturn(memberId);
+        when(authenticatedUserService.getKeycloakUserId()).thenReturn(keycloakUserId);
+        when(memberService.getByKeycloakUserId(keycloakUserId)).thenReturn(existingMember);
         when(updateRequestMapper.fromUpdateMemberRequest(memberId, updatePayload)).thenReturn(membershipUpdate);
         when(memberService.updateMember(membershipUpdate)).thenReturn(updatedMember);
-        when(openApiModelMapper.createSignUpResponse(updatedMember, "Profil mis à jour")).thenReturn(response);
+        when(openApiModelMapper.createSignUpResponse(updatedMember, "Profile updated")).thenReturn(response);
 
         // When
         ResponseEntity<SignUpResponse> result = membersManagementDelegate.updateMyProfile(updatePayload);
@@ -482,17 +483,27 @@ class MembersManagementDelegateTest {
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(result.getBody()).isNotNull();
 
-        verify(contextProvider).getAuthenticatedMemberId();
+        verify(authenticatedUserService).getKeycloakUserId();
+        verify(memberService).getByKeycloakUserId(keycloakUserId);
         verify(updateRequestMapper).fromUpdateMemberRequest(memberId, updatePayload);
         verify(memberService).updateMember(membershipUpdate);
     }
 
     @Test
-    void deleteMyAccount_shouldDeleteAuthenticatedMemberAccount() {
+    void deleteMyAccount_shouldDeactivateAuthenticatedMemberAccount() {
         // Given
+        String keycloakUserId = "kc-user-123";
         UUID memberId = UUID.randomUUID();
-        when(contextProvider.getAuthenticatedMemberId()).thenReturn(memberId);
-        doNothing().when(memberService).deleteMember(memberId);
+        Member member = Member.builder()
+                .memberId(memberId)
+                .email("test@example.com")
+                .firstName("Test")
+                .status(MemberStatus.ACTIVE)
+                .build();
+
+        when(authenticatedUserService.getKeycloakUserId()).thenReturn(keycloakUserId);
+        when(memberService.getByKeycloakUserId(keycloakUserId)).thenReturn(member);
+        doNothing().when(memberService).deactivateMember(memberId);
 
         // When
         ResponseEntity<Void> result = membersManagementDelegate.deleteMyAccount();
@@ -501,7 +512,44 @@ class MembersManagementDelegateTest {
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(result.getBody()).isNull();
 
-        verify(contextProvider).getAuthenticatedMemberId();
-        verify(memberService).deleteMember(memberId);
+        verify(authenticatedUserService).getKeycloakUserId();
+        verify(memberService).getByKeycloakUserId(keycloakUserId);
+        verify(memberService).deactivateMember(memberId);
+        verify(memberService, never()).deleteMember(any());
+    }
+
+    @Test
+    void reactivateMyAccount_shouldDelegateToService() {
+        // Given
+        String keycloakUserId = "kc-user-123";
+        UUID memberId = UUID.randomUUID();
+        Member member = Member.builder()
+                .memberId(memberId)
+                .email("test@example.com")
+                .firstName("Test")
+                .status(MemberStatus.DEACTIVATED)
+                .build();
+        Member reactivated = member.toBuilder()
+                .status(MemberStatus.ACTIVE)
+                .build();
+
+        SignUpResponse response = new SignUpResponse();
+        response.setEmail("test@example.com");
+
+        when(authenticatedUserService.getKeycloakUserId()).thenReturn(keycloakUserId);
+        when(memberService.getByKeycloakUserId(keycloakUserId)).thenReturn(member);
+        when(memberService.reactivateMember(memberId)).thenReturn(reactivated);
+        when(openApiModelMapper.createSignUpResponse(reactivated, "Account reactivated")).thenReturn(response);
+
+        // When
+        ResponseEntity<SignUpResponse> result = membersManagementDelegate.reactivateMyAccount();
+
+        // Then
+        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(result.getBody()).isNotNull();
+
+        verify(authenticatedUserService).getKeycloakUserId();
+        verify(memberService).getByKeycloakUserId(keycloakUserId);
+        verify(memberService).reactivateMember(memberId);
     }
 }

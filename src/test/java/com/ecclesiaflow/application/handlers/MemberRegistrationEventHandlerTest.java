@@ -22,15 +22,15 @@ class MemberRegistrationEventHandlerTest {
     void shouldSendConfirmationEmail() {
         EmailClient emailClient = Mockito.mock(EmailClient.class);
         MemberRegistrationEventHandler handler = new MemberRegistrationEventHandler(emailClient);
-        ReflectionTestUtils.setField(handler, "baseUrl", "http://localhost:8080");
+        ReflectionTestUtils.setField(handler, "frontendBaseUrl", "http://localhost:5173");
 
         UUID token = UUID.randomUUID();
         MemberRegisteredEvent event = new MemberRegisteredEvent("user@example.com", token, "John");
 
         assertThatNoException().isThrownBy(() -> handler.handleMemberRegistered(event));
 
-        String expectedUrl = "http://localhost:8080/ecclesiaflow/members/confirmation?token=" + token;
-        verify(emailClient).sendConfirmationEmail(eq("user@example.com"), eq(expectedUrl));
+        String expectedUrl = "http://localhost:5173/confirmation?token=" + token;
+        verify(emailClient).sendConfirmationEmail(eq("user@example.com"), eq(expectedUrl), eq("John"));
     }
 
     @Test
@@ -38,16 +38,16 @@ class MemberRegistrationEventHandlerTest {
     void shouldSwallowEmailClientExceptions() {
         EmailClient emailClient = Mockito.mock(EmailClient.class);
         MemberRegistrationEventHandler handler = new MemberRegistrationEventHandler(emailClient);
-        ReflectionTestUtils.setField(handler, "baseUrl", "http://localhost:8080");
+        ReflectionTestUtils.setField(handler, "frontendBaseUrl", "http://localhost:5173");
 
         UUID token = UUID.randomUUID();
         MemberRegisteredEvent event = new MemberRegisteredEvent("user@example.com", token, "John");
 
         doThrow(new RuntimeException("service down")).when(emailClient)
-                .sendConfirmationEmail(Mockito.anyString(), Mockito.anyString());
+                .sendConfirmationEmail(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
 
         assertThatNoException().isThrownBy(() -> handler.handleMemberRegistered(event));
         // call attempted even though it fails
-        verify(emailClient).sendConfirmationEmail(Mockito.anyString(), Mockito.anyString());
+        verify(emailClient).sendConfirmationEmail(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
     }
 }

@@ -19,25 +19,6 @@ import java.util.concurrent.TimeUnit;
  * configuration et fermeture graceful lors de l'arrêt de l'application.
  * </p>
  *
- * <p><strong>Rôle architectural :</strong> Infrastructure - gRPC Client Configuration</p>
- *
- * <p><strong>Fonctionnalités :</strong></p>
- * <ul>
- *   <li>Création d'un canal gRPC réutilisable vers le module Auth</li>
- *   <li>Configuration des timeouts et retry policies</li>
- *   <li>Keep-alive pour maintenir la connexion active</li>
- *   <li>Shutdown graceful du canal lors de l'arrêt de l'application</li>
- *   <li>Support de la compression gzip pour réduire la bande passante</li>
- * </ul>
- *
- * <p><strong>Configuration :</strong></p>
- * <ul>
- *   <li>grpc.enabled - Active/désactive le client gRPC (défaut: false)</li>
- *   <li>grpc.auth.host - Hostname du serveur Auth (défaut: localhost)</li>
- *   <li>grpc.auth.port - Port du serveur Auth (défaut: 9090)</li>
- *   <li>grpc.client.shutdown-timeout-seconds - Timeout pour shutdown (défaut: 5s)</li>
- * </ul>
- *
  * <p><strong>Sécurité :</strong></p>
  * <ul>
  *   <li>Utilise plaintext pour développement local (à remplacer par TLS en production)</li>
@@ -68,19 +49,6 @@ public class GrpcClientConfig {
 
     /**
      * Crée et configure le canal gRPC vers le module d'authentification.
-     * <p>
-     * Ce canal est partagé par tous les appels gRPC vers le module Auth.
-     * Il est automatiquement réutilisé et optimise les connexions réseau.
-     * </p>
-     *
-     * <p><strong>Configuration appliquée :</strong></p>
-     * <ul>
-     *   <li>Max inbound message size: 4MB</li>
-     *   <li>Keep-alive: 30s (ping serveur pour maintenir connexion)</li>
-     *   <li>Keep-alive timeout: 10s</li>
-     *   <li>Keep-alive sans traffic: true (ping même sans requêtes)</li>
-     *   <li>Idle timeout: 5 minutes (fermeture si inactif)</li>
-     * </ul>
      *
      * @return le canal gRPC configuré et prêt à l'emploi
      */
@@ -97,9 +65,9 @@ public class GrpcClientConfig {
                 .maxInboundMessageSize(4 * 1024 * 1024) // 4MB max
                 
                 // Keep-alive pour maintenir la connexion active
-                .keepAliveTime(30, TimeUnit.SECONDS)
+                .keepAliveTime(120, TimeUnit.SECONDS)
                 .keepAliveTimeout(10, TimeUnit.SECONDS)
-                .keepAliveWithoutCalls(true)
+                .keepAliveWithoutCalls(false)
                 
                 // Idle timeout (ferme la connexion si inactive)
                 .idleTimeout(5, TimeUnit.MINUTES)

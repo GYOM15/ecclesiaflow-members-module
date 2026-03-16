@@ -32,6 +32,7 @@ public class EmailServiceException extends RuntimeException {
 
     public enum EmailOperation {
         CONFIRMATION,
-        WELCOME
+        WELCOME,
+        EMAIL_CHANGED
     }
 }

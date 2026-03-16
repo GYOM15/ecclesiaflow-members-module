@@ -228,7 +228,7 @@ class GrpcServerConfigTest {
     @DisplayName("Start doit initialiser le serveur gRPC")
     void startShouldInitializeGrpcServer() throws Exception {
         // Given - Créer une vraie config avec un vrai service
-        MembersGrpcServiceImpl realService = new MembersGrpcServiceImpl(null); // null OK pour ce test
+        MembersGrpcServiceImpl realService = new MembersGrpcServiceImpl(null, null);
         GrpcServerConfig realConfig = new GrpcServerConfig(realService);
         ReflectionTestUtils.setField(realConfig, "grpcServerPort", 0); // Port auto
         ReflectionTestUtils.setField(realConfig, "shutdownTimeoutSeconds", 5);
@@ -253,7 +253,7 @@ class GrpcServerConfigTest {
     @DisplayName("Start doit permettre l'accès au bean grpcServer")
     void startShouldExposeGrpcServerBean() throws Exception {
         // Given
-        MembersGrpcServiceImpl realService = new MembersGrpcServiceImpl(null);
+        MembersGrpcServiceImpl realService = new MembersGrpcServiceImpl(null, null);
         GrpcServerConfig realConfig = new GrpcServerConfig(realService);
         ReflectionTestUtils.setField(realConfig, "grpcServerPort", 0);
         ReflectionTestUtils.setField(realConfig, "shutdownTimeoutSeconds", 5);

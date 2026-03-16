@@ -1,9 +1,9 @@
 package com.ecclesiaflow.web.delegate;
 
 import com.ecclesiaflow.business.domain.member.Member;
+import com.ecclesiaflow.business.domain.member.MemberStatus;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
-import com.ecclesiaflow.business.security.AuthenticatedUserContextProvider;
 import com.ecclesiaflow.business.security.RequireScopes;
 import com.ecclesiaflow.business.services.MemberService;
 import com.ecclesiaflow.web.mappers.OpenApiModelMapper;
@@ -13,8 +13,8 @@ import com.ecclesiaflow.web.model.MemberPageResponse;
 import com.ecclesiaflow.web.model.SignUpRequestPayload;
 import com.ecclesiaflow.web.model.SignUpResponse;
 import com.ecclesiaflow.web.model.UpdateMemberRequestPayload;
+import com.ecclesiaflow.web.security.AuthenticatedUserService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,195 +26,140 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 /**
- * Délégué pour la gestion des membres - Pattern Delegate avec OpenAPI Generator.
- * <p>
- * Ce délégué contient toute la logique métier pour les opérations de gestion des membres,
- * séparant ainsi les responsabilités entre le contrôleur (gestion HTTP) et la logique applicative.
- * </p>
- * 
- * <p><strong>Architecture :</strong></p>
- * <pre>
- * MembersController (implémente MembersManagementApi)
- *    ↓ délègue à
- * MembersManagementDelegate ← Cette classe
- *    ↓ utilise
- * MemberService (logique métier)
- * </pre>
- * 
- * @author EcclesiaFlow Team
- * @since 2.0.0
+ * Delegate for member management operations (CRUD + /me routes).
+ *
+ * <p>Separates HTTP concerns (controller) from business logic. Each public
+ * method maps to an OpenAPI endpoint and is guarded by {@code @RequireScopes}.</p>
  */
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class MembersManagementDelegate {
 
     private final MemberService memberService;
     private final UpdateRequestMapper updateRequestMapper;
     private final OpenApiModelMapper openApiModelMapper;
-    private final AuthenticatedUserContextProvider contextProvider;
+    private final AuthenticatedUserService authenticatedUserService;
 
-    /**
-     * Crée un nouveau membre dans le système.
-     * 
-     * @param signUpRequestPayload Données d'inscription (modèle OpenAPI)
-     * @return Membre créé avec statut HTTP 201
-     */
+    /** Registers a new member (email confirmation flow). */
     public ResponseEntity<SignUpResponse> createMember(SignUpRequestPayload signUpRequestPayload) {
-        // Transformation vers l'objet métier
         MembershipRegistration registration = SignUpRequestMapper.fromSignUpRequest(signUpRequestPayload);
-        
-        // Enregistrement via le service métier
+
         Member member = memberService.registerMember(registration);
-        
-        // Transformation vers le modèle OpenAPI
+
         SignUpResponse response = openApiModelMapper.createSignUpResponse(member, "Member registered (temporary - approval system coming)");
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * Récupère la liste de tous les membres avec pagination et filtrage.
-     * 
-     * @param page Numéro de page
-     * @param size Taille de la page
-     * @param search Terme de recherche
-     * @param confirmed Filtrage par statut de confirmation
-     * @param sort Critère de tri
-     * @param direction Direction du tri
-     * @return Page de membres
-     */
+    /** Returns a paginated, optionally filtered list of all members. */
     @RequireScopes("ef:members:read:all")
     public ResponseEntity<MemberPageResponse> getAllMembers(
-            Integer page, Integer size, String search, Boolean confirmed, String sort, String direction) {
+            Integer page, Integer size, String search, String status, String sort, String direction) {
 
-        // Création du Pageable
         Pageable pageable = createPageable(page, size, sort, direction);
-        
-        // Récupération via le service métier
-        Page<Member> memberPage = memberService.getAllMembers(pageable, search, confirmed);
-        
-        // Transformation vers le modèle OpenAPI
+
+        MemberStatus memberStatus = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                memberStatus = MemberStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Invalid status — ignore the filter
+            }
+        }
+
+        Page<Member> memberPage = memberService.getAllMembers(pageable, search, memberStatus);
+
         MemberPageResponse response = openApiModelMapper.createMemberPageResponse(memberPage);
-        
+
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Récupère les détails d'un membre par son ID.
-     * 
-     * @param memberId Identifiant unique du membre
-     * @return Détails du membre
-     */
+    /** Retrieves a single member by ID. */
     @RequireScopes({"ef:members:read:own", "ef:members:read:all"})
     public ResponseEntity<SignUpResponse> getMemberById(UUID memberId) {
         Member member = memberService.findByMemberId(memberId);
-        SignUpResponse response = openApiModelMapper.createSignUpResponse(member, "Membre trouvé");
-        
+        SignUpResponse response = openApiModelMapper.createSignUpResponse(member, "Member found");
+
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Met à jour partiellement un membre.
-     * 
-     * @param memberId Identifiant du membre
-     * @param updateMemberRequestPayload Données de mise à jour (modèle OpenAPI)
-     * @return Membre mis à jour
-     */
+    /** Partially updates a member's profile. */
     @RequireScopes({"ef:members:write:own", "ef:members:write:all"})
     public ResponseEntity<SignUpResponse> updateMemberPartially(UUID memberId, UpdateMemberRequestPayload updateMemberRequestPayload) {
-        // Transformation vers l'objet métier
         MembershipUpdate businessRequest = updateRequestMapper.fromUpdateMemberRequest(memberId, updateMemberRequestPayload);
-        
-        // Mise à jour via le service métier
+
         Member updatedMember = memberService.updateMember(businessRequest);
-        
-        // Transformation vers le modèle OpenAPI
-        SignUpResponse response = openApiModelMapper.createSignUpResponse(updatedMember, "Membre modifié avec succès");
-        
+
+        SignUpResponse response = openApiModelMapper.createSignUpResponse(updatedMember, "Member updated");
+
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Supprime définitivement un membre.
-     * 
-     * @param memberId Identifiant du membre
-     * @return Réponse vide avec statut 204
-     */
+    /** Soft-deletes a member (sets DEACTIVATED status, disables Keycloak login). */
     @RequireScopes({"ef:members:delete:own", "ef:members:delete:all"})
     public ResponseEntity<Void> deleteMember(UUID memberId) {
-        memberService.deleteMember(memberId);
-        
+        memberService.deactivateMember(memberId);
+
         return ResponseEntity.noContent().build();
     }
 
-    // ========================================
-    // Routes /me (membre authentifié)
-    // ========================================
+    // --- /me routes (authenticated member) ---
 
-    /**
-     * Récupère les informations du membre authentifié.
-     * 
-     * @return Informations du membre connecté
-     */
+    /** Returns the authenticated member's profile. */
     @RequireScopes("ef:members:read:own")
     public ResponseEntity<SignUpResponse> getMyProfile() {
-        UUID authenticatedMemberId = contextProvider.getAuthenticatedMemberId();
-        
-        Member member = memberService.findByMemberId(authenticatedMemberId);
-        SignUpResponse response = openApiModelMapper.createSignUpResponse(member, "Profil récupéré");
-        
+        String keycloakUserId = authenticatedUserService.getKeycloakUserId();
+
+        Member member = memberService.getByKeycloakUserId(keycloakUserId);
+        SignUpResponse response = openApiModelMapper.createSignUpResponse(member, "Profile retrieved");
+
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Met à jour les informations du membre authentifié.
-     * 
-     * @param updateMemberRequestPayload Données de mise à jour
-     * @return Membre mis à jour
-     */
+    /** Updates the authenticated member's profile. */
     @RequireScopes("ef:members:write:own")
     public ResponseEntity<SignUpResponse> updateMyProfile(UpdateMemberRequestPayload updateMemberRequestPayload) {
-        UUID authenticatedMemberId = contextProvider.getAuthenticatedMemberId();
-        
-        MembershipUpdate businessRequest = updateRequestMapper.fromUpdateMemberRequest(authenticatedMemberId, updateMemberRequestPayload);
+        String keycloakUserId = authenticatedUserService.getKeycloakUserId();
+        Member member = memberService.getByKeycloakUserId(keycloakUserId);
+
+        MembershipUpdate businessRequest = updateRequestMapper.fromUpdateMemberRequest(member.getMemberId(), updateMemberRequestPayload);
         Member updatedMember = memberService.updateMember(businessRequest);
-        SignUpResponse response = openApiModelMapper.createSignUpResponse(updatedMember, "Profil mis à jour");
-        
+        SignUpResponse response = openApiModelMapper.createSignUpResponse(updatedMember, "Profile updated");
+
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Supprime le compte du membre authentifié.
-     * 
-     * @return Réponse vide avec statut 204
-     */
+    /** Soft-deletes the authenticated member's account. */
     @RequireScopes("ef:members:delete:own")
     public ResponseEntity<Void> deleteMyAccount() {
-        UUID authenticatedMemberId = contextProvider.getAuthenticatedMemberId();
-        
-        memberService.deleteMember(authenticatedMemberId);
-        
+        String keycloakUserId = authenticatedUserService.getKeycloakUserId();
+        Member member = memberService.getByKeycloakUserId(keycloakUserId);
+
+        memberService.deactivateMember(member.getMemberId());
+
         return ResponseEntity.noContent().build();
     }
 
-    // ========================================
-    // Méthodes utilitaires privées
-    // ========================================
+    /** Reactivates the authenticated member's deactivated account. */
+    public ResponseEntity<SignUpResponse> reactivateMyAccount() {
+        String keycloakUserId = authenticatedUserService.getKeycloakUserId();
+        Member member = memberService.getByKeycloakUserId(keycloakUserId);
+        Member reactivated = memberService.reactivateMember(member.getMemberId());
+        return ResponseEntity.ok(openApiModelMapper.createSignUpResponse(reactivated, "Account reactivated"));
+    }
 
-    /**
-     * Crée un objet Pageable à partir des paramètres de pagination.
-     */
+    // --- Private helpers ---
+
     private Pageable createPageable(Integer page, Integer size, String sort, String direction) {
         int pageNumber = page != null ? page : 0;
         int pageSize = size != null ? size : 20;
         String sortField = sort != null ? sort : "firstName";
         String sortDirection = direction != null ? direction : "asc";
-        
-        Sort.Direction dir = "desc".equalsIgnoreCase(sortDirection) 
-            ? Sort.Direction.DESC 
+
+        Sort.Direction dir = "desc".equalsIgnoreCase(sortDirection)
+            ? Sort.Direction.DESC
             : Sort.Direction.ASC;
-        
+
         return PageRequest.of(pageNumber, pageSize, Sort.by(dir, sortField));
     }
 }

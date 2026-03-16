@@ -1,21 +1,19 @@
 package com.ecclesiaflow.web.client;
 
+import com.ecclesiaflow.business.domain.auth.PasswordSetupTokenResponse;
+import com.ecclesiaflow.web.model.TemporaryTokenResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Mono;
 
 import java.net.ConnectException;
-import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,8 +38,8 @@ class AuthClientImplTest {
 
     private static final String EMAIL = "test@example.com";
     private static final UUID MEMBER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
-    private static final String TEMPORARY_TOKEN_MOCK = "temporary-token-mock-for-dev";
     private static final String GENERATED_TOKEN = "temporary-token-mock-for-dev";
+    private static final String FALLBACK_TOKEN = "temporary-token-mock-for-dev";
 
     @BeforeEach
     void setUp() {
@@ -56,63 +54,57 @@ class AuthClientImplTest {
     }
 
     @Test
-    @DisplayName("should return generated token on successful API call")
+    @DisplayName("should return PasswordSetupTokenResponse on successful API call")
     void getTempToken_ForActivatedMember_success() {
-        // Arrange: Mock the final bodyToMono to return a successful response map
-        Map<String, String> successResponse = Map.of("temporaryToken", GENERATED_TOKEN);
-        when(responseSpec.bodyToMono(any(Class.class))).thenReturn(Mono.just(successResponse));
+        // Arrange
+        TemporaryTokenResponse apiResponse = new TemporaryTokenResponse(GENERATED_TOKEN);
+        apiResponse.setExpiresInSeconds(900);
+        apiResponse.setPasswordEndpoint("/ecclesiaflow/auth/password/setup");
+
+        when(responseSpec.bodyToMono(any(Class.class))).thenReturn(Mono.just(apiResponse));
 
         // Act
-        String result = authClient.retrievePostActivationToken(EMAIL, MEMBER_ID);
+        PasswordSetupTokenResponse result = authClient.retrievePostActivationToken(EMAIL, MEMBER_ID);
 
         // Assert
-        assertThat(result).isEqualTo(GENERATED_TOKEN);
+        assertThat(result).isNotNull();
+        assertThat(result.token()).isEqualTo(GENERATED_TOKEN);
+        assertThat(result.expiresInSeconds()).isEqualTo(900);
+        assertThat(result.passwordEndpoint()).isEqualTo("/ecclesiaflow/auth/password/setup");
     }
 
     @Test
-    @DisplayName("should return mock token on 4xx client error")
+    @DisplayName("should return fallback response on 4xx client error")
     void getTempToken_ForActivatedMember_clientError() {
-        // Arrange: Mock bodyToMono to return an error when a 4xx status is encountered
-        when(responseSpec.onStatus(any(java.util.function.Predicate.class), any(java.util.function.Function.class)))
-                .thenAnswer(invocation -> {
-                    Function<ClientResponse, Mono<? extends Throwable>> errorHandler = invocation.getArgument(1);
-                    // Simulate a 400 Bad Request
-                    ClientResponse mockClientResponse = ClientResponse.create(HttpStatus.BAD_REQUEST).build();
-                    return responseSpec.bodyToMono(Map.class).then(errorHandler.apply(mockClientResponse));
-                });
+        // Arrange
         when(responseSpec.bodyToMono(any(Class.class))).thenReturn(Mono.error(new RuntimeException("Simulated 400 error")));
 
         // Act
-        String result = authClient.retrievePostActivationToken(EMAIL, MEMBER_ID);
+        PasswordSetupTokenResponse result = authClient.retrievePostActivationToken(EMAIL, MEMBER_ID);
 
-        // Assert
-        assertThat(result).isEqualTo(TEMPORARY_TOKEN_MOCK);
+        // Assert — fallback response
+        assertThat(result).isNotNull();
+        assertThat(result.token()).isEqualTo(FALLBACK_TOKEN);
     }
 
     @Test
-    @DisplayName("should return mock token on 5xx server error")
+    @DisplayName("should return fallback response on 5xx server error")
     void getTempToken_ForActivatedMember_serverError() {
-        // Arrange: Mock bodyToMono to return an error when a 5xx status is encountered
-        when(responseSpec.onStatus(any(java.util.function.Predicate.class), any(java.util.function.Function.class)))
-                .thenAnswer(invocation -> {
-                    Function<ClientResponse, Mono<? extends Throwable>> errorHandler = invocation.getArgument(1);
-                    // Simulate a 500 Internal Server Error
-                    ClientResponse mockClientResponse = ClientResponse.create(HttpStatus.INTERNAL_SERVER_ERROR).build();
-                    return responseSpec.bodyToMono(Map.class).then(errorHandler.apply(mockClientResponse));
-                });
+        // Arrange
         when(responseSpec.bodyToMono(any(Class.class))).thenReturn(Mono.error(new RuntimeException("Simulated 500 error")));
 
         // Act
-        String result = authClient.retrievePostActivationToken(EMAIL, MEMBER_ID);
+        PasswordSetupTokenResponse result = authClient.retrievePostActivationToken(EMAIL, MEMBER_ID);
 
-        // Assert
-        assertThat(result).isEqualTo(TEMPORARY_TOKEN_MOCK);
+        // Assert — fallback response
+        assertThat(result).isNotNull();
+        assertThat(result.token()).isEqualTo(FALLBACK_TOKEN);
     }
 
     @Test
-    @DisplayName("should return mock token on network connectivity error")
+    @DisplayName("should return fallback response on network connectivity error")
     void getTempToken_ForActivatedMember_networkError() {
-        // Arrange: Simulate a network error during bodyToMono()
+        // Arrange
         when(responseSpec.bodyToMono(any(Class.class)))
                 .thenReturn(Mono.error(new WebClientRequestException(
                         new ConnectException("Connection refused"),
@@ -122,23 +114,24 @@ class AuthClientImplTest {
                 )));
 
         // Act
-        String result = authClient.retrievePostActivationToken(EMAIL, MEMBER_ID);
+        PasswordSetupTokenResponse result = authClient.retrievePostActivationToken(EMAIL, MEMBER_ID);
 
-        // Assert
-        assertThat(result).isEqualTo(TEMPORARY_TOKEN_MOCK);
+        // Assert — fallback response
+        assertThat(result).isNotNull();
+        assertThat(result.token()).isEqualTo(FALLBACK_TOKEN);
     }
 
     @Test
-    @DisplayName("should return mock token if the response map does not contain 'temporaryToken'")
+    @DisplayName("should return fallback response when API response triggers exception")
     void getTempToken_missingTokenForActivatedMemberInResponse() {
-        // Arrange: Mock the final bodyToMono to return a response map without the expected key
-        Map<String, String> malformedResponse = Map.of("someOtherKey", "someValue");
-        when(responseSpec.bodyToMono(any(Class.class))).thenReturn(Mono.just(malformedResponse));
+        // Arrange — null response will cause NPE → caught → fallback
+        when(responseSpec.bodyToMono(any(Class.class))).thenReturn(Mono.empty());
 
         // Act
-        String result = authClient.retrievePostActivationToken(EMAIL, MEMBER_ID);
+        PasswordSetupTokenResponse result = authClient.retrievePostActivationToken(EMAIL, MEMBER_ID);
 
-        // Assert
-        assertThat(result).isEqualTo(TEMPORARY_TOKEN_MOCK);
+        // Assert — fallback response
+        assertThat(result).isNotNull();
+        assertThat(result.token()).isEqualTo(FALLBACK_TOKEN);
     }
 }

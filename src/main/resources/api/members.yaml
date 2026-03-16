@@ -16,9 +16,7 @@ info:
     - Notifications email automatisées
     - Validation stricte des données d'entrée
 
-    **Version supportée:**
-    - v1: `application/vnd.ecclesiaflow.members.v1+json`
-    - Fallback: `application/json`
+    **Content-Type:** `application/json`
   version: 1.0.0
   contact:
     name: EcclesiaFlow Team
@@ -116,13 +114,14 @@ paths:
           schema:
             type: string
             example: "jean"
-        - name: confirmed
+        - name: status
           in: query
-          description: Filtrer par statut de confirmation
+          description: Filtrer par statut (PENDING, CONFIRMED, ACTIVE, SUSPENDED, INACTIVE)
           required: false
           schema:
-            type: boolean
-            example: true
+            type: string
+            enum: [PENDING, CONFIRMED, ACTIVE, SUSPENDED, INACTIVE]
+            example: "ACTIVE"
         - name: sort
           in: query
           description: Critère de tri
@@ -145,7 +144,7 @@ paths:
         '200':
           description: Liste des membres récupérée avec succès
           content:
-            application/vnd.ecclesiaflow.members.v1+json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/MemberPageResponse'
         '400':
@@ -201,8 +200,8 @@ paths:
                 summary: Membre basique
                 value:
                   firstName: "Jean"
-                  lastName: "Dupont"
-                  email: "jean.dupont@example.com"
+                  lastName: "Tremblay"
+                  email: "jean.tremblay@example.com"
                   address: "123 Rue de la Paix, Montréal, H3A 1B2"
               complete_member:
                 summary: Membre avec informations complètes
@@ -216,7 +215,7 @@ paths:
         '201':
           description: Membre créé avec succès
           content:
-            application/vnd.ecclesiaflow.members.v1+json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/SignUpResponse'
         '400':
@@ -270,7 +269,7 @@ paths:
         '200':
           description: Détails du membre récupérés avec succès
           content:
-            application/vnd.ecclesiaflow.members.v1+json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/SignUpResponse'
         '404':
@@ -327,7 +326,7 @@ paths:
         '200':
           description: Membre mis à jour avec succès
           content:
-            application/vnd.ecclesiaflow.members.v1+json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/SignUpResponse'
         '400':
@@ -443,7 +442,7 @@ paths:
         '200':
           description: Compte confirmé avec succès - Token temporaire généré
           content:
-            application/vnd.ecclesiaflow.members.v1+json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/ConfirmationResponse'
         '400':
@@ -575,12 +574,12 @@ paths:
           schema:
             type: string
             format: email
-            example: "jean.dupont@example.com"
+            example: "jean.tremblay@example.com"
       responses:
         '200':
           description: Statut de confirmation récupéré
           content:
-            application/vnd.ecclesiaflow.members.v1+json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/MemberConfirmationStatusResponse'
         '404':
@@ -589,6 +588,89 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+
+  /ecclesiaflow/members/social-onboarding:
+    post:
+      tags:
+        - Social Onboarding
+      summary: Créer un profil membre après connexion sociale
+      description: |
+        Crée un profil membre pour un utilisateur qui s'est connecté via un fournisseur social
+        (Google, Facebook) pour la première fois, sans passer par le flow d'inscription classique.
+
+        **Différences avec POST /ecclesiaflow/members :**
+        - Nécessite un JWT Keycloak valide (Bearer token) — l'utilisateur est déjà authentifié
+        - Ne déclenche PAS d'email de confirmation (l'email est déjà vérifié par le provider social)
+        - Le `keycloakUserId` est automatiquement extrait du claim `sub` du JWT
+        - Le membre est créé avec le statut ACTIVE directement (confirmé automatiquement)
+
+        **Processus :**
+        1. Extraction du `keycloakUserId` depuis le JWT `sub`
+        2. Vérification qu'aucun membre n'existe déjà pour cet email ou ce keycloakUserId
+        3. Validation des données d'entrée
+        4. Création du membre avec statut confirmé + lié au keycloakUserId
+        5. Retour du profil créé
+
+        **Sécurité :**
+        - L'email du body DOIT correspondre à l'email dans le JWT (vérification serveur)
+        - Token JWT obligatoire (l'utilisateur doit être authentifié via Keycloak)
+      operationId: Members.SocialOnboarding
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SocialOnboardingRequest'
+            examples:
+              google_login:
+                summary: Onboarding après login Google
+                value:
+                  firstName: "Jean"
+                  lastName: "Tremblay"
+                  email: "jean.tremblay@gmail.com"
+              complete_onboarding:
+                summary: Onboarding avec informations complètes
+                value:
+                  firstName: "Marie"
+                  lastName: "Martin"
+                  email: "marie.martin@gmail.com"
+                  address: "456 Avenue des Érables, Québec, G1R 2S3"
+                  phoneNumber: "+1-514-555-0123"
+      responses:
+        '201':
+          description: Profil membre créé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SocialOnboardingResponse'
+        '400':
+          description: Données d'entrée invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '401':
+          description: Token JWT manquant ou invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '409':
+          description: |
+            Un membre avec cet email ou ce keycloakUserId existe déjà.
+            Le frontend devrait rediriger vers `GET /ecclesiaflow/members/me`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictError'
         '500':
           description: Erreur interne du serveur
           content:
@@ -618,6 +700,20 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: |
+            Aucun profil membre trouvé pour cet utilisateur Keycloak.
+
+            **Cas courant :** L'utilisateur s'est connecté via un fournisseur social (Google, Facebook)
+            pour la première fois et n'a pas encore de profil membre dans EcclesiaFlow.
+
+            **Action attendue du frontend :** Afficher un formulaire d'onboarding pré-rempli
+            avec les claims JWT (given_name, family_name, email) et appeler
+            `POST /ecclesiaflow/members/social-onboarding` pour créer le profil.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
     patch:
       tags:
         - Members Management
@@ -666,6 +762,96 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
+
+  /ecclesiaflow/members/me/email:
+    patch:
+      tags:
+        - Email Change
+      summary: Request email address change
+      description: |
+        Initiates an email change by sending a confirmation link to the new address.
+        The current email remains unchanged until the new one is confirmed.
+        SSO users without a local password receive a 403 error.
+      operationId: Members.RequestEmailChange
+      security:
+        - BearerAuth: []
+      x-required-scopes:
+        - ef:members:write:own
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEmailRequestPayload'
+      responses:
+        '202':
+          description: Confirmation email sent to new address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailChangeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+
+  /ecclesiaflow/members/me/email/confirm:
+    post:
+      tags:
+        - Email Change
+      summary: Confirm email address change
+      description: |
+        Confirms the email change using the token received by email.
+        Updates the email in both the Members database and Keycloak.
+      operationId: Members.ConfirmEmailChange
+      security: []
+      parameters:
+        - name: token
+          in: query
+          description: Email change confirmation token (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Email updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignUpResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+
+  /ecclesiaflow/members/me/reactivate:
+    post:
+      tags:
+        - Members Management
+      summary: Reactivate a deactivated account
+      description: |
+        Reactivates a DEACTIVATED account during the 30-day grace period.
+        The user must be authenticated (Keycloak is not disabled).
+        Only accounts with DEACTIVATED status can be reactivated.
+      operationId: Members.ReactivateMyAccount
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Account reactivated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignUpResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
 components:
   securitySchemes:
@@ -804,24 +990,24 @@ components:
           description: "Nom de famille du membre"
           minLength: 2
           maxLength: 50
-          example: "Dupont"
+          example: "Tremblay"
         email:
           type: string
           format: email
           description: "Adresse email du membre (doit être unique)"
           maxLength: 100
-          example: "jean.dupont@example.com"
+          example: "jean.tremblay@example.com"
         address:
           type: string
           description: "Adresse physique du membre (optionnelle)"
           minLength: 10
           maxLength: 200
-          example: "123 Rue de la Paix, 75001 Paris"
+          example: "123 Rue Sainte-Catherine, Montréal H3B 1A7"
         phoneNumber:
           type: string
           description: "Numéro de téléphone au format international (optionnel)"
           pattern: "^\\+?[1-9]\\d{1,14}$"
-          example: "+33123456789"
+          example: "+15141234567"
 
     UpdateMemberRequestPayload:
       type: object
@@ -837,23 +1023,130 @@ components:
           description: "Nouveau nom de famille du membre"
           maxLength: 50
           example: "Martin"
-        email:
-          type: string
-          format: email
-          description: "Nouvelle adresse email du membre"
-          maxLength: 100
-          example: "jean.martin@example.com"
         address:
           type: string
           description: "Nouvelle adresse physique du membre"
           minLength: 10
           maxLength: 200
-          example: "456 Avenue des Champs, 75008 Paris"
+          example: "456 Boulevard René-Lévesque, Québec G1R 2B5"
         phoneNumber:
           type: string
           description: "Nouveau numéro de téléphone au format international"
           pattern: "^\\+?[1-9]\\d{1,14}$"
-          example: "+33987654321"
+          example: "+14189876543"
+
+    UpdateEmailRequestPayload:
+      type: object
+      description: "Request to change the member's email address"
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 100
+          example: "new.email@example.com"
+
+    EmailChangeResponse:
+      type: object
+      description: "Response after requesting an email change"
+      properties:
+        message:
+          type: string
+          example: "Confirmation email sent to new address"
+
+    SocialOnboardingRequest:
+      type: object
+      description: |
+        Données pour créer un profil membre après connexion via un fournisseur social (Google, Facebook).
+        Le `keycloakUserId` est extrait automatiquement du JWT `sub` côté serveur.
+      required:
+        - firstName
+        - lastName
+        - email
+      properties:
+        firstName:
+          type: string
+          description: "Prénom du membre (pré-rempli depuis le JWT `given_name`)"
+          minLength: 2
+          maxLength: 50
+          example: "Jean"
+        lastName:
+          type: string
+          description: "Nom de famille du membre (pré-rempli depuis le JWT `family_name`)"
+          minLength: 2
+          maxLength: 50
+          example: "Tremblay"
+        email:
+          type: string
+          format: email
+          description: |
+            Adresse email du membre.
+            Doit correspondre à l'email dans le JWT Keycloak (vérification serveur).
+          maxLength: 100
+          example: "jean.tremblay@gmail.com"
+        address:
+          type: string
+          description: "Adresse physique du membre (optionnelle)"
+          minLength: 10
+          maxLength: 200
+          example: "123 Rue Sainte-Catherine, Montréal H3B 1A7"
+        phoneNumber:
+          type: string
+          description: "Numéro de téléphone au format international (optionnel)"
+          pattern: "^\\+?[1-9]\\d{1,14}$"
+          example: "+15141234567"
+
+    SocialOnboardingResponse:
+      type: object
+      description: "Réponse après création réussie d'un profil membre via onboarding social"
+      required:
+        - message
+        - email
+        - firstName
+        - lastName
+        - confirmed
+        - createdAt
+      properties:
+        message:
+          type: string
+          description: "Message de confirmation pour l'utilisateur"
+          example: "Profil créé avec succès via connexion sociale"
+        email:
+          type: string
+          format: email
+          description: "Adresse email du membre"
+          example: "jean.tremblay@gmail.com"
+        firstName:
+          type: string
+          description: "Prénom du membre"
+          example: "Jean"
+        lastName:
+          type: string
+          description: "Nom de famille du membre"
+          example: "Tremblay"
+        address:
+          type: string
+          description: "Adresse physique du membre (si fournie)"
+          example: "123 Rue Sainte-Catherine, Montréal H3B 1A7"
+        phoneNumber:
+          type: string
+          description: "Numéro de téléphone (si fourni)"
+          example: "+15141234567"
+        confirmed:
+          type: boolean
+          description: "Toujours `true` pour les comptes créés via onboarding social"
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: "Date de création du compte (format ISO)"
+          example: "2026-03-08T14:30:00Z"
+        confirmedAt:
+          type: string
+          format: date-time
+          description: "Date de confirmation (identique à createdAt pour onboarding social)"
+          example: "2026-03-08T14:30:00Z"
 
     ResendConfirmationLinkRequest:
       type: object
@@ -866,7 +1159,7 @@ components:
           format: email
           description: "Adresse email du compte à confirmer"
           maxLength: 100
-          example: "jean.dupont@example.com"
+          example: "jean.tremblay@example.com"
 
     TemporaryTokenRequest:
       type: object
@@ -906,8 +1199,16 @@ components:
       properties:
         temporaryToken:
           type: string
-          description: "Token JWT temporaire (validité: 15 minutes)"
-          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          description: "Token opaque temporaire (validité: 15 minutes)"
+          example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+        expiresInSeconds:
+          type: integer
+          description: "Durée de validité du token en secondes"
+          example: 900
+        passwordEndpoint:
+          type: string
+          description: "URL de l'endpoint pour définir le mot de passe"
+          example: "/ecclesiaflow/auth/password/setup"
 
     SignUpResponse:
       type: object
@@ -921,7 +1222,7 @@ components:
           type: string
           format: email
           description: "Adresse email du membre"
-          example: "jean.dupont@example.com"
+          example: "jean.tremblay@example.com"
         firstName:
           type: string
           description: "Prénom du membre"
@@ -929,15 +1230,15 @@ components:
         lastName:
           type: string
           description: "Nom de famille du membre"
-          example: "Dupont"
+          example: "Tremblay"
         address:
           type: string
           description: "Adresse physique du membre (optionnelle)"
-          example: "123 Rue de la Paix, 75001 Paris"
-        role:
+          example: "123 Rue Sainte-Catherine, Montréal H3B 1A7"
+        phoneNumber:
           type: string
-          description: "Rôle du membre dans l'application"
-          example: "MEMBER"
+          description: "Phone number of the member (optional)"
+          example: "+15146123456"
         token:
           type: string
           description: "Token d'authentification (si applicable)"
@@ -954,6 +1255,14 @@ components:
           type: string
           description: "Date de confirmation du compte (format ISO)"
           example: "2024-01-15T10:45:00Z"
+        socialProvider:
+          type: string
+          enum: [GOOGLE, MICROSOFT, FACEBOOK]
+          nullable: true
+          description: "Social identity provider used during registration (null for standard accounts)"
+        hasLocalCredentials:
+          type: boolean
+          description: "Whether the member has a local password set"
 
     PageMetadata:
       type: object
@@ -1097,6 +1406,9 @@ components:
             - INVALID_FIELD_VALUE
             - UNAUTHORIZED_ACCESS
             - INSUFFICIENT_PERMISSIONS
+            - SOCIAL_ACCOUNT_EXISTS
+            - LOCAL_CREDENTIALS_REQUIRED
+            - INVALID_EMAIL_UPDATE
             - INTERNAL_SERVER_ERROR
           example: "VALIDATION_ERROR"
         message:
@@ -1329,3 +1641,37 @@ tags:
       - Expiration 24h
       - Usage unique (suppression après utilisation)
       - Protection contre les attaques par force brute
+
+  - name: Social Onboarding
+    description: |
+      Onboarding pour les utilisateurs connectés via un fournisseur social (Google, Facebook)
+
+      **Contexte :**
+      Lorsqu'un utilisateur se connecte via Google/Facebook pour la première fois,
+      Keycloak crée automatiquement un compte dans son realm, mais aucun profil
+      membre n'existe dans le module Members. Cet endpoint permet de créer le profil.
+
+      **Différences avec l'inscription classique :**
+      - Pas d'email de confirmation (vérifié par le provider social)
+      - JWT Keycloak requis (Bearer token)
+      - Le keycloakUserId est extrait du claim `sub` du JWT
+      - Le membre est directement créé avec le statut ACTIVE
+
+      **Flow frontend :**
+      1. Login via Google/Facebook → Keycloak → JWT
+      2. `GET /ecclesiaflow/members/me` → 404 (pas de profil)
+      3. Affichage formulaire pré-rempli (given_name, family_name, email du JWT)
+      4. `POST /ecclesiaflow/members/social-onboarding` → 201 (profil créé)
+      5. Redirection vers le dashboard avec profil complet
+
+  - name: Email Change
+    description: |
+      Email address change with re-verification flow.
+
+      **Process:**
+      1. User requests email change via PATCH /members/me/email
+      2. Confirmation link sent to the new email address
+      3. User clicks the link → POST /members/me/email/confirm?token=UUID
+      4. Email updated in both Members DB and Keycloak
+
+      **SSO users:** Must add a local password before changing their email.

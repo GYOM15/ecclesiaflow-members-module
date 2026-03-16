@@ -4,6 +4,7 @@ import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
 import com.ecclesiaflow.business.domain.member.MembershipRegistration;
 import com.ecclesiaflow.business.domain.member.MembershipUpdate;
+import com.ecclesiaflow.business.domain.member.SocialProvider;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -114,6 +115,23 @@ public interface MemberService {
     Member findByMemberId(UUID memberId);
     
     /**
+     * Récupère un membre par son keycloakUserId (sub claim du JWT Keycloak).
+     * <p>
+     * Le keycloakUserId est l'identifiant unique de l'utilisateur dans Keycloak.
+     * Il correspond au claim 'sub' du JWT. Cette méthode est utilisée pour récupérer
+     * le profil d'un utilisateur authentifié via Keycloak.
+     * </p>
+     * 
+     * @param keycloakUserId l'identifiant Keycloak de l'utilisateur, non null
+     * @return le membre correspondant, jamais null
+     * @throws MemberNotFoundException si aucun membre n'existe avec ce keycloakUserId
+     * @throws IllegalArgumentException si keycloakUserId est null ou vide
+     * @implNote Opération de lecture par keycloakUserId (optimisée avec index unique).
+     * @since 2.0.0
+     */
+    Member getByKeycloakUserId(String keycloakUserId);
+    
+    /**
      * Met à jour les informations d'un membre existant.
      * <p>
      * Cette méthode applique les modifications spécifiées au profil
@@ -130,17 +148,26 @@ public interface MemberService {
     Member updateMember(MembershipUpdate update);
     
     /**
+     * Soft-deletes a member: disables Keycloak login, sets status to DEACTIVATED.
+     * Actual data anonymization happens after the grace period via scheduled cleanup.
+     *
+     * @param memberId the member's shared UUID
+     * @throws MemberNotFoundException if no member exists with this memberId
+     */
+    void deactivateMember(UUID memberId);
+
+    /**
      * Supprime définitivement un membre du système.
      * <p>
      * Cette méthode effectue une suppression complète du membre
      * et de toutes ses données associées. Opération irréversible
      * réservée aux administrateurs.
      * </p>
-     * 
+     *
      * @param id l'identifiant du membre à supprimer, non null
      * @throws MemberNotFoundException si le membre n'existe pas
      * @throws IllegalArgumentException si id est null
-     * 
+     *
      * @implNote Opération transactionnelle en écriture avec cascade sur données liées.
      */
     void deleteMember(UUID id);
@@ -149,17 +176,42 @@ public interface MemberService {
      * Récupère une page de membres avec support de filtrage et recherche.
      * <p>
      * Cette méthode permet de récupérer les membres de manière paginée
-     * avec des options de filtrage par statut de confirmation et de recherche
+     * avec des options de filtrage par statut et de recherche
      * par nom ou email. Optimisée pour les gros volumes de données.
      * </p>
      *
      * @param pageable les paramètres de pagination (page, taille, tri), non null
      * @param search terme de recherche optionnel pour filtrer par nom ou email
-     * @param confirmed filtre optionnel par statut de confirmation (null = tous)
+     * @param status filtre optionnel par statut (null = tous)
      * @return une page de membres correspondant aux critères
      * @throws IllegalArgumentException si pageable est null
      * @implNote Opération de lecture optimisée avec index sur email et nom
      * @since 1.0.0
      */
-    Page<Member> getAllMembers(Pageable pageable, String search, Boolean confirmed);
+    Page<Member> getAllMembers(Pageable pageable, String search, com.ecclesiaflow.business.domain.member.MemberStatus status);
+
+    /**
+     * Registers a member via social login (Google/Facebook/Microsoft).
+     * Skips email confirmation and creates the member directly as ACTIVE.
+     *
+     * @param keycloakUserId the Keycloak sub claim identifying the user
+     * @param socialProvider the social identity provider used for authentication
+     * @param registration   member profile data (pre-filled from JWT claims)
+     * @return the newly created ACTIVE member
+     * @throws com.ecclesiaflow.business.exceptions.SocialAccountAlreadyExistsException
+     *         if a member with the same email or keycloakUserId already exists
+     */
+    Member registerSocialMember(String keycloakUserId, SocialProvider socialProvider,
+                                MembershipRegistration registration);
+
+    /**
+     * Reactivates a DEACTIVATED member account during the grace period.
+     * Sets status back to ACTIVE and clears the deactivation timestamp.
+     *
+     * @param memberId the member's shared UUID
+     * @return the reactivated member
+     * @throws MemberNotFoundException if no member exists with this memberId
+     * @throws IllegalStateException if the member is not in DEACTIVATED status
+     */
+    Member reactivateMember(UUID memberId);
 }

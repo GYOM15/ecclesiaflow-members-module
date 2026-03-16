@@ -73,8 +73,10 @@ class EmailGrpcClientTest {
             UUID expectedId = UUID.randomUUID();
             testService.setResponseEmailId(expectedId.toString());
 
+            String firstName = "John";
+
             // When
-            UUID result = emailGrpcClient.sendConfirmationEmail(email, confirmationUrl);
+            UUID result = emailGrpcClient.sendConfirmationEmail(email, confirmationUrl, firstName);
 
             // Then
             assertThat(result).isEqualTo(expectedId);
@@ -92,8 +94,10 @@ class EmailGrpcClientTest {
             String confirmationUrl = "https://ecclesiaflow.com/confirm?token=abc123";
             testService.setErrorToThrow(Status.UNAVAILABLE.withDescription("Service down"));
 
+            String firstName = "John";
+
             // When/Then
-            assertThatThrownBy(() -> emailGrpcClient.sendConfirmationEmail(email, confirmationUrl))
+            assertThatThrownBy(() -> emailGrpcClient.sendConfirmationEmail(email, confirmationUrl, firstName))
                     .isInstanceOf(EmailServiceException.class)
                     .hasMessageContaining("UNAVAILABLE");
         }
@@ -106,8 +110,10 @@ class EmailGrpcClientTest {
             String confirmationUrl = "https://ecclesiaflow.com/confirm?token=abc123";
             testService.setErrorToThrow(Status.DEADLINE_EXCEEDED.withDescription("Timeout"));
 
+            String firstName = "John";
+
             // When/Then
-            assertThatThrownBy(() -> emailGrpcClient.sendConfirmationEmail(email, confirmationUrl))
+            assertThatThrownBy(() -> emailGrpcClient.sendConfirmationEmail(email, confirmationUrl, firstName))
                     .isInstanceOf(EmailServiceException.class)
                     .hasMessageContaining("DEADLINE_EXCEEDED");
         }
@@ -120,8 +126,10 @@ class EmailGrpcClientTest {
             String confirmationUrl = "https://ecclesiaflow.com/confirm?token=abc123";
             testService.setErrorToThrow(Status.INTERNAL.withDescription("Internal error"));
 
+            String firstName = "John";
+
             // When/Then
-            assertThatThrownBy(() -> emailGrpcClient.sendConfirmationEmail(email, confirmationUrl))
+            assertThatThrownBy(() -> emailGrpcClient.sendConfirmationEmail(email, confirmationUrl, firstName))
                     .isInstanceOf(EmailServiceException.class)
                     .hasMessageContaining("INTERNAL");
         }
@@ -134,10 +142,92 @@ class EmailGrpcClientTest {
             String confirmationUrl = "https://ecclesiaflow.com/confirm?token=abc123";
             testService.setErrorToThrow(Status.UNAVAILABLE);
 
+            String firstName = "John";
+
             // When/Then
-            assertThatThrownBy(() -> emailGrpcClient.sendConfirmationEmail(email, confirmationUrl))
+            assertThatThrownBy(() -> emailGrpcClient.sendConfirmationEmail(email, confirmationUrl, firstName))
                     .isInstanceOf(EmailServiceException.class)
                     .hasMessageContaining("CONFIRMATION");
+        }
+    }
+
+    @Nested
+    @DisplayName("sendWelcomeEmail")
+    class SendWelcomeEmail {
+
+        @Test
+        @DisplayName("should return email ID on successful send")
+        void shouldReturnEmailIdOnSuccess() {
+            UUID expectedId = UUID.randomUUID();
+            testService.setResponseEmailId(expectedId.toString());
+
+            UUID result = emailGrpcClient.sendWelcomeEmail("test@example.com", "John");
+
+            assertThat(result).isEqualTo(expectedId);
+            assertThat(testService.getLastRequest().getTemplateType())
+                    .isEqualTo(EmailTemplateType.EMAIL_TEMPLATE_WELCOME);
+        }
+
+        @Test
+        @DisplayName("should handle null firstName")
+        void shouldHandleNullFirstName() {
+            UUID expectedId = UUID.randomUUID();
+            testService.setResponseEmailId(expectedId.toString());
+
+            UUID result = emailGrpcClient.sendWelcomeEmail("test@example.com", null);
+
+            assertThat(result).isEqualTo(expectedId);
+            assertThat(testService.getLastRequest().getVariablesMap().get("firstName")).isEqualTo("Membre");
+        }
+
+        @Test
+        @DisplayName("should throw EmailServiceException on error")
+        void shouldThrowOnError() {
+            testService.setErrorToThrow(Status.UNAVAILABLE.withDescription("Down"));
+
+            assertThatThrownBy(() -> emailGrpcClient.sendWelcomeEmail("test@example.com", "John"))
+                    .isInstanceOf(EmailServiceException.class)
+                    .hasMessageContaining("WELCOME");
+        }
+    }
+
+    @Nested
+    @DisplayName("sendEmailChangedNotification")
+    class SendEmailChangedNotification {
+
+        @Test
+        @DisplayName("should return email ID on successful send")
+        void shouldReturnEmailIdOnSuccess() {
+            UUID expectedId = UUID.randomUUID();
+            testService.setResponseEmailId(expectedId.toString());
+
+            UUID result = emailGrpcClient.sendEmailChangedNotification("old@example.com", "John");
+
+            assertThat(result).isEqualTo(expectedId);
+            assertThat(testService.getLastRequest().getTemplateType())
+                    .isEqualTo(EmailTemplateType.EMAIL_TEMPLATE_PROFILE_UPDATED);
+        }
+
+        @Test
+        @DisplayName("should handle null firstName")
+        void shouldHandleNullFirstName() {
+            UUID expectedId = UUID.randomUUID();
+            testService.setResponseEmailId(expectedId.toString());
+
+            UUID result = emailGrpcClient.sendEmailChangedNotification("old@example.com", null);
+
+            assertThat(result).isEqualTo(expectedId);
+            assertThat(testService.getLastRequest().getVariablesMap().get("firstName")).isEqualTo("Membre");
+        }
+
+        @Test
+        @DisplayName("should throw EmailServiceException on error")
+        void shouldThrowOnError() {
+            testService.setErrorToThrow(Status.INTERNAL.withDescription("Error"));
+
+            assertThatThrownBy(() -> emailGrpcClient.sendEmailChangedNotification("old@example.com", "John"))
+                    .isInstanceOf(EmailServiceException.class)
+                    .hasMessageContaining("EMAIL_CHANGED");
         }
     }
 

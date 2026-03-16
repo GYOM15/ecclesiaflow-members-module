@@ -2,6 +2,7 @@ package com.ecclesiaflow.io.persistence.repositories.impl;
 
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
+import com.ecclesiaflow.business.domain.member.MemberStatus;
 import com.ecclesiaflow.io.persistence.jpa.MemberEntity;
 import com.ecclesiaflow.io.persistence.mappers.MemberPersistenceMapper;
 import com.ecclesiaflow.io.persistence.jpa.SpringDataMemberRepository;
@@ -10,52 +11,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Implémentation du repository de domaine pour les membres EcclesiaFlow.
- * <p>
- * Cette classe fait le pont entre la couche domaine et la couche de persistance JPA.
- * Elle utilise le pattern Repository avec adaptation entre les entités JPA et les
- * objets de domaine, respectant ainsi la séparation des couches architecturales.
- * </p>
- * 
- * <p><strong>Rôle architectural :</strong> Repository - Adaptation domaine/persistance</p>
- * 
- * <p><strong>Responsabilités principales :</strong></p>
- * <ul>
- *   <li>Adaptation entre objets domaine {@link Member} et entités JPA {@link MemberEntity}</li>
- *   <li>Délégation des opérations CRUD vers Spring Data JPA</li>
- *   <li>Conversion bidirectionnelle via {@link MemberPersistenceMapper}</li>
- *   <li>Encapsulation de la logique de persistance</li>
- * </ul>
- * 
- * <p><strong>Pattern d'adaptation :</strong></p>
- * <ul>
- *   <li>Entrée : Objets domaine (Member)</li>
- *   <li>Conversion : Mapper vers entités JPA (MemberEntity)</li>
- *   <li>Persistance : Délégation vers SpringDataMemberRepository</li>
- *   <li>Sortie : Conversion retour vers objets domaine</li>
- * </ul>
- * 
- * <p><strong>Avantages architecturaux :</strong></p>
- * <ul>
- *   <li>Isolation du domaine métier des détails de persistance</li>
- *   <li>Flexibilité pour changer la technologie de persistance</li>
- *   <li>Testabilité avec mocks du repository domaine</li>
- *   <li>Respect des principes DDD (Domain-Driven Design)</li>
- * </ul>
- * 
- * <p><strong>Garanties :</strong> Thread-safe (bean Spring), gestion transactionnelle déléguée,
- * conversion fidèle des données, encapsulation de la persistance.</p>
- * 
- * @author EcclesiaFlow Team
- * @since 1.0.0
- * @see MemberRepository
- * @see SpringDataMemberRepository
- * @see MemberPersistenceMapper
+ * Adapts the domain {@link MemberRepository} port to Spring Data JPA,
+ * converting between {@link Member} domain objects and {@link MemberEntity} JPA entities.
  */
 @Repository
 @RequiredArgsConstructor
@@ -66,7 +29,6 @@ public class MemberRepositoryImpl implements MemberRepository {
 
     @Override
     public Optional<Member> getByMemberId(UUID memberId) {
-        // Chercher par memberId (UUID partagé entre modules), pas par la clé primaire 'id'
         return springDataRepo.findByMemberId(memberId).map(mapper::toDomain);
     }
 
@@ -76,18 +38,23 @@ public class MemberRepositoryImpl implements MemberRepository {
     }
 
     @Override
+    public Optional<Member> getByKeycloakUserId(String keycloakUserId) {
+        return springDataRepo.findByKeycloakUserId(keycloakUserId).map(mapper::toDomain);
+    }
+
+    @Override
     public boolean existsByEmail(String email) {
         return springDataRepo.existsByEmail(email);
     }
 
     @Override
-    public long countConfirmedMembers() {
-        return springDataRepo.countByConfirmedTrue();
+    public boolean existsByKeycloakUserId(String keycloakUserId) {
+        return springDataRepo.existsByKeycloakUserId(keycloakUserId);
     }
 
     @Override
-    public long countPendingConfirmations() {
-        return springDataRepo.countByConfirmedFalse();
+    public long countByStatus(MemberStatus status) {
+        return springDataRepo.countByStatus(status);
     }
 
     @Override
@@ -119,11 +86,11 @@ public class MemberRepositoryImpl implements MemberRepository {
     }
 
     @Override
-    public Page<Member> getByConfirmedStatus(Boolean confirmed, Pageable pageable) {
+    public Page<Member> getByStatus(MemberStatus status, Pageable pageable) {
         if (pageable == null) {
             throw new IllegalArgumentException("Pageable cannot be null");
         }
-        return springDataRepo.findByConfirmed(confirmed, pageable)
+        return springDataRepo.findByStatus(status, pageable)
                 .map(mapper::toDomain);
     }
 
@@ -137,13 +104,21 @@ public class MemberRepositoryImpl implements MemberRepository {
     }
 
     @Override
-    public Page<Member> getMembersBySearchTermAndConfirmationStatus(
-            String searchTerm, Boolean confirmed, Pageable pageable) {
+    public Page<Member> getMembersBySearchTermAndStatus(
+            String searchTerm, MemberStatus status, Pageable pageable) {
         if (pageable == null) {
             throw new IllegalArgumentException("Pageable cannot be null");
         }
-        return springDataRepo.findMembersBySearchTermAndConfirmationStatus(
-                searchTerm, confirmed, pageable)
+        return springDataRepo.findMembersBySearchTermAndStatus(
+                searchTerm, status, pageable)
                 .map(mapper::toDomain);
+    }
+
+    @Override
+    public List<Member> findDeactivatedBefore(LocalDateTime cutoffDate) {
+        return springDataRepo.findByStatusAndDeactivatedAtBefore(MemberStatus.DEACTIVATED, cutoffDate)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 }

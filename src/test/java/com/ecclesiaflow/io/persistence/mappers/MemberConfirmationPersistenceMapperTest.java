@@ -55,7 +55,7 @@ class MemberConfirmationPersistenceMapperTest {
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () ->
                 mapper.toDomain(null)
         );
-        assertThat(thrown.getMessage()).isEqualTo("L'entité ne peut pas être null");
+        assertThat(thrown.getMessage()).isEqualTo("Entity must not be null");
     }
 
     @Test
@@ -93,6 +93,6 @@ class MemberConfirmationPersistenceMapperTest {
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () ->
                 mapper.toEntity(null)
         );
-        assertThat(thrown.getMessage()).isEqualTo("L'objet domaine ne peut pas être null");
+        assertThat(thrown.getMessage()).isEqualTo("Domain object must not be null");
     }
 }

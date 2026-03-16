@@ -1,10 +1,11 @@
 package com.ecclesiaflow.io.persistence.mappers;
 
 import com.ecclesiaflow.business.domain.member.Member;
-import com.ecclesiaflow.business.domain.member.Role;
+import com.ecclesiaflow.business.domain.member.MemberStatus;
 import com.ecclesiaflow.io.persistence.jpa.MemberEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -18,11 +19,11 @@ class MemberPersistenceMapperTest {
 
     @BeforeEach
     void setUp() {
-        mapper = new MemberPersistenceMapper();
+        mapper = Mappers.getMapper(MemberPersistenceMapper.class);
     }
 
     @Test
-    void toDomain_shouldMapAllFieldsCorrectlyWhenConfirmed() {
+    void toDomain_shouldMapAllFieldsCorrectlyWhenActive() {
         // Arrange
         UUID id = UUID.randomUUID();
         UUID memberId = UUID.randomUUID();
@@ -35,8 +36,7 @@ class MemberPersistenceMapperTest {
                 .lastName("Doe")
                 .email("john.doe@example.com")
                 .address("123 Main St")
-                .role(Role.MEMBER)
-                .confirmed(true)
+                .status(MemberStatus.ACTIVE)
                 .confirmedAt(now.minusHours(1))
                 .createdAt(now.minusDays(5))
                 .updatedAt(now.minusMinutes(30))
@@ -53,7 +53,7 @@ class MemberPersistenceMapperTest {
         assertThat(domain.getLastName()).isEqualTo("Doe");
         assertThat(domain.getEmail()).isEqualTo("john.doe@example.com");
         assertThat(domain.getAddress()).isEqualTo("123 Main St");
-        assertThat(domain.getRole()).isEqualTo(Role.MEMBER);
+        assertThat(domain.getStatus()).isEqualTo(MemberStatus.ACTIVE);
         assertThat(domain.isConfirmed()).isTrue();
         assertThat(domain.getConfirmedAt()).isEqualTo(now.minusHours(1));
         assertThat(domain.getCreatedAt()).isEqualTo(now.minusDays(5));
@@ -61,7 +61,7 @@ class MemberPersistenceMapperTest {
     }
 
     @Test
-    void toDomain_shouldMapAllFieldsCorrectlyWhenNotConfirmed() {
+    void toDomain_shouldMapAllFieldsCorrectlyWhenPending() {
         // Arrange
         UUID id = UUID.randomUUID();
         UUID memberId = UUID.randomUUID();
@@ -74,8 +74,7 @@ class MemberPersistenceMapperTest {
                 .lastName("Doe")
                 .email("jane.doe@example.com")
                 .address("456 Elm St")
-                .role(Role.ADMIN)
-                .confirmed(false)
+                .status(MemberStatus.PENDING)
                 .confirmedAt(null)
                 .createdAt(now.minusDays(3))
                 .updatedAt(now.minusMinutes(15))
@@ -87,21 +86,22 @@ class MemberPersistenceMapperTest {
         // Assert
         assertThat(domain).isNotNull();
         assertThat(domain.getId()).isEqualTo(id);
+        assertThat(domain.getStatus()).isEqualTo(MemberStatus.PENDING);
         assertThat(domain.isConfirmed()).isFalse();
         assertThat(domain.getConfirmedAt()).isNull();
     }
 
     @Test
-    void toDomain_shouldThrowIllegalArgumentExceptionWhenEntityIsNull() {
+    void toDomainOrThrow_shouldThrowIllegalArgumentExceptionWhenEntityIsNull() {
         // Act & Assert
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () ->
-                mapper.toDomain(null)
+                mapper.toDomainOrThrow(null)
         );
-        assertThat(thrown.getMessage()).isEqualTo("L'objet domaine ne peut pas être null");
+        assertThat(thrown.getMessage()).isEqualTo("MemberEntity must not be null");
     }
 
     @Test
-    void toEntity_shouldMapAllFieldsCorrectlyWhenConfirmed() {
+    void toEntity_shouldMapAllFieldsCorrectlyWhenActive() {
         // Arrange
         UUID id = UUID.randomUUID();
         UUID memberId = UUID.randomUUID();
@@ -114,8 +114,7 @@ class MemberPersistenceMapperTest {
                 .lastName("Smith")
                 .email("alice.smith@example.com")
                 .address("789 Oak Ave")
-                .role(Role.MEMBER)
-                .confirmed(true)
+                .status(MemberStatus.ACTIVE)
                 .confirmedAt(now.minusHours(2))
                 .createdAt(now.minusDays(7))
                 .updatedAt(now.minusMinutes(45))
@@ -132,16 +131,14 @@ class MemberPersistenceMapperTest {
         assertThat(entity.getLastName()).isEqualTo("Smith");
         assertThat(entity.getEmail()).isEqualTo("alice.smith@example.com");
         assertThat(entity.getAddress()).isEqualTo("789 Oak Ave");
-        assertThat(entity.getRole()).isEqualTo(Role.MEMBER);
-        assertThat(entity.isConfirmed()).isTrue();
+        assertThat(entity.getStatus()).isEqualTo(MemberStatus.ACTIVE);
         assertThat(entity.getConfirmedAt()).isEqualTo(now.minusHours(2));
         assertThat(entity.getCreatedAt()).isEqualTo(now.minusDays(7));
-        // updatedAt n'est pas mappé car géré par @UpdateTimestamp
-        assertThat(entity.getUpdatedAt()).isNull();
+        assertThat(entity.getUpdatedAt()).isEqualTo(now.minusMinutes(45));
     }
 
     @Test
-    void toEntity_shouldMapAllFieldsCorrectlyWhenNotConfirmed() {
+    void toEntity_shouldMapAllFieldsCorrectlyWhenPending() {
         // Arrange
         UUID id = UUID.randomUUID();
         UUID memberId = UUID.randomUUID();
@@ -154,8 +151,7 @@ class MemberPersistenceMapperTest {
                 .lastName("Brown")
                 .email("bob.brown@example.com")
                 .address("101 Cedar Ln")
-                .role(Role.MEMBER)
-                .confirmed(false)
+                .status(MemberStatus.PENDING)
                 .confirmedAt(null)
                 .createdAt(now.minusDays(1))
                 .updatedAt(now.minusMinutes(5))
@@ -167,18 +163,17 @@ class MemberPersistenceMapperTest {
         // Assert
         assertThat(entity).isNotNull();
         assertThat(entity.getId()).isEqualTo(id);
-        assertThat(entity.isConfirmed()).isFalse();
+        assertThat(entity.getStatus()).isEqualTo(MemberStatus.PENDING);
         assertThat(entity.getConfirmedAt()).isNull();
-        // updatedAt n'est pas mappé car géré par @UpdateTimestamp
-        assertThat(entity.getUpdatedAt()).isNull();
+        assertThat(entity.getUpdatedAt()).isEqualTo(now.minusMinutes(5));
     }
 
     @Test
-    void toEntity_shouldThrowIllegalArgumentExceptionWhenDomainIsNull() {
+    void toEntityOrThrow_shouldThrowIllegalArgumentExceptionWhenDomainIsNull() {
         // Act & Assert
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () ->
-                mapper.toEntity(null)
+                mapper.toEntityOrThrow(null)
         );
-        assertThat(thrown.getMessage()).isEqualTo("L'objet domaine ne peut pas être null");
+        assertThat(thrown.getMessage()).isEqualTo("Member domain object must not be null");
     }
 }

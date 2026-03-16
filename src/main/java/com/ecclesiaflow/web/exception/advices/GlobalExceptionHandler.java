@@ -1,10 +1,16 @@
 package com.ecclesiaflow.web.exception.advices;
 
+import com.ecclesiaflow.business.exceptions.EmailAlreadyUsedException;
 import com.ecclesiaflow.business.exceptions.EmailServiceUnavailableException;
 import com.ecclesiaflow.business.exceptions.ExpiredConfirmationCodeException;
+import com.ecclesiaflow.business.exceptions.InsufficientPermissionsException;
 import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
+
+import com.ecclesiaflow.business.exceptions.InvalidEmailUpdateException;
+import com.ecclesiaflow.business.exceptions.LocalCredentialsRequiredException;
 import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
+import com.ecclesiaflow.business.exceptions.SocialAccountAlreadyExistsException;
 import com.ecclesiaflow.web.exception.*;
 import com.ecclesiaflow.web.exception.model.ApiErrorResponse;
 import com.ecclesiaflow.web.exception.model.ValidationError;
@@ -24,75 +30,22 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Gestionnaire global d'exceptions pour l'API REST EcclesiaFlow Members Module.
- * <p>
- * Cette classe centralise la gestion de toutes les exceptions levées par les contrôleurs
- * et les transforme en réponses HTTP standardisées avec le format {@link ApiErrorResponse}.
- * Utilise le pattern @RestControllerAdvice de Spring pour intercepter les exceptions
- * de manière transversale.
- * </p>
- * 
- * <p><strong>Rôle architectural :</strong> Aspect transversal - Gestion centralisée des erreurs</p>
- * 
- * <p><strong>Responsabilités principales :</strong></p>
- * <ul>
- *   <li>Interception et transformation des exceptions métier en réponses HTTP</li>
- *   <li>Standardisation du format des erreurs avec {@link ApiErrorResponse}</li>
- *   <li>Gestion détaillée des erreurs de validation Bean Validation</li>
- *   <li>Mapping approprié des codes de statut HTTP selon le type d'erreur</li>
- *   <li>Logging et traçabilité des erreurs (implicite via Spring)</li>
- * </ul>
- * 
- * <p><strong>Types d'exceptions gérées :</strong></p>
- * <ul>
- *   <li>{@link MethodArgumentNotValidException} - Erreurs de validation Bean Validation (400)</li>
- *   <li>{@link ConstraintViolationException} - Violations de contraintes (400)</li>
- *   <li>{@link HttpMessageNotReadableException} - JSON mal formé (400)</li>
- *   <li>{@link MemberNotFoundException} - Membre non trouvé (404)</li>
- *   <li>{@link InvalidConfirmationCodeException} - Code de confirmation invalide (400)</li>
- *   <li>{@link MemberAlreadyConfirmedException} - Membre déjà confirmé (409)</li>
- *   <li>{@link IllegalArgumentException} - Arguments invalides (400)</li>
- *   <li>{@link Exception} - Erreurs génériques (500)</li>
- * </ul>
- * 
- * <p><strong>Format de réponse standardisé :</strong></p>
- * <pre>{@code
- * {
- *   "timestamp": "2024-01-15T10:30:00",
- *   "status": 400,
- *   "error": "Bad Request",
- *   "message": "Erreur de validation des données",
- *   "path": "/ecclesiaflow/members",
- *   "errors": [
- *     {
- *       "message": "Le nom est obligatoire",
- *       "path": "firstName",
- *       "type": "validation",
- *       "code": "NotBlank"
- *     }
- *   ]
- * }
- * }</pre>
- * 
- * <p><strong>Garanties :</strong> Gestion exhaustive, format cohérent, codes HTTP appropriés.</p>
- * 
- * @author EcclesiaFlow Team
- * @since 1.0.0
- * @see ApiErrorResponse
- * @see ValidationError
+ * Centralized exception handler that maps exceptions to standardized
+ * {@link ApiErrorResponse} HTTP responses.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    // --- 400 Bad Request ---
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex, WebRequest request) {
         List<ValidationError> errors = new ArrayList<>();
-        
+
         ex.getBindingResult().getAllErrors().forEach(error -> {
             String fieldName = error instanceof FieldError ? ((FieldError) error).getField() : error.getObjectName();
             errors.add(new ValidationError(
@@ -110,18 +63,18 @@ public class GlobalExceptionHandler {
         ApiErrorResponse errorResponse = ApiErrorResponse.builder()
             .status(HttpStatus.BAD_REQUEST.value())
             .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
-            .message("Erreur de validation des données")
+            .message("Validation failed")
             .path(((ServletWebRequest) request).getRequest().getRequestURI())
             .errors(errors)
             .build();
-        
+
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiErrorResponse> handleConstraintViolation(ConstraintViolationException ex, WebRequest request) {
         List<ValidationError> errors = new ArrayList<>();
-        
+
         for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
             errors.add(new ValidationError(
                 violation.getMessage(),
@@ -129,7 +82,7 @@ public class GlobalExceptionHandler {
                 "constraint",
                 violation.getConstraintDescriptor().getAnnotation().annotationType().getSimpleName(),
                 violation.getInvalidValue() != null ? violation.getInvalidValue().toString() : "null",
-                violation.getConstraintDescriptor().getAttributes().get("groups") != null ? 
+                violation.getConstraintDescriptor().getAttributes().get("groups") != null ?
                     violation.getConstraintDescriptor().getAttributes().get("groups").toString() : "CONSTRAINT_VIOLATION",
                 null,
                 null
@@ -139,11 +92,11 @@ public class GlobalExceptionHandler {
         ApiErrorResponse errorResponse = ApiErrorResponse.builder()
             .status(HttpStatus.BAD_REQUEST.value())
             .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
-            .message("Erreur de validation des contraintes")
+            .message("Constraint violation")
             .path(((ServletWebRequest) request).getRequest().getRequestURI())
             .errors(errors)
             .build();
-        
+
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
@@ -151,11 +104,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, WebRequest request) {
         List<ValidationError> errors = new ArrayList<>();
         errors.add(new ValidationError(
-            "Requête JSON mal formée",
+            "Malformed JSON request",
             "request",
             "parsing",
             "MalformedJson",
-            "Requête JSON mal formée",
+            "Malformed JSON request",
             "MalformedJson",
             null,
             null
@@ -164,28 +117,22 @@ public class GlobalExceptionHandler {
         ApiErrorResponse errorResponse = ApiErrorResponse.builder()
             .status(HttpStatus.BAD_REQUEST.value())
             .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
-            .message("Requête JSON mal formée")
+            .message("Malformed JSON request")
             .path(((ServletWebRequest) request).getRequest().getRequestURI())
             .errors(errors)
             .build();
-        
+
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(MissingRequestHeaderException.class)
     public ResponseEntity<ApiErrorResponse> handleMissingRequestHeader(MissingRequestHeaderException ex, WebRequest request) {
-        String error = "En-tête requis manquant: " + ex.getHeaderName();
-        return buildBadRequestErrorResponse(error, request);
+        return buildBadRequestErrorResponse("Missing required header: " + ex.getHeaderName(), request);
     }
 
     @ExceptionHandler(InvalidRequestException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidRequest(InvalidRequestException ex, WebRequest request) {
         return buildBadRequestErrorResponse(ex.getMessage(), request);
-    }
-
-    @ExceptionHandler(MemberNotFoundException.class)
-    public ResponseEntity<ApiErrorResponse> handleMemberNotFound(MemberNotFoundException ex, WebRequest request) {
-        return buildSimpleErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
     @ExceptionHandler(InvalidConfirmationCodeException.class)
@@ -198,20 +145,60 @@ public class GlobalExceptionHandler {
         return buildBadRequestErrorResponse(ex.getMessage(), request);
     }
 
-    @ExceptionHandler(MemberAlreadyConfirmedException.class)
-    public ResponseEntity<ApiErrorResponse> handleMemberAlreadyConfirmed(MemberAlreadyConfirmedException ex, WebRequest request) {
-        return buildSimpleErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
-    }
-
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiErrorResponse> handleIllegalArgument(IllegalArgumentException ex, WebRequest request) {
         return buildBadRequestErrorResponse(ex.getMessage(), request);
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiErrorResponse> handleAllExceptions(Exception ex, WebRequest request) {
-        return buildSimpleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Une erreur interne est survenue", request);
+    @ExceptionHandler(InvalidEmailUpdateException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidEmailUpdate(InvalidEmailUpdateException ex, WebRequest request) {
+        return buildBadRequestErrorResponse(ex.getMessage(), request);
     }
+
+    // --- 403 Forbidden ---
+
+    @ExceptionHandler(InsufficientPermissionsException.class)
+    public ResponseEntity<ApiErrorResponse> handleInsufficientPermissions(InsufficientPermissionsException ex, WebRequest request) {
+        return buildSimpleErrorResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(LocalCredentialsRequiredException.class)
+    public ResponseEntity<ApiErrorResponse> handleLocalCredentialsRequired(LocalCredentialsRequiredException ex, WebRequest request) {
+        String providerName = switch (ex.getProvider()) {
+            case GOOGLE -> "Google";
+            case MICROSOFT -> "Microsoft";
+            case FACEBOOK -> "Facebook";
+        };
+        String message = "Your account was created with " + providerName
+                + ". Please add a password before changing your email.";
+        return buildSimpleErrorResponse(HttpStatus.FORBIDDEN, message, request);
+    }
+
+    // --- 404 Not Found ---
+
+    @ExceptionHandler(MemberNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleMemberNotFound(MemberNotFoundException ex, WebRequest request) {
+        return buildSimpleErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    // --- 409 Conflict ---
+
+    @ExceptionHandler(MemberAlreadyConfirmedException.class)
+    public ResponseEntity<ApiErrorResponse> handleMemberAlreadyConfirmed(MemberAlreadyConfirmedException ex, WebRequest request) {
+        return buildSimpleErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(EmailAlreadyUsedException.class)
+    public ResponseEntity<ApiErrorResponse> handleEmailAlreadyUsed(EmailAlreadyUsedException ex, WebRequest request) {
+        return buildSimpleErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(SocialAccountAlreadyExistsException.class)
+    public ResponseEntity<ApiErrorResponse> handleSocialAccountAlreadyExists(SocialAccountAlreadyExistsException ex, WebRequest request) {
+        return buildSimpleErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    // --- 429 / 503 ---
 
     @ExceptionHandler(RequestNotPermitted.class)
     public ResponseEntity<ApiErrorResponse> handleRateLimitExceeded(RequestNotPermitted ex, HttpServletRequest request) {
@@ -248,23 +235,22 @@ public class GlobalExceptionHandler {
             .build();
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errorResponse);
     }
-    /**
-     * Construit une réponse d'erreur 400 Bad Request avec des erreurs de validation.
-     * Utilisé pour les erreurs qui peuvent contenir des détails de validation.
-     */
+
+    // --- 500 Catch-all ---
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiErrorResponse> handleAllExceptions(Exception ex, WebRequest request) {
+        return buildSimpleErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An internal error occurred", request);
+    }
+
+    // --- Helpers ---
+
+    /** Builds a 400 response with a single validation error entry. */
     private ResponseEntity<ApiErrorResponse> buildBadRequestErrorResponse(String message, WebRequest request) {
-        // Pour les erreurs 400, on peut avoir des erreurs de validation
-        // Si c'est une erreur simple, on crée une ValidationError générique
         List<ValidationError> errors = new ArrayList<>();
         errors.add(new ValidationError(
-            message,
-            "request",
-            "validation",
-            "BadRequest",
-            message,
-            "BAD_REQUEST",
-            null,
-            null
+            message, "request", "validation", "BadRequest",
+            message, "BAD_REQUEST", null, null
         ));
 
         ApiErrorResponse errorResponse = ApiErrorResponse.builder()
@@ -274,25 +260,20 @@ public class GlobalExceptionHandler {
             .path(((ServletWebRequest) request).getRequest().getRequestURI())
             .errors(errors)
             .build();
-        
+
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
-    /**
-     * Construit une réponse d'erreur simple sans erreurs de validation.
-     * Utilisé pour les erreurs 404, 409, 500, etc. où le champ errors doit être null.
-     */
+    /** Builds an error response without validation details (errors = null). */
     private ResponseEntity<ApiErrorResponse> buildSimpleErrorResponse(HttpStatus status, String message, WebRequest request) {
         ApiErrorResponse errorResponse = ApiErrorResponse.builder()
             .status(status.value())
             .error(status.getReasonPhrase())
             .message(message)
             .path(((ServletWebRequest) request).getRequest().getRequestURI())
-            .errors(null)  // Explicitement null pour respecter le contrat OpenAPI
+            .errors(null)
             .build();
-            
-        // Pour ces types d'erreurs (404, 409, 500), errors est null selon le contrat OpenAPI
-        
+
         return new ResponseEntity<>(errorResponse, status);
     }
 }

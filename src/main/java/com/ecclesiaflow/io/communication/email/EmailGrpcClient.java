@@ -35,16 +35,17 @@ public class EmailGrpcClient implements EmailClient {
     @Override
     @CircuitBreaker(name = ResilienceConfig.EMAIL_SERVICE_CB, fallbackMethod = "sendConfirmationEmailFallback")
     @Retry(name = ResilienceConfig.EMAIL_SERVICE_RETRY)
-    public UUID sendConfirmationEmail(String email, String confirmationUrl) {
+    public UUID sendConfirmationEmail(String email, String confirmationUrl, String firstName) {
         Map<String, String> variables = Map.of(
             "email", email,
-            "confirmationLink", confirmationUrl
+            "confirmationLink", confirmationUrl,
+            "firstName", firstName != null ? firstName : "Membre"
         );
 
         return sendEmail(
             email,
             EmailTemplateType.EMAIL_TEMPLATE_EMAIL_CONFIRMATION,
-            "Confirmez votre adresse email - EcclesiaFlow",
+            "Confirmez votre adresse email — EcclesiaFlow",
             variables,
             Priority.PRIORITY_HIGH,
             EmailOperation.CONFIRMATION
@@ -52,7 +53,55 @@ public class EmailGrpcClient implements EmailClient {
     }
 
     @SuppressWarnings("unused")
-    private UUID sendConfirmationEmailFallback(String email, String confirmationUrl, Throwable t) {
+    private UUID sendConfirmationEmailFallback(String email, String confirmationUrl, String firstName, Throwable t) {
+        throw new EmailServiceUnavailableException(SERVICE_NAME, t);
+    }
+
+    @Override
+    @CircuitBreaker(name = ResilienceConfig.EMAIL_SERVICE_CB, fallbackMethod = "sendWelcomeEmailFallback")
+    @Retry(name = ResilienceConfig.EMAIL_SERVICE_RETRY)
+    public UUID sendWelcomeEmail(String email, String firstName) {
+        Map<String, String> variables = Map.of(
+            "email", email,
+            "firstName", firstName != null ? firstName : "Membre"
+        );
+
+        return sendEmail(
+            email,
+            EmailTemplateType.EMAIL_TEMPLATE_WELCOME,
+            "Bienvenue sur EcclesiaFlow",
+            variables,
+            Priority.PRIORITY_NORMAL,
+            EmailOperation.WELCOME
+        );
+    }
+
+    @SuppressWarnings("unused")
+    private UUID sendWelcomeEmailFallback(String email, String firstName, Throwable t) {
+        throw new EmailServiceUnavailableException(SERVICE_NAME, t);
+    }
+
+    @Override
+    @CircuitBreaker(name = ResilienceConfig.EMAIL_SERVICE_CB, fallbackMethod = "sendEmailChangedNotificationFallback")
+    @Retry(name = ResilienceConfig.EMAIL_SERVICE_RETRY)
+    public UUID sendEmailChangedNotification(String oldEmail, String firstName) {
+        Map<String, String> variables = Map.of(
+            "email", oldEmail,
+            "firstName", firstName != null ? firstName : "Membre"
+        );
+
+        return sendEmail(
+            oldEmail,
+            EmailTemplateType.EMAIL_TEMPLATE_PROFILE_UPDATED,
+            "Your email address has been changed — EcclesiaFlow",
+            variables,
+            Priority.PRIORITY_NORMAL,
+            EmailOperation.EMAIL_CHANGED
+        );
+    }
+
+    @SuppressWarnings("unused")
+    private UUID sendEmailChangedNotificationFallback(String oldEmail, String firstName, Throwable t) {
         throw new EmailServiceUnavailableException(SERVICE_NAME, t);
     }
 

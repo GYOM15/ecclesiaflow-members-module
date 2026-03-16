@@ -1,14 +1,17 @@
 package com.ecclesiaflow.io.grpc.server;
 
+import com.ecclesiaflow.business.domain.events.MemberActivatedEvent;
 import com.ecclesiaflow.business.domain.member.Member;
 import com.ecclesiaflow.business.domain.member.MemberRepository;
-import com.ecclesiaflow.grpc.members.ConfirmationStatusRequest;
-import com.ecclesiaflow.grpc.members.ConfirmationStatusResponse;
+import com.ecclesiaflow.business.domain.member.MemberStatus;
+import org.springframework.context.ApplicationEventPublisher;
+import com.ecclesiaflow.grpc.members.*;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -39,6 +42,9 @@ class MembersGrpcServiceImplTest {
     private MemberRepository memberRepository;
 
     @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    @Mock
     private StreamObserver<ConfirmationStatusResponse> responseObserver;
 
     @InjectMocks
@@ -64,7 +70,7 @@ class MembersGrpcServiceImplTest {
                 .firstName("John")
                 .lastName("Doe")
                 .confirmedAt(LocalDateTime.now())
-                .confirmed(true)
+                .status(MemberStatus.ACTIVE)
                 .build();
 
         unconfirmedMember = Member.builder()
@@ -73,7 +79,7 @@ class MembersGrpcServiceImplTest {
                 .firstName("Jane")
                 .lastName("Smith")
                 .confirmedAt(null)
-                .confirmed(false)
+                .status(MemberStatus.PENDING)
                 .build();
     }
 
@@ -340,5 +346,212 @@ class MembersGrpcServiceImplTest {
         // Then
         verify(responseObserver).onNext(any());
         verify(responseObserver).onCompleted();
+    }
+
+    // ========================================================================
+    // Tests - notifyAccountActivated
+    // ========================================================================
+
+    @Nested
+    @DisplayName("notifyAccountActivated")
+    class NotifyAccountActivated {
+
+        @Mock
+        private StreamObserver<AccountActivatedResponse> activatedObserver;
+
+        @Captor
+        private ArgumentCaptor<AccountActivatedResponse> activatedCaptor;
+
+        @Test
+        @DisplayName("should activate confirmed member successfully")
+        void shouldActivateConfirmedMember() {
+            Member confirmed = Member.builder()
+                    .memberId(MEMBER_ID)
+                    .email(VALID_EMAIL)
+                    .firstName("John")
+                    .lastName("Doe")
+                    .status(MemberStatus.CONFIRMED)
+                    .build();
+
+            AccountActivatedRequest request = AccountActivatedRequest.newBuilder()
+                    .setMemberId(MEMBER_ID.toString())
+                    .setKeycloakUserId("kc-user-123")
+                    .build();
+
+            when(memberRepository.getByMemberId(MEMBER_ID)).thenReturn(Optional.of(confirmed));
+
+            service.notifyAccountActivated(request, activatedObserver);
+
+            verify(activatedObserver).onNext(activatedCaptor.capture());
+            verify(activatedObserver).onCompleted();
+            assertThat(activatedCaptor.getValue().getSuccess()).isTrue();
+            verify(memberRepository).save(any(Member.class));
+            verify(eventPublisher).publishEvent(any(MemberActivatedEvent.class));
+        }
+
+        @Test
+        @DisplayName("should fail for non-existent member")
+        void shouldFailForNonExistentMember() {
+            AccountActivatedRequest request = AccountActivatedRequest.newBuilder()
+                    .setMemberId(MEMBER_ID.toString())
+                    .setKeycloakUserId("kc-user-123")
+                    .build();
+
+            when(memberRepository.getByMemberId(MEMBER_ID)).thenReturn(Optional.empty());
+
+            service.notifyAccountActivated(request, activatedObserver);
+
+            verify(activatedObserver).onNext(activatedCaptor.capture());
+            assertThat(activatedCaptor.getValue().getSuccess()).isFalse();
+            assertThat(activatedCaptor.getValue().getMessage()).contains("not found");
+        }
+
+        @Test
+        @DisplayName("should fail for member not in CONFIRMED status")
+        void shouldFailForNonConfirmedMember() {
+            Member pending = Member.builder()
+                    .memberId(MEMBER_ID)
+                    .email(VALID_EMAIL)
+                    .firstName("Jane")
+                    .status(MemberStatus.PENDING)
+                    .build();
+
+            AccountActivatedRequest request = AccountActivatedRequest.newBuilder()
+                    .setMemberId(MEMBER_ID.toString())
+                    .setKeycloakUserId("kc-user-123")
+                    .build();
+
+            when(memberRepository.getByMemberId(MEMBER_ID)).thenReturn(Optional.of(pending));
+
+            service.notifyAccountActivated(request, activatedObserver);
+
+            verify(activatedObserver).onNext(activatedCaptor.capture());
+            assertThat(activatedCaptor.getValue().getSuccess()).isFalse();
+            assertThat(activatedCaptor.getValue().getMessage()).contains("not in CONFIRMED status");
+        }
+
+        @Test
+        @DisplayName("should reject empty memberId with INVALID_ARGUMENT")
+        void shouldRejectEmptyMemberId() {
+            AccountActivatedRequest request = AccountActivatedRequest.newBuilder()
+                    .setMemberId("")
+                    .setKeycloakUserId("kc-user-123")
+                    .build();
+
+            service.notifyAccountActivated(request, activatedObserver);
+
+            verify(activatedObserver).onError(any(StatusRuntimeException.class));
+        }
+
+        @Test
+        @DisplayName("should reject empty keycloakUserId with INVALID_ARGUMENT")
+        void shouldRejectEmptyKeycloakUserId() {
+            AccountActivatedRequest request = AccountActivatedRequest.newBuilder()
+                    .setMemberId(MEMBER_ID.toString())
+                    .setKeycloakUserId("")
+                    .build();
+
+            service.notifyAccountActivated(request, activatedObserver);
+
+            verify(activatedObserver).onError(any(StatusRuntimeException.class));
+        }
+
+        @Test
+        @DisplayName("should return INTERNAL on unexpected exception")
+        void shouldReturnInternalOnException() {
+            AccountActivatedRequest request = AccountActivatedRequest.newBuilder()
+                    .setMemberId(MEMBER_ID.toString())
+                    .setKeycloakUserId("kc-user-123")
+                    .build();
+
+            when(memberRepository.getByMemberId(MEMBER_ID)).thenThrow(new RuntimeException("DB error"));
+
+            service.notifyAccountActivated(request, activatedObserver);
+
+            verify(activatedObserver).onError(any(StatusRuntimeException.class));
+        }
+    }
+
+    // ========================================================================
+    // Tests - notifyLocalCredentialsAdded
+    // ========================================================================
+
+    @Nested
+    @DisplayName("notifyLocalCredentialsAdded")
+    class NotifyLocalCredentialsAdded {
+
+        @Mock
+        private StreamObserver<LocalCredentialsAddedResponse> credentialsObserver;
+
+        @Captor
+        private ArgumentCaptor<LocalCredentialsAddedResponse> credentialsCaptor;
+
+        @Test
+        @DisplayName("should update hasLocalCredentials flag successfully")
+        void shouldUpdateFlagSuccessfully() {
+            Member member = Member.builder()
+                    .memberId(MEMBER_ID)
+                    .email(VALID_EMAIL)
+                    .firstName("John")
+                    .keycloakUserId("kc-user-123")
+                    .hasLocalCredentials(false)
+                    .status(MemberStatus.ACTIVE)
+                    .build();
+
+            LocalCredentialsAddedRequest request = LocalCredentialsAddedRequest.newBuilder()
+                    .setKeycloakUserId("kc-user-123")
+                    .build();
+
+            when(memberRepository.getByKeycloakUserId("kc-user-123")).thenReturn(Optional.of(member));
+
+            service.notifyLocalCredentialsAdded(request, credentialsObserver);
+
+            verify(credentialsObserver).onNext(credentialsCaptor.capture());
+            verify(credentialsObserver).onCompleted();
+            assertThat(credentialsCaptor.getValue().getSuccess()).isTrue();
+            verify(memberRepository).save(any(Member.class));
+        }
+
+        @Test
+        @DisplayName("should return failure for unknown keycloakUserId")
+        void shouldReturnFailureForUnknownUser() {
+            LocalCredentialsAddedRequest request = LocalCredentialsAddedRequest.newBuilder()
+                    .setKeycloakUserId("unknown-kc-id")
+                    .build();
+
+            when(memberRepository.getByKeycloakUserId("unknown-kc-id")).thenReturn(Optional.empty());
+
+            service.notifyLocalCredentialsAdded(request, credentialsObserver);
+
+            verify(credentialsObserver).onNext(credentialsCaptor.capture());
+            assertThat(credentialsCaptor.getValue().getSuccess()).isFalse();
+            assertThat(credentialsCaptor.getValue().getMessage()).contains("not found");
+        }
+
+        @Test
+        @DisplayName("should reject empty keycloakUserId with INVALID_ARGUMENT")
+        void shouldRejectEmptyKeycloakUserId() {
+            LocalCredentialsAddedRequest request = LocalCredentialsAddedRequest.newBuilder()
+                    .setKeycloakUserId("")
+                    .build();
+
+            service.notifyLocalCredentialsAdded(request, credentialsObserver);
+
+            verify(credentialsObserver).onError(any(StatusRuntimeException.class));
+        }
+
+        @Test
+        @DisplayName("should return INTERNAL on unexpected exception")
+        void shouldReturnInternalOnException() {
+            LocalCredentialsAddedRequest request = LocalCredentialsAddedRequest.newBuilder()
+                    .setKeycloakUserId("kc-user-123")
+                    .build();
+
+            when(memberRepository.getByKeycloakUserId("kc-user-123")).thenThrow(new RuntimeException("DB error"));
+
+            service.notifyLocalCredentialsAdded(request, credentialsObserver);
+
+            verify(credentialsObserver).onError(any(StatusRuntimeException.class));
+        }
     }
 }

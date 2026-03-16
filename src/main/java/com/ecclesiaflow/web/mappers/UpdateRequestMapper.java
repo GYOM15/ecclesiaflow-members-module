@@ -70,7 +70,6 @@ public class UpdateRequestMapper {
                 .firstName(payload.getFirstName())
                 .lastName(payload.getLastName())
                 .address(payload.getAddress())
-                .email(payload.getEmail())
                 .phoneNumber(payload.getPhoneNumber())
                 .build();
     }

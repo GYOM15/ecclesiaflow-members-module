@@ -13,6 +13,7 @@ import com.ecclesiaflow.business.exceptions.InvalidConfirmationCodeException;
 import com.ecclesiaflow.business.exceptions.MemberAlreadyConfirmedException;
 import com.ecclesiaflow.business.exceptions.MemberNotFoundException;
 import com.ecclesiaflow.business.domain.auth.AuthClient;
+import com.ecclesiaflow.business.domain.auth.PasswordSetupTokenResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -53,12 +54,14 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
 
         confirmationRepository.delete(confirmation);
 
-        String temporaryToken = authClient.retrievePostActivationToken(member.getEmail(), member.getMemberId());
+        PasswordSetupTokenResponse tokenResponse = authClient.retrievePostActivationToken(
+                member.getEmail(), member.getMemberId());
 
         return MembershipConfirmationResult.builder()
                 .message("Compte confirmé avec succès. Vous pouvez maintenant définir votre mot de passe.")
-                .temporaryToken(temporaryToken)
-                .expiresInSeconds(900)
+                .temporaryToken(tokenResponse.token())
+                .expiresInSeconds(tokenResponse.expiresInSeconds())
+                .passwordEndpoint(tokenResponse.passwordEndpoint())
                 .build();
     }
 
@@ -96,7 +99,6 @@ public class MemberConfirmationServiceImpl implements MemberConfirmationService 
                 .build();
         confirmationRepository.save(confirmation);
         
-        // Publier événement au lieu d'appeler directement le notifier
         // L'email sera envoyé APRÈS le commit via @TransactionalEventListener
         eventPublisher.publishEvent(
             new MemberRegisteredEvent(member.getEmail(), newToken, member.getFirstName())

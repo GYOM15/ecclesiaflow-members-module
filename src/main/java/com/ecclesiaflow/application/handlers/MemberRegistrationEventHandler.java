@@ -57,6 +57,9 @@ public class MemberRegistrationEventHandler {
     @Value("${ecclesiaflow.members.base-url:http://localhost:8080}")
     private String baseUrl;
 
+    @Value("${ecclesiaflow.frontend.base-url:http://localhost:5173}")
+    private String frontendBaseUrl;
+
     /**
      * Gère l'événement d'inscription d'un nouveau membre.
      * 
@@ -85,11 +88,11 @@ public class MemberRegistrationEventHandler {
     @Async("emailTaskExecutor")
     public void handleMemberRegistered(MemberRegisteredEvent event) {
         try {
-            String confirmationUrl = buildConfirmationUrl(event.getConfirmationToken().toString());
-            emailClient.sendConfirmationEmail(event.getEmail(), confirmationUrl);
+            String confirmationUrl = buildConfirmationUrl(event.confirmationToken().toString());
+            emailClient.sendConfirmationEmail(event.email(), confirmationUrl, event.firstName());
         } catch (Exception e) {
-            // Exception capturée pour ne pas impacter la transaction métier
-            // Le logging est géré par les aspects AOP
+            // Exception captured to not impact the business transaction
+            // Logging is handled by AOP aspects
         }
     }
 
@@ -100,6 +103,6 @@ public class MemberRegistrationEventHandler {
      * @return URL complète de confirmation
      */
     private String buildConfirmationUrl(String token) {
-        return String.format("%s/ecclesiaflow/members/confirmation?token=%s", baseUrl, token);
+        return String.format("%s/confirmation?token=%s", frontendBaseUrl, token);
     }
 }

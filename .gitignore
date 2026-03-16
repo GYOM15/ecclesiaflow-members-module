@@ -32,16 +32,18 @@ build/
 ### VS Code ###
 .vscode/
 
-### SÉCURITÉ - FICHIERS SENSIBLES ###
-# Variables d'environnement (contiennent des secrets)
-.env
+### SECURITY - SENSITIVE FILES ###
+# Environment variables (contain secrets) - NOT committed
+.env.dev
+.env.test
+.env.prod
 .env.local
 .env.production
 .env.staging
+.env
 
-# Fichiers de configuration avec secrets
-application.properties
-application-*.properties
+# IMPORTANT: .env.example IS committed (template only, no real secrets)
+# IMPORTANT: application*.properties ARE committed (use env vars for secrets)
 
 # Certificats SSL
 *.p12

@@ -8,6 +8,8 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ecclesiaflow.business.domain.member.MemberStatus;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -46,8 +48,7 @@ class SpringDataMemberConfirmationRepositoryTest {
                 .lastName("Doe")
                 .email("john.doe@example.com")
                 .address("123 Main St, Anytown")
-                .confirmed(false)
-                .role(com.ecclesiaflow.business.domain.member.Role.MEMBER)
+                .status(MemberStatus.PENDING)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -166,8 +167,7 @@ class SpringDataMemberConfirmationRepositoryTest {
                 .lastName("Smith")
                 .email("jane.smith@example.com")
                 .address("456 Oak Ave, Otherville")
-                .confirmed(false)
-                .role(com.ecclesiaflow.business.domain.member.Role.MEMBER)
+                .status(MemberStatus.PENDING)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();

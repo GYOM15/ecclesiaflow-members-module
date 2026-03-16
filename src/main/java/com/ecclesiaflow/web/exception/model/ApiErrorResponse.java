@@ -9,102 +9,80 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Record représentant une réponse d'erreur standardisée avec support des erreurs de validation.
+ * Standardized error response record with validation error support.
  * <p>
- * Capacité de gérer des erreurs de validation détaillées. Utilisée principalement par
- * {@link com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler} pour les erreurs
- * de validation Bean Validation et les erreurs métier complexes.
+ * Handles detailed validation errors. Primarily used by
+ * {@link com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler} for
+ * Bean Validation errors and complex business errors.
  * </p>
- * 
- * <p><strong>Rôle architectural :</strong> Modèle de réponse d'erreur avancée</p>
- * 
- * <p><strong>Fonctionnalités :</strong></p>
- * <ul>
- *   <li>Informations d'erreur de base (timestamp, status, message, path)</li>
- *   <li>Liste détaillée des erreurs de validation</li>
- *   <li>Builder pattern pour construction flexible</li>
- *   <li>Sérialisation JSON optimisée (exclusion des champs null)</li>
- *   <li>Documentation OpenAPI intégrée</li>
- * </ul>
- * 
- * <p><strong>Cas d'utilisation :</strong></p>
- * <ul>
- *   <li>Erreurs de validation Bean Validation (@Valid)</li>
- *   <li>Erreurs de validation métier complexes</li>
- *   <li>Erreurs avec détails multiples</li>
- *   <li>Documentation API avec exemples détaillés</li>
- * </ul>
- * 
- * <p><strong>Avantages du record :</strong> Immutabilité, equals/hashCode automatiques,
- * constructeur compact avec validation, sérialisation JSON native.</p>
- * 
- * @param timestamp Horodatage de l'erreur
- * @param status Code de statut HTTP
- * @param error Type d'erreur HTTP
- * @param message Message d'erreur principal
- * @param path Chemin de la requête
- * @param errors Liste des erreurs de validation détaillées
- * 
+ *
+ * @param timestamp  error timestamp
+ * @param status     HTTP status code
+ * @param error      HTTP error type
+ * @param errorCode  machine-readable error code (e.g. ACCOUNT_DEACTIVATED), nullable
+ * @param message    detailed error message
+ * @param path       request path
+ * @param errors     detailed validation errors
+ *
  * @author EcclesiaFlow Team
  * @since 1.0.0
  * @see ValidationError
  * @see com.ecclesiaflow.web.exception.advices.GlobalExceptionHandler
  */
-@Schema(description = "Réponse d'erreur standard de l'API")
+@Schema(description = "Standard API error response")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ApiErrorResponse(
-    @Schema(description = "Horodatage de l'erreur", example = "2023-01-01T12:00:00")
+    @Schema(description = "Error timestamp", example = "2023-01-01T12:00:00")
     LocalDateTime timestamp,
 
-    @Schema(description = "Statut HTTP", example = "400")
+    @Schema(description = "HTTP status code", example = "400")
     int status,
 
-    @Schema(description = "Type d'erreur", example = "Bad Request")
+    @Schema(description = "HTTP error type", example = "Bad Request")
     String error,
 
-    @Schema(description = "Message d'erreur détaillé", example = "Erreur de validation des données")
+    @Schema(description = "Machine-readable error code", example = "ACCOUNT_DEACTIVATED")
+    String errorCode,
+
+    @Schema(description = "Detailed error message", example = "Validation error")
     String message,
 
-    @Schema(description = "Chemin de la requête", example = "/api/members")
+    @Schema(description = "Request path", example = "/api/members")
     String path,
 
     @ArraySchema(schema = @Schema(implementation = ValidationError.class))
     List<ValidationError> errors
 ) {
     public ApiErrorResponse {
-        // Garde errors null si explicitement passé comme null
-        // Sinon initialise avec une liste vide pour les erreurs de validation
+        // Keep errors null if explicitly passed as null
     }
 
     /**
-     * Crée un nouveau builder pour construire une ApiErrorResponse.
-     * 
-     * @return nouvelle instance de builder
+     * Creates a new builder instance.
+     *
+     * @return new builder
      */
     public static ApiErrorResponseBuilder builder() {
         return new ApiErrorResponseBuilder();
     }
 
     /**
-     * Builder pour construire une ApiErrorResponse de manière fluide.
-     * <p>
-     * Permet la construction étape par étape d'une réponse d'erreur avec
-     * validation automatique et valeurs par défaut appropriées.
-     * </p>
+     * Fluent builder for constructing an ApiErrorResponse.
      */
     public static class ApiErrorResponseBuilder {
         private LocalDateTime timestamp = LocalDateTime.now();
         private int status;
         private String error;
+        private String errorCode;
         private String message;
         private String path;
         private List<ValidationError> errors = null;
 
         /**
-         * Définit le code de statut HTTP.
-         * 
-         * @param status le code de statut HTTP (400, 404, 500, etc.)
-         * @return ce builder pour chaînage
+         * Sets the HTTP status code.
+         *
+         * @param status HTTP status code (400, 404, 500, etc.)
+         * @return this builder for chaining
          */
         public ApiErrorResponseBuilder status(int status) {
             this.status = status;
@@ -112,10 +90,10 @@ public record ApiErrorResponse(
         }
 
         /**
-         * Définit le type d'erreur HTTP.
-         * 
-         * @param error le type d'erreur ("Bad Request", "Not Found", etc.)
-         * @return ce builder pour chaînage
+         * Sets the HTTP error type.
+         *
+         * @param error error type ("Bad Request", "Not Found", etc.)
+         * @return this builder for chaining
          */
         public ApiErrorResponseBuilder error(String error) {
             this.error = error;
@@ -123,10 +101,21 @@ public record ApiErrorResponse(
         }
 
         /**
-         * Définit le message d'erreur principal.
-         * 
-         * @param message le message d'erreur descriptif
-         * @return ce builder pour chaînage
+         * Sets the machine-readable error code.
+         *
+         * @param errorCode error code (e.g. "ACCOUNT_DEACTIVATED")
+         * @return this builder for chaining
+         */
+        public ApiErrorResponseBuilder errorCode(String errorCode) {
+            this.errorCode = errorCode;
+            return this;
+        }
+
+        /**
+         * Sets the error message.
+         *
+         * @param message descriptive error message
+         * @return this builder for chaining
          */
         public ApiErrorResponseBuilder message(String message) {
             this.message = message;
@@ -134,10 +123,10 @@ public record ApiErrorResponse(
         }
 
         /**
-         * Définit le chemin de la requête qui a causé l'erreur.
-         * 
-         * @param path le chemin de la requête HTTP
-         * @return ce builder pour chaînage
+         * Sets the request path that caused the error.
+         *
+         * @param path HTTP request path
+         * @return this builder for chaining
          */
         public ApiErrorResponseBuilder path(String path) {
             this.path = path;
@@ -145,10 +134,10 @@ public record ApiErrorResponse(
         }
 
         /**
-         * Ajoute une erreur de validation à la liste.
-         * 
-         * @param error l'erreur de validation à ajouter
-         * @return ce builder pour chaînage
+         * Adds a validation error to the list.
+         *
+         * @param error validation error to add
+         * @return this builder for chaining
          */
         public ApiErrorResponseBuilder addValidationError(ValidationError error) {
             if (this.errors == null) {
@@ -159,10 +148,10 @@ public record ApiErrorResponse(
         }
 
         /**
-         * Définit explicitement la liste des erreurs de validation.
-         * 
-         * @param errors la liste des erreurs (peut être null)
-         * @return ce builder pour chaînage
+         * Sets the validation errors list explicitly.
+         *
+         * @param errors list of errors (may be null)
+         * @return this builder for chaining
          */
         public ApiErrorResponseBuilder errors(List<ValidationError> errors) {
             this.errors = errors;
@@ -170,12 +159,12 @@ public record ApiErrorResponse(
         }
 
         /**
-         * Construit l'ApiErrorResponse finale.
-         * 
-         * @return nouvelle instance d'ApiErrorResponse avec les paramètres définis
+         * Builds the final ApiErrorResponse.
+         *
+         * @return new ApiErrorResponse instance
          */
         public ApiErrorResponse build() {
-            return new ApiErrorResponse(timestamp, status, error, message, path, errors);
+            return new ApiErrorResponse(timestamp, status, error, errorCode, message, path, errors);
         }
     }
 }

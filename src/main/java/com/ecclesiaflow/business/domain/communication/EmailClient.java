@@ -35,13 +35,34 @@ import java.util.UUID;
 public interface EmailClient {
 
     /**
-     * Envoie un email de confirmation d'adresse email.
+     * Sends an email confirmation to verify the user's email address.
      * 
-     * @param email adresse email du destinataire
-     * @param confirmationUrl lien de confirmation complet avec token
-     * @return UUID de l'email envoyé (pour tracking)
-     * @throws com.ecclesiaflow.business.exceptions.EmailServiceException si l'envoi échoue
+     * @param email recipient email address
+     * @param confirmationUrl complete confirmation link with token
+     * @param firstName recipient's first name for personalization
+     * @return UUID of the sent email (for tracking)
+     * @throws com.ecclesiaflow.business.exceptions.EmailServiceException if sending fails
      */
-    UUID sendConfirmationEmail(String email, String confirmationUrl);
+    UUID sendConfirmationEmail(String email, String confirmationUrl, String firstName);
+
+    /**
+     * Sends a welcome email after account activation.
+     * 
+     * @param email recipient email address
+     * @param firstName recipient's first name for personalization
+     * @return UUID of the sent email (for tracking)
+     * @throws com.ecclesiaflow.business.exceptions.EmailServiceException if sending fails
+     */
+    UUID sendWelcomeEmail(String email, String firstName);
+
+    /**
+     * Notifies the old email address that the account email has been changed.
+     *
+     * @param oldEmail  the previous email address
+     * @param firstName recipient's first name for personalization
+     * @return UUID of the sent email (for tracking)
+     * @throws com.ecclesiaflow.business.exceptions.EmailServiceException if sending fails
+     */
+    UUID sendEmailChangedNotification(String oldEmail, String firstName);
 
 }

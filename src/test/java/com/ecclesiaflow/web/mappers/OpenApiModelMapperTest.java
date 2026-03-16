@@ -2,7 +2,7 @@ package com.ecclesiaflow.web.mappers;
 
 import com.ecclesiaflow.business.domain.confirmation.MembershipConfirmationResult;
 import com.ecclesiaflow.business.domain.member.Member;
-import com.ecclesiaflow.business.domain.member.Role;
+import com.ecclesiaflow.business.domain.member.MemberStatus;
 import com.ecclesiaflow.web.model.ConfirmationResponse;
 import com.ecclesiaflow.web.model.MemberPageResponse;
 import com.ecclesiaflow.web.model.SignUpResponse;
@@ -36,15 +36,14 @@ class OpenApiModelMapperTest {
         // Given
         LocalDateTime createdAt = LocalDateTime.of(2025, 1, 15, 10, 30);
         LocalDateTime confirmedAt = LocalDateTime.of(2025, 1, 16, 14, 20);
-        
+
         Member member = Member.builder()
                 .memberId(UUID.randomUUID())
                 .email("john.doe@example.com")
                 .firstName("John")
                 .lastName("Doe")
                 .address("123 Main St")
-                .role(Role.MEMBER)
-                .confirmed(true)
+                .status(MemberStatus.ACTIVE)
                 .createdAt(createdAt)
                 .confirmedAt(confirmedAt)
                 .build();
@@ -84,17 +83,16 @@ class OpenApiModelMapperTest {
     }
 
     @Test
-    void createSignUpResponse_shouldHandleUnconfirmedMember() {
+    void createSignUpResponse_shouldHandlePendingMember() {
         // Given
         Member member = Member.builder()
                 .memberId(UUID.randomUUID())
                 .email("unconfirmed@example.com")
                 .firstName("Jane")
                 .lastName("Smith")
-                .role(Role.MEMBER)
-                .confirmed(false)
+                .status(MemberStatus.PENDING)
                 .createdAt(LocalDateTime.now())
-                .confirmedAt(null)  // Not confirmed yet
+                .confirmedAt(null)
                 .build();
 
         String message = "Member registered";
@@ -117,8 +115,7 @@ class OpenApiModelMapperTest {
                 .email("test@example.com")
                 .firstName("Test")
                 .lastName("User")
-                .role(Role.MEMBER)
-                .confirmed(false)
+                .status(MemberStatus.PENDING)
                 .createdAt(null)
                 .confirmedAt(null)
                 .build();
@@ -139,8 +136,8 @@ class OpenApiModelMapperTest {
     void createMemberPageResponse_shouldMapPageCorrectly() {
         // Given
         List<Member> members = List.of(
-                Member.builder().memberId(UUID.randomUUID()).email("alice@example.com").firstName("Alice").lastName("A").role(Role.MEMBER).confirmed(true).createdAt(LocalDateTime.now()).build(),
-                Member.builder().memberId(UUID.randomUUID()).email("bob@example.com").firstName("Bob").lastName("B").role(Role.MEMBER).confirmed(false).createdAt(LocalDateTime.now()).build()
+                Member.builder().memberId(UUID.randomUUID()).email("alice@example.com").firstName("Alice").lastName("A").status(MemberStatus.ACTIVE).createdAt(LocalDateTime.now()).build(),
+                Member.builder().memberId(UUID.randomUUID()).email("bob@example.com").firstName("Bob").lastName("B").status(MemberStatus.PENDING).createdAt(LocalDateTime.now()).build()
         );
 
         Page<Member> memberPage = new PageImpl<>(members, PageRequest.of(0, 20), 2);
@@ -192,7 +189,7 @@ class OpenApiModelMapperTest {
     void createMemberPageResponse_shouldHandleSecondPage() {
         // Given
         List<Member> members = List.of(
-                Member.builder().memberId(UUID.randomUUID()).email("charlie@example.com").firstName("Charlie").role(Role.MEMBER).confirmed(true).createdAt(LocalDateTime.now()).build()
+                Member.builder().memberId(UUID.randomUUID()).email("charlie@example.com").firstName("Charlie").status(MemberStatus.ACTIVE).createdAt(LocalDateTime.now()).build()
         );
 
         Page<Member> secondPage = new PageImpl<>(members, PageRequest.of(1, 20), 21);
@@ -205,7 +202,7 @@ class OpenApiModelMapperTest {
         assertThat(response.getNumber()).isEqualTo(1);
         assertThat(response.getPage()).isEqualTo(1);
         assertThat(response.getFirst()).isFalse();
-        assertThat(response.getLast()).isTrue(); // C'est la dernière page (page 2 sur 2)
+        assertThat(response.getLast()).isTrue();
         assertThat(response.getTotalPages()).isEqualTo(2);
     }
 
@@ -214,7 +211,7 @@ class OpenApiModelMapperTest {
     void createConfirmationResponse_shouldMapAllFieldsCorrectly() {
         // Given
         MembershipConfirmationResult result = MembershipConfirmationResult.builder()
-                .message("Compte confirmé avec succès")
+                .message("Account confirmed successfully")
                 .temporaryToken("temp-token-abc123")
                 .expiresInSeconds(900)
                 .build();
@@ -224,7 +221,7 @@ class OpenApiModelMapperTest {
 
         // Then
         assertThat(response).isNotNull();
-        assertThat(response.getMessage()).isEqualTo("Compte confirmé avec succès");
+        assertThat(response.getMessage()).isEqualTo("Account confirmed successfully");
         assertThat(response.getTemporaryToken()).isEqualTo("temp-token-abc123");
         assertThat(response.getExpiresIn()).isEqualTo(900L);
         assertThat(response.getPasswordEndpoint()).isNotNull();
@@ -250,7 +247,7 @@ class OpenApiModelMapperTest {
     void createConfirmationResponse_shouldHandleDifferentAuthModuleUrl() {
         // Given
         ReflectionTestUtils.setField(mapper, "authModuleBaseUrl", "https://production.example.com");
-        
+
         MembershipConfirmationResult result = MembershipConfirmationResult.builder()
                 .message("Success")
                 .temporaryToken("token")

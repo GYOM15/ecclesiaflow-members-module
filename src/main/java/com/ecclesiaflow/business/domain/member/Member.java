@@ -26,11 +26,13 @@ import java.util.UUID;
  *   <li>Mise à jour immutable des informations via le pattern Builder</li>
  * </ul>
  * 
- * <p><strong>États du cycle de vie :</strong></p>
+ * <p><strong>États du cycle de vie (MemberStatus) :</strong></p>
  * <ol>
- *   <li><strong>Créé</strong> - Membre inscrit mais non confirmé (confirmed = false)</li>
- *   <li><strong>Confirmé</strong> - Email confirmé via code (confirmed = true, confirmedAt défini)</li>
- *   <li><strong>Actif</strong> - Mot de passe défini (passwordSet = true)</li>
+ *   <li><strong>PENDING</strong> - Membre inscrit mais email non confirmé</li>
+ *   <li><strong>CONFIRMED</strong> - Email confirmé, mot de passe non encore défini</li>
+ *   <li><strong>ACTIVE</strong> - Compte pleinement actif (mot de passe défini)</li>
+ *   <li><strong>SUSPENDED</strong> - Compte suspendu</li>
+ *   <li><strong>INACTIVE</strong> - Compte désactivé</li>
  * </ol>
  * 
  * <p><strong>Invariants métier :</strong></p>
@@ -38,7 +40,6 @@ import java.util.UUID;
  *   <li>Un membre ne peut être confirmé qu'une seule fois</li>
  *   <li>Le mot de passe ne peut être marqué comme défini qu'une seule fois</li>
  *   <li>L'email doit être unique dans le système (contraint par le repository)</li>
- *   <li>Le rôle par défaut est MEMBER</li>
  * </ul>
  * 
  * <p><strong>Intégration avec d'autres modules :</strong></p>
@@ -57,7 +58,6 @@ import java.util.UUID;
  * 
  * @author EcclesiaFlow Team
  * @since 1.0.0
- * @see Role
  * @see MembershipRegistration
  * @see MembershipUpdate
  */
@@ -74,12 +74,14 @@ public class Member {
     private final LocalDateTime createdAt;
     private final LocalDateTime updatedAt;
     private final String phoneNumber;
+    private final String keycloakUserId;
+    private final SocialProvider socialProvider;
+    private final boolean hasLocalCredentials;
+    private final LocalDateTime deactivatedAt;
+    private final LocalDateTime anonymizedAt;
 
     @Builder.Default
-    private final Role role = Role.MEMBER;
-
-    @Builder.Default
-    private final boolean confirmed = false;
+    private final MemberStatus status = MemberStatus.PENDING;
 
     // Suppression du @Getter redondant - déjà présent au niveau classe
     private final UUID id;
@@ -100,7 +102,6 @@ public class Member {
         return this.toBuilder()
                 .firstName(chooseUpdatedValue(update.getFirstName(), this.firstName))
                 .lastName(chooseUpdatedValue(update.getLastName(), this.lastName))
-                .email(chooseUpdatedValue(update.getEmail(), this.email))
                 .address(chooseUpdatedValue(update.getAddress(), this.address))
                 .phoneNumber(chooseUpdatedValue(update.getPhoneNumber(), this.phoneNumber))
                 .createdAt(this.createdAt)
@@ -126,22 +127,32 @@ public class Member {
     }
 
     /**
+     * Vérifie si le membre a confirmé son email.
+     * Un membre est considéré confirmé s'il n'est plus en statut PENDING.
+     *
+     * @return true si le membre a confirmé son email
+     */
+    public boolean isConfirmed() {
+        return status != MemberStatus.PENDING;
+    }
+
+    /**
      * Confirme le compte du membre après validation du code de confirmation.
      * <p>
-     * Cette méthode effectue la transition d'état vers "confirmé" et
+     * Cette méthode effectue la transition d'état vers CONFIRMED et
      * enregistre l'horodatage de confirmation de manière immutable.
      * Retourne une nouvelle instance avec le statut confirmé.
      * </p>
      * 
-     * @return une nouvelle instance de Member avec le statut confirmé
+     * @return une nouvelle instance de Member avec le statut CONFIRMED
      * @throws IllegalStateException si le membre est déjà confirmé
      */
     public Member confirm() {
-        if (this.confirmed) {
+        if (this.status != MemberStatus.PENDING) {
             throw new IllegalStateException("Le membre est déjà confirmé.");
         }
         return this.toBuilder()
-                .confirmed(true)
+                .status(MemberStatus.CONFIRMED)
                 .confirmedAt(LocalDateTime.now())
                 .build();
     }

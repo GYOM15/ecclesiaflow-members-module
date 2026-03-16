@@ -21,6 +21,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import org.springframework.context.ApplicationEventPublisher;
+
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -39,6 +41,7 @@ class MembersServiceImplIntegrationTest {
     private MembersServiceGrpc.MembersServiceBlockingStub stub;
 
     private MemberRepository memberRepository;
+    private ApplicationEventPublisher eventPublisher;
 
     private static final String SERVER_NAME = "test-members-grpc-service";
     private static final String CONFIRMED_EMAIL = "confirmed@example.com";
@@ -48,11 +51,12 @@ class MembersServiceImplIntegrationTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        // Mock repository
+        // Mock dependencies
         memberRepository = mock(MemberRepository.class);
+        eventPublisher = mock(ApplicationEventPublisher.class);
 
         // Créer le service gRPC
-        MembersGrpcServiceImpl service = new MembersGrpcServiceImpl(memberRepository);
+        MembersGrpcServiceImpl service = new MembersGrpcServiceImpl(memberRepository, eventPublisher);
 
         // Démarrer le serveur in-memory
         server = InProcessServerBuilder
