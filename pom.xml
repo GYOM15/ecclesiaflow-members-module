@@ -497,8 +497,8 @@
 						<exclude>**/aspect/*Aspect.emailOperations()</exclude>
 						<exclude>**/aspect/*Aspect.authModuleCalls()</exclude>
 						<exclude>**/aspect/*Aspect.memberRegistration()</exclude>
-						<!-- WebClient fallback (DEPRECATED - préférer gRPC) -->
-						<exclude>**/web/client/AuthClientImpl.class</exclude>
+						<!-- Spring Security config (wiring only, no business logic) -->
+						<exclude>**/web/security/SecurityConfig.class</exclude>
 					</excludes>
 				</configuration>
 				<executions>

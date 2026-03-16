@@ -151,6 +151,86 @@ class EmailGrpcClientTest {
         }
     }
 
+    @Nested
+    @DisplayName("sendWelcomeEmail")
+    class SendWelcomeEmail {
+
+        @Test
+        @DisplayName("should return email ID on successful send")
+        void shouldReturnEmailIdOnSuccess() {
+            UUID expectedId = UUID.randomUUID();
+            testService.setResponseEmailId(expectedId.toString());
+
+            UUID result = emailGrpcClient.sendWelcomeEmail("test@example.com", "John");
+
+            assertThat(result).isEqualTo(expectedId);
+            assertThat(testService.getLastRequest().getTemplateType())
+                    .isEqualTo(EmailTemplateType.EMAIL_TEMPLATE_WELCOME);
+        }
+
+        @Test
+        @DisplayName("should handle null firstName")
+        void shouldHandleNullFirstName() {
+            UUID expectedId = UUID.randomUUID();
+            testService.setResponseEmailId(expectedId.toString());
+
+            UUID result = emailGrpcClient.sendWelcomeEmail("test@example.com", null);
+
+            assertThat(result).isEqualTo(expectedId);
+            assertThat(testService.getLastRequest().getVariablesMap().get("firstName")).isEqualTo("Membre");
+        }
+
+        @Test
+        @DisplayName("should throw EmailServiceException on error")
+        void shouldThrowOnError() {
+            testService.setErrorToThrow(Status.UNAVAILABLE.withDescription("Down"));
+
+            assertThatThrownBy(() -> emailGrpcClient.sendWelcomeEmail("test@example.com", "John"))
+                    .isInstanceOf(EmailServiceException.class)
+                    .hasMessageContaining("WELCOME");
+        }
+    }
+
+    @Nested
+    @DisplayName("sendEmailChangedNotification")
+    class SendEmailChangedNotification {
+
+        @Test
+        @DisplayName("should return email ID on successful send")
+        void shouldReturnEmailIdOnSuccess() {
+            UUID expectedId = UUID.randomUUID();
+            testService.setResponseEmailId(expectedId.toString());
+
+            UUID result = emailGrpcClient.sendEmailChangedNotification("old@example.com", "John");
+
+            assertThat(result).isEqualTo(expectedId);
+            assertThat(testService.getLastRequest().getTemplateType())
+                    .isEqualTo(EmailTemplateType.EMAIL_TEMPLATE_PROFILE_UPDATED);
+        }
+
+        @Test
+        @DisplayName("should handle null firstName")
+        void shouldHandleNullFirstName() {
+            UUID expectedId = UUID.randomUUID();
+            testService.setResponseEmailId(expectedId.toString());
+
+            UUID result = emailGrpcClient.sendEmailChangedNotification("old@example.com", null);
+
+            assertThat(result).isEqualTo(expectedId);
+            assertThat(testService.getLastRequest().getVariablesMap().get("firstName")).isEqualTo("Membre");
+        }
+
+        @Test
+        @DisplayName("should throw EmailServiceException on error")
+        void shouldThrowOnError() {
+            testService.setErrorToThrow(Status.INTERNAL.withDescription("Error"));
+
+            assertThatThrownBy(() -> emailGrpcClient.sendEmailChangedNotification("old@example.com", "John"))
+                    .isInstanceOf(EmailServiceException.class)
+                    .hasMessageContaining("EMAIL_CHANGED");
+        }
+    }
+
     /**
      * Test implementation of the Email gRPC service.
      */
