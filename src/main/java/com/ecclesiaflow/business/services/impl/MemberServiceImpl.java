@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -143,13 +144,22 @@ public class MemberServiceImpl implements MemberService {
     @Transactional
     public Member registerSocialMember(String keycloakUserId, SocialProvider socialProvider,
                                        MembershipRegistration registration) {
-        if (memberRepository.existsByEmail(registration.email())) {
-            throw new SocialAccountAlreadyExistsException(
-                    "A member with this email already exists.");
+        // If a member with this keycloakUserId already exists, return it (idempotent)
+        Optional<Member> existingByKcId = memberRepository.getByKeycloakUserId(keycloakUserId);
+        if (existingByKcId.isPresent()) {
+            return existingByKcId.get();
         }
-        if (memberRepository.existsByKeycloakUserId(keycloakUserId)) {
-            throw new SocialAccountAlreadyExistsException(
-                    "A member with this keycloakUserId already exists.");
+
+        // If a member with this email already exists (e.g. registered via form),
+        // link the social account by updating keycloakUserId and socialProvider
+        Optional<Member> existingByEmail = memberRepository.getByEmail(registration.email());
+        if (existingByEmail.isPresent()) {
+            Member existing = existingByEmail.get();
+            Member linked = existing.toBuilder()
+                    .keycloakUserId(keycloakUserId)
+                    .socialProvider(socialProvider)
+                    .build();
+            return memberRepository.save(linked);
         }
 
         Member member = Member.builder()

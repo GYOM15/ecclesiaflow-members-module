@@ -521,8 +521,8 @@ class MemberServiceImplTest {
                 .status(MemberStatus.ACTIVE)
                 .build();
 
-        when(memberRepository.existsByEmail(socialRegistration.email())).thenReturn(false);
-        when(memberRepository.existsByKeycloakUserId(keycloakUserId)).thenReturn(false);
+        when(memberRepository.getByKeycloakUserId(keycloakUserId)).thenReturn(Optional.empty());
+        when(memberRepository.getByEmail(socialRegistration.email())).thenReturn(Optional.empty());
         when(memberRepository.save(any(Member.class))).thenReturn(savedMember);
 
         // When
@@ -542,36 +542,60 @@ class MemberServiceImplTest {
     }
 
     @Test
-    void registerSocialMember_shouldNotPublishEventWhenEmailAlreadyExists() {
+    void registerSocialMember_shouldLinkExistingMemberWhenEmailAlreadyExists() {
         // Given
         String keycloakUserId = "kc-social-456";
         MembershipRegistration socialRegistration = new MembershipRegistration(
                 "Bob", "Dupont", "bob@gmail.com", "789 Rue", null);
 
-        when(memberRepository.existsByEmail(socialRegistration.email())).thenReturn(true);
+        Member existingMember = Member.builder()
+                .memberId(UUID.randomUUID())
+                .firstName("Bob")
+                .lastName("Dupont")
+                .email("bob@gmail.com")
+                .keycloakUserId("old-kc-id")
+                .status(MemberStatus.ACTIVE)
+                .build();
 
-        // When & Then
-        assertThrows(SocialAccountAlreadyExistsException.class,
-                () -> memberService.registerSocialMember(keycloakUserId, SocialProvider.GOOGLE, socialRegistration));
+        when(memberRepository.getByKeycloakUserId(keycloakUserId)).thenReturn(Optional.empty());
+        when(memberRepository.getByEmail(socialRegistration.email())).thenReturn(Optional.of(existingMember));
+        when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        verify(memberRepository, never()).save(any());
+        // When
+        Member result = memberService.registerSocialMember(keycloakUserId, SocialProvider.GOOGLE, socialRegistration);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(keycloakUserId, result.getKeycloakUserId());
+        assertEquals(SocialProvider.GOOGLE, result.getSocialProvider());
+        verify(memberRepository).save(any(Member.class));
         verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
-    void registerSocialMember_shouldNotPublishEventWhenKeycloakUserIdAlreadyExists() {
+    void registerSocialMember_shouldReturnExistingMemberWhenKeycloakUserIdAlreadyExists() {
         // Given
         String keycloakUserId = "kc-social-789";
         MembershipRegistration socialRegistration = new MembershipRegistration(
                 "Claire", "Bernard", "claire@gmail.com", "101 Boulevard", null);
 
-        when(memberRepository.existsByEmail(socialRegistration.email())).thenReturn(false);
-        when(memberRepository.existsByKeycloakUserId(keycloakUserId)).thenReturn(true);
+        Member existingMember = Member.builder()
+                .memberId(UUID.randomUUID())
+                .firstName("Claire")
+                .lastName("Bernard")
+                .email("claire@gmail.com")
+                .keycloakUserId(keycloakUserId)
+                .status(MemberStatus.ACTIVE)
+                .build();
 
-        // When & Then
-        assertThrows(SocialAccountAlreadyExistsException.class,
-                () -> memberService.registerSocialMember(keycloakUserId, SocialProvider.GOOGLE, socialRegistration));
+        when(memberRepository.getByKeycloakUserId(keycloakUserId)).thenReturn(Optional.of(existingMember));
 
+        // When
+        Member result = memberService.registerSocialMember(keycloakUserId, SocialProvider.GOOGLE, socialRegistration);
+
+        // Then
+        assertNotNull(result);
+        assertEquals("Claire", result.getFirstName());
         verify(memberRepository, never()).save(any());
         verify(eventPublisher, never()).publishEvent(any());
     }
